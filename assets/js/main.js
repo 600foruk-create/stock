@@ -762,86 +762,14 @@
             let totalStock = moduleItems.reduce((sum, i) => sum + (i.stock || 0), 0);
             let totalKg = moduleItems.reduce((sum, i) => sum + ((i.stock || 0) * (i.weight || 0)), 0);
             
-            // Low stock items by brand
-            let lowStockByBrand = {};
-            moduleItems.forEach(item => {
-                let main = mainCategories.find(m => m.id === item.mainId);
-                let min = item.minStock || main?.lowStockLimit || 10;
-                if (item.stock <= min) {
-                    if (!lowStockByBrand[main.id]) {
-                        lowStockByBrand[main.id] = { name: main.name, count: 0 };
-                    }
-                    lowStockByBrand[main.id].count++;
-                }
+            // Brand Stats for new chart logic
+            let brandStats = mainCategories.map(brand => {
+                let brandItems = items.filter(i => i.mainId === brand.id);
+                let pieces = brandItems.reduce((sum, i) => sum + (i.stock || 0), 0);
+                let kg = brandItems.reduce((sum, i) => sum + ((i.stock || 0) * (i.weight || 0)), 0);
+                return { brandCode: brand.id, brandName: brand.name, pieces, kg, color: brand.color };
             });
-            
-            let lowStockHtml = '';
-            for (let brandId in lowStockByBrand) {
-                lowStockHtml += `<div class="stat-expand-item"><span>${lowStockByBrand[brandId].name}</span><span>${lowStockByBrand[brandId].count} items</span></div>`;
-            }
-            
-            document.getElementById('dashboardStats').innerHTML = `
-                <div class="stat-card" onclick="toggleStatCard(this)">
-                    <h3>Total Items</h3>
-                    <div class="number">${totalItems}</div>
-                    <div class="stat-expand">
-                        <div class="stat-expand-item"><span>Active Items</span><span>${totalItems}</span></div>
-                    </div>
-                </div>
-                <div class="stat-card" onclick="toggleStatCard(this)">
-                    <h3>Total Stock</h3>
-                    <div class="number">${totalStock} PCS</div>
-                    <div class="sub">${totalKg.toFixed(2)} KG</div>
-                    <div class="stat-expand">
-                        <div class="stat-expand-item"><span>Total Pieces</span><span>${totalStock}</span></div>
-                        <div class="stat-expand-item"><span>Total Weight</span><span>${totalKg.toFixed(2)} KG</span></div>
-                    </div>
-                </div>
-                <div class="stat-card" onclick="toggleStatCard(this)">
-                    <h3>Low Stock</h3>
-                    <div class="number">${moduleItems.filter(i => i.stock <= (i.minStock || 10)).length}</div>
-                    <div class="stat-expand">
-                        ${lowStockHtml || '<div class="stat-expand-item">No low stock items</div>'}
-                    </div>
-                </div>
-            `;
-            
-            // Brand Cards with Collapse
-            let brandCardsHtml = '';
-            sortMainCategories(mainCategories).forEach(main => {
-                let brandItems = items.filter(i => i.mainId === main.id);
-                let totalBrandStock = brandItems.reduce((sum, i) => sum + (i.stock || 0), 0);
-                let totalBrandKg = brandItems.reduce((sum, i) => sum + ((i.stock || 0) * (i.weight || 0)), 0);
-                
-                let itemsHtml = '';
-                sortItems(brandItems).forEach(item => {
-                    let sub = subCategories.find(s => s.id === item.subId);
-                    let sizeName = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
-                    itemsHtml += `
-                        <div class="stock-item">
-                            <div class="item-info">
-                                <span class="item-size">${sizeName}"</span>
-                                <span class="item-details">${item.length}ft / ${item.weight}KG</span>
-                            </div>
-                            <span class="item-qty">${item.stock || 0}</span>
-                        </div>
-                    `;
-                });
-                
-                brandCardsHtml += `
-                    <div class="brand-card" id="brandCard_${main.id}">
-                        <div class="brand-header" style="background: ${main.color};" onclick="toggleBrandCard(document.getElementById('brandCard_${main.id}'))">
-                            <h4>${main.name}</h4>
-                            <span class="brand-total">${totalBrandStock} PCS | ${totalBrandKg.toFixed(2)} KG</span>
-                        </div>
-                        <div class="brand-body">
-                            ${itemsHtml}
-                        </div>
-                    </div>
-                `;
-            });
-            document.getElementById('brandStockCards').innerHTML = brandCardsHtml;
-            
+
             // Pending orders quantities
             let orderedQtys = {};
             orders.filter(o => o.status === 'pending' || o.status === 'processing').forEach(order => {
@@ -851,9 +779,30 @@
                     }
                 });
             });
-            
-            // Stock Comparison Table
-            let comparisonRows = '';
+
+            // Update stats grid
+            let statsHtml = '';
+            brandStats.forEach(b => {
+                statsHtml += `
+                    <div class="stat-card" style="background: white; padding: 1.6rem 1.5rem; border-radius: 24px; box-shadow: 0 8px 20px rgba(31, 70, 104, 0.08); border-left: 4px solid ${b.color};">
+                        <div style="color: #64748b; font-weight: 500; font-size: 0.95rem; text-transform: uppercase;">${b.brandName}</div>
+                        <div style="font-size: 2.2rem; font-weight: 700; color: #1f4668;">${b.pieces} pcs</div>
+                        <div style="font-size: 1rem; color: #f97316; font-weight: 600; margin-top: 5px;">${b.kg.toFixed(1)} kg</div>
+                    </div>
+                `;
+            });
+            statsHtml += `
+                <div class="stat-card" style="background: white; padding: 1.6rem 1.5rem; border-radius: 24px; box-shadow: 0 8px 20px rgba(31, 70, 104, 0.08); border-left: 4px solid #f97316;">
+                    <div style="color: #64748b; font-weight: 500; font-size: 0.95rem; text-transform: uppercase;">TOTAL</div>
+                    <div style="font-size: 2.2rem; font-weight: 700; color: #1f4668;">${totalStock} pcs</div>
+                    <div style="font-size: 1rem; color: #f97316; font-weight: 600; margin-top: 5px;">${totalKg.toFixed(1)} kg</div>
+                </div>
+            `;
+            let dashboardStatsEl = document.getElementById('dashboardStats');
+            if (dashboardStatsEl) dashboardStatsEl.innerHTML = statsHtml;
+
+            // Pending orders negative impact
+            let negativeRows = '';
             moduleItems.forEach(item => {
                 let main = mainCategories.find(m => m.id === item.mainId);
                 let sub = subCategories.find(s => s.id === item.subId);
@@ -863,53 +812,183 @@
                 let remaining = (item.stock || 0) - ordered;
                 let size = sub.name.replace(/[^0-9.]/g, '');
                 
+                if (ordered > 0 && remaining < 0) {
+                    negativeRows += `<tr>
+                        <td><span style="color:${main.color}; font-weight:bold;">${main.name}</span></td>
+                        <td>${size}" - ${item.length}ft / ${item.weight}KG</td>
+                        <td>${item.stock || 0}</td>
+                        <td>${ordered}</td>
+                        <td style="color: #dc2626; font-weight:bold;">${remaining}</td>
+                    </tr>`;
+                }
+            });
+            let pendingNegativeBody = document.getElementById('pendingNegativeBody');
+            if (pendingNegativeBody) {
+                pendingNegativeBody.innerHTML = negativeRows || '<tr><td colspan="5" style="text-align:center;">No items with negative impact from pending orders</td></tr>';
+            }
+
+            // Original Comparison Table
+            let comparisonRows = '';
+            moduleItems.forEach(item => {
+                let main = mainCategories.find(m => m.id === item.mainId);
+                let sub = subCategories.find(s => s.id === item.subId);
+                if (!main || !sub) return;
+                let ordered = orderedQtys[item.id] || 0;
+                let remaining = (item.stock || 0) - ordered;
+                let size = sub.name.replace(/[^0-9.]/g, '');
                 comparisonRows += `<tr>
                     <td><span style="color:${main.color};">${main.name}</span></td>
                     <td>${size}"</td>
                     <td>${item.length}ft / ${item.weight}KG</td>
                     <td>${item.stock || 0}</td>
                     <td>${ordered}</td>
-                    <td style="color: ${remaining >= 0 ? '#16a34a' : '#dc2626'};">${remaining}</td>
+                    <td style="color: ${remaining >= 0 ? '#16a34a' : '#dc2626'}; font-weight:bold;">${remaining}</td>
                 </tr>`;
             });
-            document.getElementById('stockComparisonBody').innerHTML = comparisonRows;
+            let stockComparisonBody = document.getElementById('stockComparisonBody');
+            if (stockComparisonBody) stockComparisonBody.innerHTML = comparisonRows;
+
+            window.brandStatsData = brandStats;
+            if (typeof Chart !== 'undefined') {
+                setTimeout(initCharts, 100);
+            }
         }
         
+        // Chart Initialization
+        let dashPieChart = null;
+        let dashBarChart = null;
+        function initCharts() {
+            if (!window.brandStatsData) return;
+            const brandStats = window.brandStatsData;
+            
+            // Get production Kg grouped by month (mimicking new logic but securely referencing transactions)
+            const monthlyDataKG = new Array(12).fill(0);
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            transactions.forEach(p => {
+                if (p.type === 'PRODUCTION' || p.type === 'IN') {
+                    if (p.date) {
+                        const month = new Date(p.date).getMonth();
+                        if (month >= 0 && month <= 11) {
+                            monthlyDataKG[month] += (p.quantity * (p.weight || 0));
+                        }
+                    }
+                }
+            });
+
+            const pieCanvas = document.getElementById('pieChart');
+            const barCanvas = document.getElementById('barChart');
+            
+            if (pieCanvas) {
+                if (dashPieChart) dashPieChart.destroy();
+                dashPieChart = new Chart(pieCanvas.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: brandStats.map(b => b.brandName),
+                        datasets: [{
+                            data: brandStats.map(b => b.pieces),
+                            backgroundColor: brandStats.map(b => b.color),
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+                });
+            }
+
+            if (barCanvas) {
+                if (dashBarChart) dashBarChart.destroy();
+                dashBarChart = new Chart(barCanvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Production (KG)',
+                            data: monthlyDataKG,
+                            backgroundColor: '#1f4668',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false } } }
+                });
+            }
+        }
+
         function refreshStockList() {
-            let brandCardsHtml = '';
-            sortMainCategories(mainCategories).forEach(main => {
-                let brandItems = items.filter(i => i.mainId === main.id);
-                let totalBrandStock = brandItems.reduce((sum, i) => sum + (i.stock || 0), 0);
-                let totalKg = brandItems.reduce((sum, i) => sum + ((i.stock || 0) * (i.weight || 0)), 0);
-                
-                let itemsHtml = '';
+            let html = '';
+            // Pending orders quantities
+            let orderedQtys = {};
+            orders.filter(o => o.status === 'pending' || o.status === 'processing').forEach(order => {
+                (order.items || []).forEach(item => {
+                    orderedQtys[item.itemId] = (orderedQtys[item.itemId] || 0) + (item.quantity || 0);
+                });
+            });
+
+            sortMainCategories(mainCategories).forEach(brand => {
+                let brandItems = items.filter(i => i.mainId === brand.id);
+                if (brandItems.length === 0) return;
+
+                let tableRows = '';
+                let brandTotalAvailable = 0;
+                let brandTotalOrder = 0;
+                let brandTotalRemaining = 0;
+
                 sortItems(brandItems).forEach(item => {
                     let sub = subCategories.find(s => s.id === item.subId);
                     let sizeName = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
-                    itemsHtml += `
-                        <div class="stock-item">
-                            <div class="item-info">
-                                <span class="item-size">${sizeName}"</span>
-                                <span class="item-details">${item.length}ft / ${item.weight}KG</span>
-                            </div>
-                            <span class="item-qty">${item.stock || 0}</span>
-                        </div>
+                    let available = item.stock || 0;
+                    let inOrder = orderedQtys[item.id] || 0;
+                    let remaining = available - inOrder;
+                    
+                    brandTotalAvailable += available;
+                    brandTotalOrder += inOrder;
+                    brandTotalRemaining += remaining;
+
+                    const remainingColor = remaining < 0 ? '#dc2626' : '#059669';
+
+                    tableRows += `
+                        <tr>
+                            <td style="padding: 0.8rem 1rem; border-bottom: 1px solid #e0f2fe;">${sizeName}" - ${item.length}ft / ${item.weight}KG</td>
+                            <td style="padding: 0.8rem 1rem; border-bottom: 1px solid #e0f2fe;"><strong>${available}</strong></td>
+                            <td style="padding: 0.8rem 1rem; border-bottom: 1px solid #e0f2fe;"><strong>${inOrder}</strong></td>
+                            <td style="padding: 0.8rem 1rem; border-bottom: 1px solid #e0f2fe;"><strong style="color:${remainingColor}">${remaining}</strong></td>
+                        </tr>
                     `;
                 });
-                
-                brandCardsHtml += `
-                    <div class="brand-card" id="stockCard_${main.id}">
-                        <div class="brand-header" style="background: ${main.color};" onclick="toggleBrandCard(document.getElementById('stockCard_${main.id}'))">
-                            <h4>${main.name}</h4>
-                            <span class="brand-total">${totalBrandStock} PCS | ${totalKg.toFixed(2)} KG</span>
+
+                const totalRemainingColor = brandTotalRemaining < 0 ? '#dc2626' : '#059669';
+                tableRows += `
+                    <tr style="font-weight:700; border-top:2px solid #1f4668;">
+                        <td style="padding: 0.8rem 1rem;"><strong>TOTAL</strong></td>
+                        <td style="padding: 0.8rem 1rem;"><strong>${brandTotalAvailable}</strong></td>
+                        <td style="padding: 0.8rem 1rem;"><strong>${brandTotalOrder}</strong></td>
+                        <td style="padding: 0.8rem 1rem;"><strong style="color:${totalRemainingColor}">${brandTotalRemaining}</strong></td>
+                    </tr>
+                `;
+
+                html += `
+                    <div style="margin-bottom: 2.5rem; border-radius: 24px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.1); border: 1px solid #bae6fd;">
+                        <div style="padding: 1.2rem 1.5rem; font-size: 1.3rem; font-weight: 700; color: white; background: ${brand.color};">
+                            🏭 ${brand.name}
                         </div>
-                        <div class="brand-body">
-                            ${itemsHtml}
+                        <div class="table-responsive">
+                            <table style="width: 100%; border-collapse: collapse; background: white;">
+                                <thead>
+                                    <tr style="background: #e0f2fe; color: #1f4668;">
+                                        <th style="padding: 1rem; text-align: left; font-weight: 600;">Product</th>
+                                        <th style="padding: 1rem; text-align: left; font-weight: 600;">Available Stock</th>
+                                        <th style="padding: 1rem; text-align: left; font-weight: 600;">In Order</th>
+                                        <th style="padding: 1rem; text-align: left; font-weight: 600;">Remaining</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableRows}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 `;
             });
-            document.getElementById('stockListCards').innerHTML = brandCardsHtml;
+            let cnt = document.getElementById('brandReportsContainer');
+            if (cnt) cnt.innerHTML = html || '<div style="text-align:center; padding:2rem;">No data available</div>';
         }
         
         function refreshLowStockReport() {
@@ -1975,80 +2054,81 @@
         // Categories Functions (Clean Design with Collapse)
         function refreshCategoriesView() {
             let html = '';
-            sortMainCategories(mainCategories).forEach(main => {
-                let mainSubs = subCategories.filter(s => s.mainId === main.id);
-                let mainItems = items.filter(i => i.mainId === main.id);
-                let totalStock = mainItems.reduce((sum, i) => sum + (i.stock || 0), 0);
+            sortMainCategories(mainCategories).forEach(brand => {
+                let mainSubs = subCategories.filter(s => s.mainId === brand.id);
                 
-                let subHtml = '';
+                let subCatHtml = '';
                 sortSubCategories(mainSubs).forEach(sub => {
-                    let subItems = items.filter(i => i.mainId === main.id && i.subId === sub.id);
-                    let subTotalStock = subItems.reduce((sum, i) => sum + (i.stock || 0), 0);
-                    
-                    let itemsHtml = '';
-                    sortItems(subItems).forEach(item => {
-                        itemsHtml += `
-                            <div class="item-row">
-                                <div class="item-info">
-                                    <span class="item-name-badge">${item.name || 'Item'}</span>
-                                    <div class="item-specs">
-                                        <span class="item-spec">${item.length} ft</span>
-                                        <span class="item-spec">${item.weight} KG</span>
-                                    </div>
+                    let subItems = items.filter(i => i.mainId === brand.id && i.subId === sub.id);
+                    let itemHtml = subItems.map(item => {
+                        let stock = item.stock || 0;
+                        let isNegative = stock < 0 ? 'color:#dc2626; font-weight:bold;' : '';
+                        return `
+                            <div style="background: #f8fafc; border-radius: 40px; padding: 0.7rem 1rem; margin: 0.5rem 0; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0; flex-wrap: wrap; gap: 1rem;">
+                                <div>
+                                    <strong>${item.name || 'Item'}</strong> 
+                                    (${sub.name.replace(/[^0-9.]/g, '')}", ${item.length}ft, ${item.weight} kg) 
+                                    <span style="${isNegative} margin-left:1rem;">Stock: ${stock}</span>
                                 </div>
-                                <div style="display: flex; align-items: center; gap: 1rem;">
-                                    <span class="item-stock">${item.stock || 0}</span>
-                                    <div class="item-actions">
-                                        <button class="btn-icon btn-icon-sm" onclick="editItem(${item.id})" title="Edit">✏️</button>
-                                        <button class="btn-icon btn-icon-sm" onclick="deleteItem(${item.id})" title="Delete">🗑️</button>
-                                    </div>
+                                <div style="display:flex; gap:0.5rem;">
+                                    <button class="btn btn-primary btn-sm" onclick="editItem(${item.id})">✎</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteItem(${item.id})">🗑</button>
                                 </div>
                             </div>
                         `;
-                    });
-                    
-                    subHtml += `
-                        <div class="sub-category" id="subCat_${sub.id}">
-                            <div class="sub-header" onclick="toggleSubCategory(this)">
-                                <div style="display: flex; align-items: center; gap: 1rem;">
-                                    <span class="sub-name">${sub.name}</span>
-                                    <span class="sub-stats">Total: ${subTotalStock} PCS</span>
-                                </div>
-                                <div class="sub-actions">
-                                    <button class="btn-icon btn-icon-sm" onclick="editSubCategory(${sub.id}); event.stopPropagation();" title="Edit Size">✏️</button>
-                                    <button class="btn-icon btn-icon-sm" onclick="deleteSubCategory(${sub.id}); event.stopPropagation();" title="Delete Size">🗑️</button>
-                                    <button class="add-btn add-btn-sm" onclick="showAddItemModalFor(${main.id}, ${sub.id}); event.stopPropagation();">+ Add Item</button>
+                    }).join('') || '<div style="padding:1rem; text-align:center;">No items yet</div>';
+
+                    subCatHtml += `
+                        <div style="background: white; border-radius: 16px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #bae6fd;">
+                            <div style="background: #e0f2fe; padding: 0.8rem 1.2rem; border-radius: 40px; margin: 0.5rem 0; display: flex; justify-content: space-between; align-items: center;">
+                                <span><strong>${sub.name}</strong></span>
+                                <div style="display:flex; gap:0.5rem;">
+                                    <button class="btn btn-primary btn-sm" onclick="editSubCategory(${sub.id})">✎ Edit</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteSubCategory(${sub.id})">🗑</button>
                                 </div>
                             </div>
-                            <div class="items-container">
-                                ${itemsHtml || '<div style="color: var(--gray-500); text-align: center; padding: 1rem;">No items in this size</div>'}
+                            <div style="padding: 1rem 0 1rem 1.5rem;">
+                                ${itemHtml}
+                                <div style="margin-top:1rem; text-align:right;">
+                                    <button class="btn btn-success btn-sm" onclick="showAddItemModalFor(${brand.id}, ${sub.id})">➕ Add Item</button>
+                                </div>
                             </div>
                         </div>
                     `;
                 });
-                
+
                 html += `
-                    <div class="main-category" id="mainCat_${main.id}">
-                        <div class="category-header" onclick="toggleMainCategory(this)">
-                            <div class="category-title">
-                                <span class="color-dot" style="background: ${main.color};"></span>
-                                <span class="category-name">${main.name}</span>
-                                <span class="category-stats">Total Stock: ${totalStock} PCS</span>
-                            </div>
-                            <div class="category-actions">
-                                <button class="btn-icon" onclick="editMainCategory(${main.id}); event.stopPropagation();" title="Edit Brand">✏️</button>
-                                <button class="btn-icon" onclick="deleteMainCategory(${main.id}); event.stopPropagation();" title="Delete Brand">🗑️</button>
-                                <button class="add-btn" onclick="showAddSubCategoryModalFor(${main.id}); event.stopPropagation();">+ Add Size</button>
+                    <div style="background: #f0f9ff; border-radius: 18px; margin-bottom: 1.5rem; overflow: hidden; border: 1px solid #bae6fd;">
+                        <div style="background: ${brand.color}; color: white; padding: 1rem 1.5rem; font-weight: 700; font-size: 1.2rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>🏷️ ${brand.name}</span>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button class="btn btn-primary btn-sm" onclick="editMainCategory(${brand.id})" style="background:rgba(255,255,255,0.2); border:none;">✎ Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteMainCategory(${brand.id})" style="background:rgba(255,0,0,0.4); border:none;">🗑</button>
                             </div>
                         </div>
-                        <div class="sub-category-container">
-                            ${subHtml || '<div style="color: var(--gray-500); text-align: center; padding: 2rem;">No sizes added yet. Click "Add Size" to create one.</div>'}
+                        <div style="padding: 1.5rem;">
+                            ${subCatHtml || '<p>No sizes</p>'}
+                            <div style="margin-top:1rem; text-align:right;">
+                                <button class="btn btn-success btn-sm" style="background:#f97316; border:none;" onclick="showAddSubCategoryModalFor(${brand.id})">➕ Add Size to ${brand.name}</button>
+                            </div>
                         </div>
                     </div>
                 `;
             });
-            document.getElementById('categoriesContainer').innerHTML = html;
+            let cnt = document.getElementById('brandSetupContainer');
+            if (cnt) cnt.innerHTML = html || '<div style="padding:2rem;text-align:center;">No brands added</div>';
         }
+
+        document.getElementById('addBrandBtn')?.addEventListener('click', () => {
+            const name = document.getElementById('newBrandName').value.trim();
+            const color = document.getElementById('newBrandColor').value;
+            if (!name) return alert('Enter brand name');
+            const newId = mainCategories.length > 0 ? Math.max(...mainCategories.map(m => m.id)) + 1 : 1;
+            mainCategories.push({ id: newId, name, color, lowStockLimit: 10 });
+            document.getElementById('newBrandName').value = '';
+            saveAll();
+            refreshCategoriesView();
+        });
         
         function showAddSubCategoryModalFor(mainId) {
             let select = document.getElementById('subCategoryMainSelect');
