@@ -773,28 +773,61 @@
 
         .btn-icon {
             background: white;
-            border: 1px solid var(--gray-300);
+            border: 1px solid var(--gray-200);
             border-radius: 50%;
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.2s;
+            font-size: 0.9rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--gray-600);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .btn-icon:hover {
-            background: var(--sky-500);
-            color: white;
-            border-color: var(--sky-500);
+            background: var(--sky-50);
+            color: var(--sky-600);
+            border-color: var(--sky-200);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .btn-icon-sm {
-            width: 28px;
-            height: 28px;
+            width: 30px;
+            height: 30px;
+            font-size: 0.8rem;
+        }
+
+        .add-btn {
+            background: var(--sky-50);
+            color: var(--sky-600);
+            border: 1px dashed var(--sky-300);
+            border-radius: 50px;
+            padding: 0.4rem 1rem;
             font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .add-btn:hover {
+            background: var(--sky-500);
+            color: white;
+            border-style: solid;
+            border-color: var(--sky-500);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(14, 165, 233, 0.3);
+        }
+
+        .add-btn-sm {
+            padding: 0.3rem 0.8rem;
+            font-size: 0.8rem;
         }
 
         .sub-category-container {

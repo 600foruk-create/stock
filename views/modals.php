@@ -34,6 +34,10 @@
                 <input type="text" id="mainCategoryName" class="form-control">
             </div>
             <div class="form-group">
+                <label>Brand Code (e.g., 01)</label>
+                <input type="text" id="mainCategoryCode" class="form-control" placeholder="01" maxlength="2">
+            </div>
+            <div class="form-group">
                 <label>Brand Color</label>
                 <input type="color" id="mainCategoryColor" class="form-control" value="#2196f3">
             </div>
@@ -168,6 +172,10 @@
             <div class="form-group">
                 <label>Brand Name</label>
                 <input type="text" id="quickBrandName" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Brand Code</label>
+                <input type="text" id="quickBrandCode" class="form-control" placeholder="01" maxlength="2">
             </div>
             <div class="form-group">
                 <label>Brand Color</label>
