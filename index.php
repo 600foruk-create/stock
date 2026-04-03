@@ -44,6 +44,7 @@
                     <button class="nav-tab" onclick="showTab('categories')">🏷️ Categories</button>
                     <button class="nav-tab" onclick="showTab('customers')">👥 Customers</button>
                     <button class="nav-tab" onclick="showTab('stockList')">📦 Stock List</button>
+                    <button class="nav-tab" onclick="showTab('audit')">📈 Monthly Audit</button>
                     <button class="nav-tab" onclick="showTab('lowStockReport')">⚠️ Low Stock</button>
                 </div>
 
@@ -54,6 +55,7 @@
                 <?php include 'views/categories.php'; ?>
                 <?php include 'views/customers.php'; ?>
                 <?php include 'views/stocklist.php'; ?>
+                <?php include 'views/monthlyaudit.php'; ?>
                 <?php include 'views/lowstockreport.php'; ?>
 
                 <!-- New Modules Placeholders -->

@@ -210,7 +210,15 @@ function switchModule(module) {
         document.getElementById('finishGoodTabs').style.display = 'flex';
         let activeTab = document.querySelector('.nav-tab.active');
         if (activeTab) {
-            let tabName = activeTab.textContent.replace('📊', '').replace('📝', '').replace('📋', '').replace('🏷️', '').replace('👥', '').replace('📦', '').replace('⚠️', '').trim().toLowerCase();
+            let tabNameText = activeTab.textContent.toLowerCase();
+            let tabName = 'dashboard';
+            if (tabNameText.includes('data entry')) tabName = 'dataEntry';
+            else if (tabNameText.includes('orders')) tabName = 'orders';
+            else if (tabNameText.includes('categories')) tabName = 'categories';
+            else if (tabNameText.includes('customers')) tabName = 'customers';
+            else if (tabNameText.includes('stock list')) tabName = 'stockList';
+            else if (tabNameText.includes('audit')) tabName = 'audit';
+            else if (tabNameText.includes('low stock')) tabName = 'lowStockReport';
             showTab(tabName);
         } else {
             showTab('dashboard');
@@ -313,7 +321,19 @@ function showTab(tabName) {
     if (currentModule !== 'finishGood') return;
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-    document.getElementById(tabName).classList.add('active');
+    
+    // Find tab by name or case-insensitive search
+    const tabElement = document.getElementById(tabName);
+    if (tabElement) {
+        tabElement.classList.add('active');
+    }
+    
+    // Also update nav buttons active state
+    document.querySelectorAll('.nav-tab').forEach(btn => {
+        if (btn.getAttribute('onclick')?.includes(`'${tabName}'`)) {
+            btn.classList.add('active');
+        }
+    });
     if (tabName === 'dashboard') refreshDashboard();
     if (tabName === 'orders') refreshOrdersList();
     if (tabName === 'dataEntry') {
@@ -323,6 +343,7 @@ function showTab(tabName) {
     if (tabName === 'categories') refreshCategoriesView();
     if (tabName === 'customers') refreshCustomersList();
     if (tabName === 'stockList') refreshStockList();
+    if (tabName === 'audit') refreshAuditList();
     if (tabName === 'lowStockReport') refreshLowStockReport();
 }
 
@@ -1034,6 +1055,115 @@ function clearStockFilters() {
     document.getElementById('stockDateFrom').value = '';
     document.getElementById('stockDateTo').value = '';
     refreshStockList();
+}
+
+function refreshAuditList() {
+    const search = (document.getElementById('auditSearch')?.value || '').toLowerCase();
+    const auditPrintDate = document.getElementById('auditPrintDate');
+    if (auditPrintDate) auditPrintDate.textContent = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    
+    let html = '';
+    sortMainCategories(mainCategories).forEach(main => {
+        let brandItems = items.filter(i => i.mainId === main.id);
+        const brandMatches = main.name.toLowerCase().includes(search);
+        
+        let rowsHtml = '';
+        sortItems(brandItems).forEach(item => {
+            let sub = subCategories.find(s => s.id === item.subId);
+            let sizeName = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
+            const isMatch = search === '' || brandMatches || sizeName.includes(search);
+            
+            if (!isMatch) return;
+
+            let systemPcs = item.stock || 0;
+            let systemKg = (systemPcs * (item.weight || 0)).toFixed(2);
+            
+            rowsHtml += `
+                <tr id="auditRow_${item.id}">
+                    <td style="font-weight:700;">${sizeName}"</td>
+                    <td>${(item.weight || 0).toFixed(2)} KG</td>
+                    <td style="color:${main.color}; font-weight:600;">${main.name}</td>
+                    <td id="auditSysPcs_${item.id}">${systemPcs}</td>
+                    <td id="auditSysKg_${item.id}">${systemKg}</td>
+                    <td>
+                        <input type="number" step="1" class="godown-input" value="0" 
+                               oninput="calculateAuditRow(${item.id}, ${item.weight || 0})" 
+                               id="auditGodownPcs_${item.id}">
+                    </td>
+                    <td id="auditGodownKg_${item.id}">0.00</td>
+                    <td id="auditDiffPcs_${item.id}">0</td>
+                    <td id="auditDiffKg_${item.id}">0.00</td>
+                </tr>
+            `;
+        });
+
+        if (rowsHtml) {
+            html += `
+                <div class="audit-group" style="margin-bottom: 2rem;">
+                    <div class="audit-brand-header" style="background:${main.color};">
+                        <span>${main.name}</span>
+                        <span id="auditBrandTotal_${main.id}" style="font-size:0.9rem; opacity:0.9;"></span>
+                    </div>
+                    <table class="audit-table">
+                        <thead>
+                            <tr>
+                                <th rowspan="2">Size</th>
+                                <th rowspan="2">KG/Pcs</th>
+                                <th rowspan="2">Brand</th>
+                                <th colspan="2">Total Stock (System)</th>
+                                <th colspan="2">Godown Stock (Manual)</th>
+                                <th colspan="2">Difference</th>
+                            </tr>
+                            <tr>
+                                <th>Pieces</th>
+                                <th>KG</th>
+                                <th>Pieces</th>
+                                <th>KG</th>
+                                <th>Total Pieces</th>
+                                <th>Total KG</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+    });
+
+    const auditContainer = document.getElementById('auditListContainer');
+    if (auditContainer) {
+        auditContainer.innerHTML = html || '<p style="text-align:center; padding:3rem; color:var(--gray-500);">No brands or sizes found.</p>';
+    }
+}
+
+function calculateAuditRow(itemId, unitWeight) {
+    const sysPcs = parseInt(document.getElementById(`auditSysPcs_${itemId}`).textContent) || 0;
+    const godownPcsInput = document.getElementById(`auditGodownPcs_${itemId}`);
+    const godownPcs = parseInt(godownPcsInput.value) || 0;
+    
+    // Auto KG Calculation
+    const godownKg = (godownPcs * unitWeight).toFixed(2);
+    document.getElementById(`auditGodownKg_${itemId}`).textContent = godownKg;
+    
+    // Difference Calculation
+    const diffPcs = godownPcs - sysPcs;
+    const diffKg = (diffPcs * unitWeight).toFixed(2);
+    
+    const diffPcsEl = document.getElementById(`auditDiffPcs_${itemId}`);
+    const diffKgEl = document.getElementById(`auditDiffKg_${itemId}`);
+    
+    diffPcsEl.textContent = (diffPcs > 0 ? '+' : '') + diffPcs;
+    diffKgEl.textContent = (diffPcs > 0 ? '+' : '') + diffKg;
+    
+    // Color coding
+    diffPcsEl.className = diffPcs === 0 ? '' : (diffPcs > 0 ? 'diff-plus' : 'diff-minus');
+    diffKgEl.className = diffPcs === 0 ? '' : (diffPcs > 0 ? 'diff-plus' : 'diff-minus');
+}
+
+function clearAuditFilters() {
+    const searchInput = document.getElementById('auditSearch');
+    if (searchInput) searchInput.value = '';
+    refreshAuditList();
 }
 
 function refreshLowStockReport() {
