@@ -31,12 +31,25 @@ let companySettings = {
 })();
 
 function updateCompanyDisplay() {
+    document.title = `${companySettings.name} - Stock Manager`;
     document.getElementById('sidebarCompany').textContent = companySettings.name;
     document.getElementById('sidebarLogo').innerHTML = companySettings.logo || '📦';
-    document.getElementById('loginTitle').innerHTML = `📦 ${companySettings.name}`;
-    document.getElementById('companyNameInput').value = companySettings.name;
-    document.getElementById('databaseNameInput').value = companySettings.databaseName;
-    document.getElementById('logoPreview').innerHTML = companySettings.logo || '📦';
+    
+    // Update Login Page if it exists
+    const loginTitle = document.getElementById('loginTitle');
+    if (loginTitle) {
+        loginTitle.innerHTML = `${companySettings.logo || '📦'} ${companySettings.name}`;
+    }
+
+    // Update Settings Page inputs
+    const nameInput = document.getElementById('companyNameInput');
+    if (nameInput) nameInput.value = companySettings.name;
+    
+    const dbInput = document.getElementById('databaseNameInput');
+    if (dbInput) dbInput.value = companySettings.databaseName;
+    
+    const logoPreview = document.getElementById('logoPreview');
+    if (logoPreview) logoPreview.innerHTML = companySettings.logo || '📦';
 }
 
 function showCompanySettings() {
