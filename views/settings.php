@@ -1,4 +1,3 @@
-<div id="settingsPanel" style="display: none;">
                     <div class="settings-panel">
                         <div class="company-settings">
                             <h3>🏢 Company Settings</h3>
@@ -37,4 +36,3 @@
                             <tbody id="usersList"></tbody>
                         </table>
                     </div>
-                </div>
