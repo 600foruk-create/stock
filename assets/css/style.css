@@ -57,6 +57,7 @@
         .login-header h1 {
             background: linear-gradient(135deg, var(--sky-600), var(--orange-500));
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             font-size: 2.5rem;
             margin-bottom: 0.5rem;
@@ -401,6 +402,13 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stock-list-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
             margin: 1rem 0;
         }
 
@@ -1187,6 +1195,12 @@
 
         /* Print styles */
         @media print {
+            body { 
+                background: white !important;
+                padding: 0 !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
             body * {
                 visibility: hidden;
             }
@@ -1201,15 +1215,68 @@
                 top: 0;
                 width: 100%;
                 background: white;
-                padding: 1.5rem;
+                padding: 0;
             }
-            .no-print, .sidebar, .top-bar, .nav-tabs, .action-buttons {
+            .no-print, .sidebar, .top-bar, .nav-tabs, .action-buttons, .menu-item {
                 display: none !important;
+            }
+            .brand-card {
+                box-shadow: none !important;
+                border: 1px solid #000 !important;
+                margin-bottom: 2rem !important;
+                break-inside: avoid;
+            }
+            .brand-header {
+                background: #f0f0f0 !important;
+                color: #000 !important;
+                border-bottom: 2px solid #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .brand-total {
+                background: transparent !important;
+                color: #000 !important;
+                font-weight: bold;
             }
             .brand-body {
                 max-height: none !important;
                 overflow: visible !important;
+                padding: 0 !important;
             }
+            .data-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+            .data-table th {
+                background: #e0e0e0 !important;
+                color: #000 !important;
+                border: 1px solid #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .data-table td {
+                border: 1px solid #ccc !important;
+                color: #000 !important;
+            }
+            .print-header {
+                display: block !important;
+                text-align: center;
+                margin-bottom: 2rem;
+                border-bottom: 2px solid #000;
+                padding-bottom: 1rem;
+            }
+            .print-header h1 {
+                font-size: 24pt;
+                margin-bottom: 0.5rem;
+            }
+            .print-header p {
+                font-size: 12pt;
+                color: #666;
+            }
+        }
+
+        .print-header {
+            display: none;
         }
 
         /* Responsive */

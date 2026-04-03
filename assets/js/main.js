@@ -906,13 +906,13 @@ function refreshStockList() {
         let totalKg = 0;
         let totalInOrder = 0;
 
-        let itemsHtml = '<table class="data-table" style="margin: 0; width: 100%; border-collapse: collapse; font-size: 0.85rem;">';
+        let itemsHtml = '<table class="data-table" style="margin: 0; width: 100%; border-collapse: collapse; font-size: 0.95rem;">';
         itemsHtml += '<thead><tr>';
-        itemsHtml += '<th style="padding: 0.6rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100);">Size</th>';
-        itemsHtml += '<th style="padding: 0.6rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100);">Description</th>';
-        itemsHtml += '<th style="padding: 0.6rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">Available</th>';
-        itemsHtml += '<th style="padding: 0.6rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">In Order</th>';
-        itemsHtml += '<th style="padding: 0.6rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">Result</th>';
+        itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100);">Size</th>';
+        itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100);">Description</th>';
+        itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">Available</th>';
+        itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">In Order</th>';
+        itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">Result</th>';
         itemsHtml += '</tr></thead><tbody>';
 
         sortItems(brandItems).forEach(item => {
@@ -933,11 +933,11 @@ function refreshStockList() {
 
             itemsHtml += `
                         <tr style="background: white;">
-                            <td style="padding: 0.6rem; border-bottom: 1px solid var(--gray-200);"><strong>${sizeName}"</strong></td>
-                            <td style="padding: 0.6rem; border-bottom: 1px solid var(--gray-200); color: var(--gray-700);">${desc}</td>
-                            <td style="padding: 0.6rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:600; color:var(--orange-500);">${available}</td>
-                            <td style="padding: 0.6rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:600; color:${ioColor};">${inOrder}</td>
-                            <td style="padding: 0.6rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:700; color:${resColor};">${result}</td>
+                            <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200);"><strong>${sizeName}"</strong></td>
+                            <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); color: var(--gray-700);">${desc}</td>
+                            <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:600; color:var(--orange-500);">${available}</td>
+                            <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:600; color:${ioColor};">${inOrder}</td>
+                            <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:700; color:${resColor};">${result}</td>
                         </tr>
                     `;
         });
@@ -1022,6 +1022,17 @@ function refreshLowStockReport() {
 
 // Print Functions
 function printStockList() {
+    const company = localStorage.getItem('companyName') || 'StockFlow';
+    const date = new Date().toLocaleDateString('en-GB', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    document.getElementById('printCompanyName').textContent = company;
+    document.getElementById('printDate').textContent = date;
     window.print();
 }
 
