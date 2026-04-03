@@ -17,7 +17,10 @@
                         </div>
                         <div class="form-group">
                             <label>Customer</label>
-                            <div id="newCustomerWrapper"></div>
+                            <div style="display:flex; gap:0.5rem; align-items:center;">
+                                <div id="newCustomerWrapper" style="flex:1;"></div>
+                                <button type="button" class="btn btn-success" onclick="showAddCustomerModal()" style="white-space: nowrap;">➕ Add New</button>
+                            </div>
                         </div>
                         <div id="newOrderRows"></div>
                         <button class="btn btn-info" onclick="addNewOrderRow()">➕ Add Item</button>
