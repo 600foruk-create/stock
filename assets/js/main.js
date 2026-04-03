@@ -132,6 +132,29 @@ function saveAll() {
     localStorage.setItem('stock_usedOrders', JSON.stringify(Array.from(usedCompletedOrders)));
 }
 
+// Function to re-sequence all codes to fill gaps and maintain order
+function resequenceCodes() {
+    // Sort main categories to have a consistent base if they don't have codes
+    sortMainCategories(mainCategories).forEach((main) => {
+        let mainCode = main.code || String(main.id).padStart(2, '0');
+
+        // Resequence SubCategories (Sizes) within this Brand
+        let brandSubs = subCategories.filter(s => s.mainId === main.id);
+        sortSubCategories(brandSubs).forEach((sub, subIndex) => {
+            let newSubSeq = subIndex + 1;
+            sub.code = mainCode + String(newSubSeq).padStart(3, '0');
+
+            // Resequence Items within this Size
+            let subItems = items.filter(i => i.subId === sub.id);
+            sortItems(subItems).forEach((item, itemIndex) => {
+                let newItemSeq = itemIndex + 1;
+                item.code = sub.code + String(newItemSeq).padStart(4, '0');
+            });
+        });
+    });
+    saveAll();
+}
+
 function getProductCode(item, main, sub) {
     if (!item || !main || !sub) return 'N/A';
     let size = sub.name.replace(/[^0-9.]/g, '') || '0';
@@ -2281,7 +2304,7 @@ function deleteSubCategory(id) {
     }
     if (confirm('Are you sure you want to delete this size?')) {
         subCategories = subCategories.filter(s => s.id !== id);
-        saveAll();
+        resequenceCodes();
         refreshCategoriesView();
         refreshDashboard();
         refreshStockList();
@@ -2306,19 +2329,10 @@ function saveSubCategory() {
         alert('Size updated!');
     } else {
         let newId = subCategories.length > 0 ? Math.max(...subCategories.map(s => s.id)) + 1 : 1;
-        let existingSubs = subCategories.filter(s => s.mainId === mainId);
-        let maxSeq = 0;
-        existingSubs.forEach(s => {
-            if (s.code && typeof s.code === 'string') {
-                let seq = parseInt(s.code.slice(mainCode.length)) || 0;
-                if (seq > maxSeq) maxSeq = seq;
-            }
-        });
-        let newCode = mainCode + String(maxSeq + 1).padStart(3, '0');
-        subCategories.push({ id: newId, code: newCode, mainId, name: fullName });
+        subCategories.push({ id: newId, code: '', mainId, name: fullName });
+        resequenceCodes();
         alert('Size added!');
     }
-    saveAll();
     refreshCategoriesView();
     refreshDashboard();
     refreshStockList();
@@ -2359,7 +2373,7 @@ function editItem(id) {
 function deleteItem(id) {
     if (confirm('Are you sure you want to delete this item?')) {
         items = items.filter(i => i.id !== id);
-        saveAll();
+        resequenceCodes();
         refreshCategoriesView();
         refreshDashboard();
         refreshStockList();
@@ -2400,20 +2414,10 @@ function saveItem() {
         alert('Item updated!');
     } else {
         let newId = items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1;
-        let existingItems = items.filter(i => i.subId === subId);
-        let maxSeq = 0;
-        existingItems.forEach(i => {
-            if (i.code && typeof i.code === 'string') {
-                let seqStr = i.code.slice(subCode.length);
-                let seq = parseInt(seqStr) || 0;
-                if (seq > maxSeq) maxSeq = seq;
-            }
-        });
-        let newCode = subCode + String(maxSeq + 1).padStart(4, '0');
-        items.push({ id: newId, code: newCode, mainId, subId, name: '', length, weight, stock, minStock });
+        items.push({ id: newId, code: '', mainId, subId, name: '', length, weight, stock, minStock });
+        resequenceCodes();
         alert('Item added!');
     }
-    saveAll();
     refreshCategoriesView();
     refreshDashboard();
     refreshStockList();
