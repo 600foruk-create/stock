@@ -47,6 +47,13 @@ function updateCompanyDisplay() {
     
     const logoPreview = document.getElementById('logoPreview');
     if (logoPreview) logoPreview.innerHTML = companySettings.logo || '📦';
+
+    // Update Print Headers
+    const logoElements = document.querySelectorAll('.printLogo, #printLogo, #auditPrintLogo');
+    logoElements.forEach(el => el.innerHTML = companySettings.logo || '📦');
+
+    const nameElements = document.querySelectorAll('.printCompanyName, #printCompanyName, #auditPrintCompanyName');
+    nameElements.forEach(el => el.textContent = companySettings.name);
 }
 
 function showCompanySettings() {
@@ -1245,6 +1252,48 @@ function updateBrandAuditTotals(brandId) {
     
     dPcsEl.className = diffTotalPcs === 0 ? '' : (diffTotalPcs > 0 ? 'diff-plus' : 'diff-minus');
     dKgEl.className = diffTotalKg === 0 ? '' : (diffTotalKg > 0 ? 'diff-plus' : 'diff-minus');
+}
+
+function saveMonthlyAudit() {
+    const inputs = document.querySelectorAll('.godown-input');
+    let updatedCount = 0;
+    let itemsToUpdate = [];
+
+    inputs.forEach(input => {
+        const val = input.value.trim();
+        if (val !== "" && val !== "0") {
+            const itemId = parseInt(input.id.replace('auditGodownPcs_', ''));
+            const newStock = parseInt(val) || 0;
+            itemsToUpdate.push({ id: itemId, stock: newStock });
+        }
+    });
+
+    if (itemsToUpdate.length === 0) {
+        alert('No godown counts entered to save.');
+        return;
+    }
+
+    if (!confirm(`Are you sure you want to Save Audit for ${itemsToUpdate.length} items? This will permanently update your System Stock to match the Godown counts.`)) {
+        return;
+    }
+
+    itemsToUpdate.forEach(update => {
+        const item = items.find(i => i.id === update.id);
+        if (item) {
+            item.stock = update.stock;
+            updatedCount++;
+        }
+    });
+
+    if (updatedCount > 0) {
+        saveData();
+        alert(`✅ Audit Saved Successfully!\n${updatedCount} items have been updated in the system.`);
+        
+        // Refresh all views to show new stock levels
+        if (typeof refreshDashboard === 'function') refreshDashboard();
+        if (typeof refreshStockList === 'function') refreshStockList();
+        refreshAuditList();
+    }
 }
 
 function clearAuditFilters() {

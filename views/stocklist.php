@@ -1,18 +1,18 @@
 <div id="stockList" class="tab-content">
-                    <div class="action-buttons no-print" style="margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: var(--shadow-sm);">
-                        <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
-                            <label style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 0.4rem; display: block;">Search Brand or Size (e.g., 2m)</label>
+                    <div class="search-filter-bar no-print">
+                        <div class="form-group">
+                            <label>Search Brand or Size (e.g., 2m)</label>
                             <input type="text" id="stockSearch" class="form-control" placeholder="Search Brand / Size..." oninput="refreshStockList()">
                         </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 0.4rem; display: block;">From Date</label>
+                        <div class="form-group">
+                            <label>From Date</label>
                             <input type="date" id="stockDateFrom" class="form-control" onchange="refreshStockList()">
                         </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 0.4rem; display: block;">To Date</label>
+                        <div class="form-group">
+                            <label>To Date</label>
                             <input type="date" id="stockDateTo" class="form-control" onchange="refreshStockList()">
                         </div>
-                        <div style="display: flex; gap: 0.5rem;">
+                        <div class="btn-group">
                             <button class="btn btn-print" onclick="printStockList()">🖨️ Print</button>
                             <button class="btn btn-secondary" onclick="clearStockFilters()">🧹 Clear</button>
                         </div>
