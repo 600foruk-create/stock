@@ -2058,13 +2058,10 @@ function confirmDeleteOrder() {
     alert('Order deleted successfully!');
 }
 
-let expandedMains = [];
-let expandedSubs = [];
-
 function refreshCategoriesView() {
-    document.querySelectorAll('.main-category.expanded').forEach(el => expandedMains.push(el.id));
-    document.querySelectorAll('.sub-category.expanded').forEach(el => expandedSubs.push(el.id));
-
+    const currentExpandedMains = Array.from(document.querySelectorAll('.main-category.expanded')).map(el => el.id);
+    const currentExpandedSubs = Array.from(document.querySelectorAll('.sub-category.expanded')).map(el => el.id);
+    
     let html = '';
     sortMainCategories(mainCategories).forEach(main => {
         let mainSubs = subCategories.filter(s => s.mainId === main.id);
@@ -2143,10 +2140,8 @@ function refreshCategoriesView() {
     });
     document.getElementById('categoriesContainer').innerHTML = html;
 
-    expandedMains.forEach(id => { let el = document.getElementById(id); if (el) el.classList.add('expanded'); });
-    expandedSubs.forEach(id => { let el = document.getElementById(id); if (el) el.classList.add('expanded'); });
-    expandedMains = [];
-    expandedSubs = [];
+    currentExpandedMains.forEach(id => { let el = document.getElementById(id); if (el) el.classList.add('expanded'); });
+    currentExpandedSubs.forEach(id => { let el = document.getElementById(id); if (el) el.classList.add('expanded'); });
 }
 
 function showAddSubCategoryModalFor(mainId) {
@@ -2372,7 +2367,7 @@ function editItem(id) {
 
 function deleteItem(id) {
     if (confirm('Are you sure you want to delete this item?')) {
-        items = items.filter(i => i.id !== id);
+        items = items.filter(i => i.id != id);
         resequenceCodes();
         refreshCategoriesView();
         refreshDashboard();
