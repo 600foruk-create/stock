@@ -182,12 +182,23 @@ function sortItems(itemsList) {
 
 function switchModule(module) {
     currentModule = module;
-    document.querySelectorAll('.menu-item').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.menu-item').forEach((btn, index) => {
+        btn.classList.remove('active');
+        if (module === 'finishGood' && index === 0) btn.classList.add('active');
+        if (module === 'rawMaterials' && index === 1) btn.classList.add('active');
+        if (module === 'store' && index === 2) btn.classList.add('active');
+        if (module === 'settings' && index === 3) btn.classList.add('active');
+    });
+
+    // Hide all main panels and tabs
+    document.getElementById('finishGoodTabs').style.display = 'none';
+    document.getElementById('settingsPanel').style.display = 'none';
+    document.getElementById('rawMaterialsPanel').style.display = 'none';
+    document.getElementById('storePanel').style.display = 'none';
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
 
     if (module === 'finishGood') {
-        document.querySelectorAll('.menu-item')[0].classList.add('active');
         document.getElementById('finishGoodTabs').style.display = 'flex';
-        document.getElementById('settingsPanel').style.display = 'none';
         let activeTab = document.querySelector('.nav-tab.active');
         if (activeTab) {
             let tabName = activeTab.textContent.replace('📊', '').replace('📝', '').replace('📋', '').replace('🏷️', '').replace('👥', '').replace('📦', '').replace('⚠️', '').trim().toLowerCase();
@@ -195,13 +206,14 @@ function switchModule(module) {
         } else {
             showTab('dashboard');
         }
-    } else {
-        document.querySelectorAll('.menu-item')[1].classList.add('active');
-        document.getElementById('finishGoodTabs').style.display = 'none';
+    } else if (module === 'settings') {
         document.getElementById('settingsPanel').style.display = 'block';
-        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
         refreshUsersList();
         refreshBrandLowStockSettings();
+    } else if (module === 'rawMaterials') {
+        document.getElementById('rawMaterialsPanel').style.display = 'block';
+    } else if (module === 'store') {
+        document.getElementById('storePanel').style.display = 'block';
     }
 }
 

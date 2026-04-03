@@ -25,6 +25,8 @@
                 </div>
                 <div class="sidebar-menu">
                     <button class="menu-item active" onclick="switchModule('finishGood')"><i>📊</i> Finish Good</button>
+                    <button class="menu-item" onclick="switchModule('rawMaterials')"><i>🏗️</i> Raw Materials</button>
+                    <button class="menu-item" onclick="switchModule('store')"><i>🏬</i> Store</button>
                     <button class="menu-item" onclick="switchModule('settings')"><i>⚙️</i> Settings</button>
                 </div>
                 <div class="sidebar-footer">
@@ -53,6 +55,19 @@
                 <?php include 'views/customers.php'; ?>
                 <?php include 'views/stocklist.php'; ?>
                 <?php include 'views/lowstockreport.php'; ?>
+
+                <!-- New Modules Placeholders -->
+                <div id="rawMaterialsPanel" style="display: none; padding: 2rem; text-align: center;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">🏗️</div>
+                    <h2 style="color: var(--sky-600);">Raw Materials</h2>
+                    <p style="color: var(--gray-500);">Module coming soon. Here you can manage your inventory of raw materials.</p>
+                </div>
+
+                <div id="storePanel" style="display: none; padding: 2rem; text-align: center;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">🏬</div>
+                    <h2 style="color: var(--sky-600);">Store</h2>
+                    <p style="color: var(--gray-500);">Module coming soon. Manage your internal store and non-product inventory here.</p>
+                </div>
 
                 <!-- Settings Block -->
                 <div id="settingsPanel" style="display: none;">
