@@ -936,8 +936,17 @@ function refreshDashboard() {
 }
 
 function refreshStockList() {
+    const search = (document.getElementById('stockSearch')?.value || '').toLowerCase();
+    const fromDate = document.getElementById('stockDateFrom')?.value;
+    const toDate = document.getElementById('stockDateTo')?.value;
+
     let orderedQtys = {};
-    orders.filter(o => o.status === 'pending' || o.status === 'processing').forEach(order => {
+    orders.filter(o => {
+        const isPending = o.status === 'pending' || o.status === 'processing';
+        const inDateRange = (!fromDate || new Date(o.date) >= new Date(fromDate)) &&
+                           (!toDate || new Date(o.date) <= new Date(toDate));
+        return isPending && inDateRange;
+    }).forEach(order => {
         (order.items || []).forEach(item => {
             orderedQtys[item.itemId] = (orderedQtys[item.itemId] || 0) + (item.quantity || 0);
         });
@@ -945,6 +954,7 @@ function refreshStockList() {
 
     let brandCardsHtml = '';
     sortMainCategories(mainCategories).forEach(main => {
+        const brandMatches = main.name.toLowerCase().includes(search);
         let brandItems = items.filter(i => i.mainId === main.id);
         let totalBrandStock = 0;
         let totalKg = 0;
@@ -959,11 +969,20 @@ function refreshStockList() {
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">Result</th>';
         itemsHtml += '</tr></thead><tbody>';
 
+        let hasVisibleItems = false;
         sortItems(brandItems).forEach(item => {
             let sub = subCategories.find(s => s.id === item.subId);
             let sizeName = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
-            let desc = `${sizeName}"( ${(item.weight || 0).toFixed(1)} ) Kg`;
+            
+            // Smart Search logic (e.g. "2m" matches 2" and Brand starting with M)
+            const itemKey = (sizeName + main.name.charAt(0)).toLowerCase();
+            const fullMatch = (main.name + " " + sizeName).toLowerCase();
+            const isMatch = search === '' || brandMatches || sizeName.includes(search) || itemKey.includes(search) || fullMatch.includes(search);
 
+            if (!isMatch) return;
+            hasVisibleItems = true;
+
+            let desc = `${sizeName}"( ${(item.weight || 0).toFixed(1)} ) Kg`;
             let available = item.stock || 0;
             let inOrder = orderedQtys[item.id] || 0;
             let result = available - inOrder;
@@ -986,26 +1005,35 @@ function refreshStockList() {
                     `;
         });
 
-        if (brandItems.length === 0) {
-            itemsHtml += '<tr><td colspan="5" style="text-align:center; padding: 1rem; color:var(--gray-500); background: white;">No items available in this brand</td></tr>';
-        }
         itemsHtml += '</tbody></table>';
 
-        let totalResult = totalBrandStock - totalInOrder;
-
-        brandCardsHtml += `
-                    <div class="brand-card expanded" id="stockCard_${main.id}">
-                        <div class="brand-header" style="background: ${main.color};" onclick="toggleBrandCard(document.getElementById('stockCard_${main.id}'))">
-                            <h4>${main.name}</h4>
-                            <span class="brand-total">Total: ${totalBrandStock} | Order: ${totalInOrder} | Res: ${totalResult}</span>
+        if (hasVisibleItems) {
+            let totalResult = totalBrandStock - totalInOrder;
+            brandCardsHtml += `
+                        <div class="brand-card expanded" id="stockCard_${main.id}">
+                            <div class="brand-header" style="background: ${main.color};" onclick="toggleBrandCard(document.getElementById('stockCard_${main.id}'))">
+                                <h4>${main.name}</h4>
+                                <span class="brand-total">Total: ${totalBrandStock} | Order: ${totalInOrder} | Res: ${totalResult}</span>
+                            </div>
+                            <div class="brand-body" style="padding:0;">
+                                ${itemsHtml}
+                            </div>
                         </div>
-                        <div class="brand-body" style="padding:0;">
-                            ${itemsHtml}
-                        </div>
-                    </div>
-                `;
+                    `;
+        }
     });
-    document.getElementById('stockListCards').innerHTML = brandCardsHtml;
+
+    const listContainer = document.getElementById('stockListCards');
+    if (listContainer) {
+        listContainer.innerHTML = brandCardsHtml || '<div style="text-align:center; padding:3rem; color:var(--gray-500);">No items match your search or date range.</div>';
+    }
+}
+
+function clearStockFilters() {
+    document.getElementById('stockSearch').value = '';
+    document.getElementById('stockDateFrom').value = '';
+    document.getElementById('stockDateTo').value = '';
+    refreshStockList();
 }
 
 function refreshLowStockReport() {
