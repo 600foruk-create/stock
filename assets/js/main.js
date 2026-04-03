@@ -1070,7 +1070,8 @@ function refreshLowStockReport() {
 
 // Print Functions
 function printStockList() {
-    const company = localStorage.getItem('companyName') || 'StockFlow';
+    const company = companySettings.name || 'StockFlow';
+    const logo = companySettings.logo || '📦';
     const date = new Date().toLocaleDateString('en-GB', { 
         day: '2-digit', 
         month: 'short', 
@@ -1080,7 +1081,9 @@ function printStockList() {
     });
     
     document.getElementById('printCompanyName').textContent = company;
-    document.getElementById('printDate').textContent = date;
+    const printLogo = document.getElementById('printLogo');
+    if (printLogo) printLogo.innerHTML = logo;
+    document.getElementById('printDate').textContent = `Report Date: ${date}`;
     window.print();
 }
 
