@@ -666,6 +666,7 @@
         // Quick Add Functions
         function showQuickAddBrand() {
             document.getElementById('quickBrandName').value = '';
+            document.getElementById('quickBrandCode').value = '';
             document.getElementById('quickBrandColor').value = '#2196f3';
             document.getElementById('quickBrandLowStock').value = '10';
             document.getElementById('quickAddBrandModal').style.display = 'block';
@@ -677,6 +678,7 @@
         
         function saveQuickBrand() {
             let name = document.getElementById('quickBrandName').value;
+            let code = document.getElementById('quickBrandCode').value;
             let color = document.getElementById('quickBrandColor').value;
             let lowStock = parseInt(document.getElementById('quickBrandLowStock').value) || 10;
             
@@ -686,7 +688,7 @@
             }
             
             let newId = mainCategories.length > 0 ? Math.max(...mainCategories.map(m => m.id)) + 1 : 1;
-            mainCategories.push({ id: newId, name, color, lowStockLimit: lowStock });
+            mainCategories.push({ id: newId, code: code || String(newId).padStart(2, '0'), name, color, lowStockLimit: lowStock });
             
             saveAll();
             closeQuickAddBrandModal();
@@ -722,9 +724,23 @@
                 return;
             }
             
+            let main = mainCategories.find(m => m.id === brandId);
+            let mainCode = (main && main.code) ? main.code : String(brandId).padStart(2, '0');
+            
             let fullName = sizeValue + (unit === 'inch' ? '"' : 'mm');
             let newId = subCategories.length > 0 ? Math.max(...subCategories.map(s => s.id)) + 1 : 1;
-            subCategories.push({ id: newId, mainId: brandId, name: fullName });
+            
+            let existingSubs = subCategories.filter(s => s.mainId === brandId);
+            let maxSeq = 0;
+            existingSubs.forEach(s => {
+                if (s.code && typeof s.code === 'string') {
+                    let seq = parseInt(s.code.slice(mainCode.length)) || 0;
+                    if (seq > maxSeq) maxSeq = seq;
+                }
+            });
+            let newCode = mainCode + String(maxSeq + 1).padStart(3, '0');
+            
+            subCategories.push({ id: newId, code: newCode, mainId: brandId, name: fullName });
             
             saveAll();
             closeQuickAddSizeModal();
@@ -1972,25 +1988,33 @@
             alert('Order deleted successfully!');
         }
         
-        // Categories Functions (Clean Design with Collapse)
+        let expandedMains = [];
+        let expandedSubs = [];
+
         function refreshCategoriesView() {
+            document.querySelectorAll('.main-category.expanded').forEach(el => expandedMains.push(el.id));
+            document.querySelectorAll('.sub-category.expanded').forEach(el => expandedSubs.push(el.id));
+
             let html = '';
             sortMainCategories(mainCategories).forEach(main => {
                 let mainSubs = subCategories.filter(s => s.mainId === main.id);
                 let mainItems = items.filter(i => i.mainId === main.id);
                 let totalStock = mainItems.reduce((sum, i) => sum + (i.stock || 0), 0);
+                let mainCode = (main.code) ? main.code : String(main.id).padStart(2,'0');
                 
                 let subHtml = '';
                 sortSubCategories(mainSubs).forEach(sub => {
                     let subItems = items.filter(i => i.mainId === main.id && i.subId === sub.id);
                     let subTotalStock = subItems.reduce((sum, i) => sum + (i.stock || 0), 0);
+                    let subCode = (sub.code) ? sub.code : (mainCode + String(sub.id).padStart(3,'0'));
                     
                     let itemsHtml = '';
                     sortItems(subItems).forEach(item => {
+                        let itemCode = item.code || (subCode + String(item.id).padStart(4,'0'));
                         itemsHtml += `
                             <div class="item-row">
                                 <div class="item-info">
-                                    <span class="item-name-badge">${item.name || 'Item'}</span>
+                                    <span class="item-name-badge">[${itemCode}] ${item.name || 'Item'}</span>
                                     <div class="item-specs">
                                         <span class="item-spec">${item.length} ft</span>
                                         <span class="item-spec">${item.weight} KG</span>
@@ -2011,7 +2035,7 @@
                         <div class="sub-category" id="subCat_${sub.id}">
                             <div class="sub-header" onclick="toggleSubCategory(this)">
                                 <div style="display: flex; align-items: center; gap: 1rem;">
-                                    <span class="sub-name">${sub.name}</span>
+                                    <span class="sub-name">[${subCode}] ${sub.name}</span>
                                     <span class="sub-stats">Total: ${subTotalStock} PCS</span>
                                 </div>
                                 <div class="sub-actions">
@@ -2032,7 +2056,7 @@
                         <div class="category-header" onclick="toggleMainCategory(this)">
                             <div class="category-title">
                                 <span class="color-dot" style="background: ${main.color};"></span>
-                                <span class="category-name">${main.name}</span>
+                                <span class="category-name">[${mainCode}] ${main.name}</span>
                                 <span class="category-stats">Total Stock: ${totalStock} PCS</span>
                             </div>
                             <div class="category-actions">
@@ -2048,6 +2072,11 @@
                 `;
             });
             document.getElementById('categoriesContainer').innerHTML = html;
+            
+            expandedMains.forEach(id => { let el = document.getElementById(id); if (el) el.classList.add('expanded'); });
+            expandedSubs.forEach(id => { let el = document.getElementById(id); if (el) el.classList.add('expanded'); });
+            expandedMains = []; 
+            expandedSubs = [];
         }
         
         function showAddSubCategoryModalFor(mainId) {
@@ -2084,6 +2113,7 @@
             document.getElementById('mainCategoryModalTitle').textContent = '➕ Add Brand';
             document.getElementById('editMainCategoryId').value = '';
             document.getElementById('mainCategoryName').value = '';
+            document.getElementById('mainCategoryCode').value = '';
             document.getElementById('mainCategoryColor').value = '#2196f3';
             document.getElementById('mainCategoryLowStock').value = '10';
             document.getElementById('addMainCategoryModal').style.display = 'block';
@@ -2099,6 +2129,7 @@
                 document.getElementById('mainCategoryModalTitle').textContent = '✏️ Edit Brand';
                 document.getElementById('editMainCategoryId').value = main.id;
                 document.getElementById('mainCategoryName').value = main.name;
+                document.getElementById('mainCategoryCode').value = main.code || '';
                 document.getElementById('mainCategoryColor').value = main.color;
                 document.getElementById('mainCategoryLowStock').value = main.lowStockLimit || 10;
                 document.getElementById('addMainCategoryModal').style.display = 'block';
@@ -2125,6 +2156,7 @@
         function saveMainCategory() {
             let id = document.getElementById('editMainCategoryId').value;
             let name = document.getElementById('mainCategoryName').value;
+            let code = document.getElementById('mainCategoryCode').value;
             let color = document.getElementById('mainCategoryColor').value;
             let lowStockLimit = parseInt(document.getElementById('mainCategoryLowStock').value) || 10;
             if (!name) { alert('Enter brand name'); return; }
@@ -2132,11 +2164,12 @@
                 let main = mainCategories.find(m => m.id == id);
                 if (main) {
                     main.name = name; main.color = color; main.lowStockLimit = lowStockLimit;
+                    if (code) main.code = code;
                 }
                 alert('Brand updated!');
             } else {
                 let newId = mainCategories.length > 0 ? Math.max(...mainCategories.map(m => m.id)) + 1 : 1;
-                mainCategories.push({ id: newId, name, color, lowStockLimit });
+                mainCategories.push({ id: newId, code: code || String(newId).padStart(2, '0'), name, color, lowStockLimit });
                 alert('Brand added!');
             }
             saveAll();
@@ -2216,13 +2249,26 @@
             let unit = document.getElementById('subCategoryUnit').value;
             if (!sizeValue) { alert('Enter size'); return; }
             let fullName = sizeValue + (unit === 'inch' ? '"' : 'mm');
+            
+            let main = mainCategories.find(m => m.id === mainId);
+            let mainCode = (main && main.code) ? main.code : String(mainId).padStart(2, '0');
+            
             if (id) {
                 let sub = subCategories.find(s => s.id == id);
                 if (sub) { sub.mainId = mainId; sub.name = fullName; }
                 alert('Size updated!');
             } else {
                 let newId = subCategories.length > 0 ? Math.max(...subCategories.map(s => s.id)) + 1 : 1;
-                subCategories.push({ id: newId, mainId, name: fullName });
+                let existingSubs = subCategories.filter(s => s.mainId === mainId);
+                let maxSeq = 0;
+                existingSubs.forEach(s => {
+                    if (s.code && typeof s.code === 'string') {
+                        let seq = parseInt(s.code.slice(mainCode.length)) || 0;
+                        if (seq > maxSeq) maxSeq = seq;
+                    }
+                });
+                let newCode = mainCode + String(maxSeq + 1).padStart(3, '0');
+                subCategories.push({ id: newId, code: newCode, mainId, name: fullName });
                 alert('Size added!');
             }
             saveAll();
@@ -2288,7 +2334,11 @@
             }
             
             let main = mainCategories.find(m => m.id === mainId);
+            let sub = subCategories.find(s => s.id === subId);
             let minStock = main ? main.lowStockLimit : 10;
+            
+            let mainCode = (main && main.code) ? main.code : String(mainId).padStart(2, '0');
+            let subCode = (sub && sub.code) ? sub.code : (mainCode + String(subId).padStart(3, '0'));
             
             if (id) {
                 let item = items.find(i => i.id == id);
@@ -2303,7 +2353,17 @@
                 alert('Item updated!');
             } else {
                 let newId = items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1;
-                items.push({ id: newId, mainId, subId, name: '', length, weight, stock, minStock });
+                let existingItems = items.filter(i => i.subId === subId);
+                let maxSeq = 0;
+                existingItems.forEach(i => {
+                    if (i.code && typeof i.code === 'string') {
+                        let seqStr = i.code.slice(subCode.length);
+                        let seq = parseInt(seqStr) || 0;
+                        if (seq > maxSeq) maxSeq = seq;
+                    }
+                });
+                let newCode = subCode + String(maxSeq + 1).padStart(4, '0');
+                items.push({ id: newId, code: newCode, mainId, subId, name: '', length, weight, stock, minStock });
                 alert('Item added!');
             }
             saveAll();
