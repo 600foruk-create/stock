@@ -198,7 +198,7 @@
                 loadData();
                 document.getElementById('loginPage').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
-                document.getElementById('usernameDisplay').textContent = username;
+                // document.getElementById('usernameDisplay').textContent = username;
                 updateCompanyDisplay();
                 refreshDashboard();
                 refreshTransactions();
@@ -225,7 +225,7 @@
                 loadData();
                 document.getElementById('loginPage').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
-                document.getElementById('usernameDisplay').textContent = currentUser.username;
+                // document.getElementById('usernameDisplay').textContent = currentUser.username;
                 updateCompanyDisplay();
                 refreshDashboard();
                 refreshTransactions();

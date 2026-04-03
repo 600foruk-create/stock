@@ -34,14 +34,6 @@
 
             <!-- Main Content -->
             <main class="main-content">
-                <div class="top-bar">
-                    <span class="page-title" id="pageTitle">Dashboard</span>
-                    <div class="user-badge">
-                        <span id="usernameDisplay">admin</span>
-                        <div class="user-icon">A</div>
-                    </div>
-                </div>
-
                 <!-- Navigation Tabs -->
                 <div class="nav-tabs" id="finishGoodTabs">
                     <button class="nav-tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
