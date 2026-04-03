@@ -1,11 +1,19 @@
 <div id="audit" class="tab-content">
     <div class="action-buttons no-print" style="margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: var(--shadow-sm);">
-        <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+        <div class="form-group" style="flex: 1; min-width: 180px; margin-bottom: 0;">
             <label style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 0.4rem; display: block;">Search Brand or Size</label>
             <input type="text" id="auditSearch" class="form-control" placeholder="Search..." oninput="refreshAuditList()">
         </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 0.4rem; display: block;">From Date</label>
+            <input type="date" id="auditDateFrom" class="form-control" onchange="refreshAuditList()">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 0.4rem; display: block;">To Date</label>
+            <input type="date" id="auditDateTo" class="form-control" onchange="refreshAuditList()">
+        </div>
         <div style="display: flex; gap: 0.5rem;">
-            <button class="btn btn-print" onclick="window.print()">🖨️ Print Audit List</button>
+            <button class="btn btn-print" onclick="window.print()">🖨️ Print Audit</button>
             <button class="btn btn-secondary" onclick="clearAuditFilters()">🧹 Clear</button>
         </div>
     </div>

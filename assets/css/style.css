@@ -307,17 +307,20 @@
             top: -1px;
             z-index: 100;
             display: flex;
-            gap: 0.5rem;
+            gap: 5px;
             background: var(--sky-500);
-            padding: 0.3rem;
+            padding: 0.4rem;
             border-radius: 50px;
             margin-bottom: 1.5rem;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scrollbar-width: none;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
+        .nav-tabs::-webkit-scrollbar { display: none; }
 
         .nav-tab {
-            padding: 0.5rem 1.2rem;
+            padding: 0.5rem 1rem;
             border: none;
             border-radius: 50px;
             background: transparent;
@@ -325,6 +328,8 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            white-space: nowrap;
+            font-size: 0.85rem;
         }
 
         .nav-tab:hover {
@@ -1220,11 +1225,13 @@
             .no-print, .sidebar, .top-bar, .nav-tabs, .action-buttons, .menu-item {
                 display: none !important;
             }
-            .brand-card {
+            .brand-card, .audit-group {
                 box-shadow: none !important;
                 border: 1px solid #000 !important;
                 margin-bottom: 1rem !important;
                 break-inside: avoid;
+                page-break-after: always;
+                break-after: page;
             }
             .brand-header {
                 background: #f0f0f0 !important;

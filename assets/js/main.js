@@ -1059,50 +1059,85 @@ function clearStockFilters() {
 
 function refreshAuditList() {
     const search = (document.getElementById('auditSearch')?.value || '').toLowerCase();
+    const fromDate = document.getElementById('auditDateFrom')?.value;
+    const toDate = document.getElementById('auditDateTo')?.value;
     const auditPrintDate = document.getElementById('auditPrintDate');
     if (auditPrintDate) auditPrintDate.textContent = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     
+    // Calculate pending orders within date range
+    let orderedQtys = {};
+    orders.filter(o => {
+        const isPending = o.status === 'pending' || o.status === 'processing';
+        const inDateRange = (!fromDate || new Date(o.date) >= new Date(fromDate)) &&
+                           (!toDate || new Date(o.date) <= new Date(toDate));
+        return isPending && inDateRange;
+    }).forEach(order => {
+        (order.items || []).forEach(item => {
+            orderedQtys[item.itemId] = (orderedQtys[item.itemId] || 0) + (item.quantity || 0);
+        });
+    });
+
     let html = '';
     sortMainCategories(mainCategories).forEach(main => {
         let brandItems = items.filter(i => i.mainId === main.id);
         const brandMatches = main.name.toLowerCase().includes(search);
         
-        let rowsHtml = '';
-        sortItems(brandItems).forEach(item => {
+        // Group items by size
+        let sizeGroups = {};
+        brandItems.forEach(item => {
             let sub = subCategories.find(s => s.id === item.subId);
             let sizeName = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
             const isMatch = search === '' || brandMatches || sizeName.includes(search);
-            
             if (!isMatch) return;
 
-            let systemPcs = item.stock || 0;
-            let systemKg = (systemPcs * (item.weight || 0)).toFixed(2);
-            
-            rowsHtml += `
-                <tr id="auditRow_${item.id}">
-                    <td style="font-weight:700;">${sizeName}"</td>
-                    <td>${(item.weight || 0).toFixed(2)} KG</td>
-                    <td style="color:${main.color}; font-weight:600;">${main.name}</td>
-                    <td id="auditSysPcs_${item.id}">${systemPcs}</td>
-                    <td id="auditSysKg_${item.id}">${systemKg}</td>
-                    <td>
-                        <input type="number" step="1" class="godown-input" value="0" 
-                               oninput="calculateAuditRow(${item.id}, ${item.weight || 0})" 
-                               id="auditGodownPcs_${item.id}">
-                    </td>
-                    <td id="auditGodownKg_${item.id}">0.00</td>
-                    <td id="auditDiffPcs_${item.id}">0</td>
-                    <td id="auditDiffKg_${item.id}">0.00</td>
-                </tr>
-            `;
+            if (!sizeGroups[sizeName]) sizeGroups[sizeName] = [];
+            sizeGroups[sizeName].push(item);
+        });
+
+        let rowsHtml = '';
+        let bSysPcs = 0, bSysKg = 0;
+        
+        // Sort sizes numerically
+        const sortedSizes = Object.keys(sizeGroups).sort((a, b) => parseFloat(a) - parseFloat(b));
+
+        sortedSizes.forEach(sizeName => {
+            const group = sortItems(sizeGroups[sizeName]);
+            group.forEach((item, index) => {
+                let systemPcs = item.stock || 0;
+                let ordered = orderedQtys[item.id] || 0;
+                let effectivePcs = systemPcs - ordered; // The stock that should be there
+                let systemKg = (effectivePcs * (item.weight || 0)).toFixed(2);
+                
+                bSysPcs += effectivePcs;
+                bSysKg += parseFloat(systemKg);
+
+                rowsHtml += `
+                    <tr id="auditRow_${item.id}" data-unit-weight="${item.weight || 0}" data-brand-id="${main.id}">
+                        ${index === 0 ? `<td rowspan="${group.length}" style="font-weight:700; background: var(--gray-50); font-size: 1.1rem; border-right: 2px solid var(--gray-300);">${sizeName}"</td>` : ''}
+                        <td>${(item.weight || 0).toFixed(2)} KG</td>
+                        <td style="color:${main.color}; font-weight:600;">${main.name}</td>
+                        <td id="auditSysPcs_${item.id}" class="sys-pcs-val">${effectivePcs}</td>
+                        <td id="auditSysKg_${item.id}" class="sys-kg-val">${systemKg}</td>
+                        <td>
+                            <input type="number" step="1" class="godown-input audit-input-${main.id}" 
+                                   placeholder="0"
+                                   oninput="calculateAuditRow(${item.id}, ${item.weight || 0}, ${main.id})" 
+                                   id="auditGodownPcs_${item.id}">
+                        </td>
+                        <td id="auditGodownKg_${item.id}" class="godown-kg-val">0.00</td>
+                        <td id="auditDiffPcs_${item.id}" class="diff-pcs-val">0</td>
+                        <td id="auditDiffKg_${item.id}" class="diff-kg-val">0.00</td>
+                    </tr>
+                `;
+            });
         });
 
         if (rowsHtml) {
             html += `
                 <div class="audit-group" style="margin-bottom: 2rem;">
                     <div class="audit-brand-header" style="background:${main.color};">
-                        <span>${main.name}</span>
-                        <span id="auditBrandTotal_${main.id}" style="font-size:0.9rem; opacity:0.9;"></span>
+                        <span>${main.name} Audit</span>
+                        <span style="font-size:0.85rem; font-weight:400;">Total Sizes: ${sortedSizes.length}</span>
                     </div>
                     <table class="audit-table">
                         <thead>
@@ -1110,20 +1145,33 @@ function refreshAuditList() {
                                 <th rowspan="2">Size</th>
                                 <th rowspan="2">KG/Pcs</th>
                                 <th rowspan="2">Brand</th>
-                                <th colspan="2">Total Stock (System)</th>
-                                <th colspan="2">Godown Stock (Manual)</th>
-                                <th colspan="2">Difference</th>
+                                <th colspan="2" style="background: var(--sky-50);">Result Stock (System)</th>
+                                <th colspan="2" style="background: var(--orange-50);">Godown Stock (Manual)</th>
+                                <th colspan="2" style="background: var(--green-50);">Difference</th>
                             </tr>
                             <tr>
-                                <th>Pieces</th>
-                                <th>KG</th>
-                                <th>Pieces</th>
-                                <th>KG</th>
-                                <th>Total Pieces</th>
-                                <th>Total KG</th>
+                                <th style="background: var(--sky-50);">Pieces</th>
+                                <th style="background: var(--sky-50);">KG</th>
+                                <th style="background: var(--orange-50);">Pieces</th>
+                                <th style="background: var(--orange-50);">KG</th>
+                                <th style="background: var(--green-50);">Pcs +/-</th>
+                                <th style="background: var(--green-50);">KG +/-</th>
                             </tr>
                         </thead>
-                        <tbody>${rowsHtml}</tbody>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: var(--gray-100); font-weight: 800;">
+                                <td colspan="3" style="text-align: right; padding-right: 1.5rem;">${main.name} TOTAL:</td>
+                                <td id="totalSysPcs_${main.id}">${bSysPcs}</td>
+                                <td id="totalSysKg_${main.id}">${bSysKg.toFixed(2)}</td>
+                                <td id="totalGodownPcs_${main.id}">0</td>
+                                <td id="totalGodownKg_${main.id}">0.00</td>
+                                <td id="totalDiffPcs_${main.id}">0</td>
+                                <td id="totalDiffKg_${main.id}">0.00</td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             `;
@@ -1136,10 +1184,11 @@ function refreshAuditList() {
     }
 }
 
-function calculateAuditRow(itemId, unitWeight) {
+function calculateAuditRow(itemId, unitWeight, brandId) {
     const sysPcs = parseInt(document.getElementById(`auditSysPcs_${itemId}`).textContent) || 0;
     const godownPcsInput = document.getElementById(`auditGodownPcs_${itemId}`);
-    const godownPcs = parseInt(godownPcsInput.value) || 0;
+    const godownPcsStr = godownPcsInput.value;
+    const godownPcs = parseInt(godownPcsStr) || 0;
     
     // Auto KG Calculation
     const godownKg = (godownPcs * unitWeight).toFixed(2);
@@ -1158,11 +1207,50 @@ function calculateAuditRow(itemId, unitWeight) {
     // Color coding
     diffPcsEl.className = diffPcs === 0 ? '' : (diffPcs > 0 ? 'diff-plus' : 'diff-minus');
     diffKgEl.className = diffPcs === 0 ? '' : (diffPcs > 0 ? 'diff-plus' : 'diff-minus');
+
+    // Update Brand Sub-totals
+    updateBrandAuditTotals(brandId);
+}
+
+function updateBrandAuditTotals(brandId) {
+    const brandGroup = document.querySelector(`.audit-input-${brandId}`)?.closest('.audit-group');
+    if (!brandGroup) return;
+
+    let sysTotalPcs = 0, sysTotalKg = 0;
+    let godownTotalPcs = 0, godownTotalKg = 0;
+    let diffTotalPcs = 0, diffTotalKg = 0;
+
+    brandGroup.querySelectorAll('tbody tr').forEach(row => {
+        const itemId = row.id.split('_')[1];
+        sysTotalPcs += parseInt(document.getElementById(`auditSysPcs_${itemId}`).textContent) || 0;
+        sysTotalKg += parseFloat(document.getElementById(`auditSysKg_${itemId}`).textContent) || 0;
+        
+        godownTotalPcs += parseInt(document.getElementById(`auditGodownPcs_${itemId}`).value) || 0;
+        godownTotalKg += parseFloat(document.getElementById(`auditGodownKg_${itemId}`).textContent) || 0;
+        
+        diffTotalPcs += (parseInt(document.getElementById(`auditGodownPcs_${itemId}`).value) || 0) - (parseInt(document.getElementById(`auditSysPcs_${itemId}`).textContent) || 0);
+        diffTotalKg += parseFloat(document.getElementById(`auditDiffKg_${itemId}`).textContent) || 0;
+    });
+
+    document.getElementById(`totalSysPcs_${brandId}`).textContent = sysTotalPcs;
+    document.getElementById(`totalSysKg_${brandId}`).textContent = sysTotalKg.toFixed(2);
+    document.getElementById(`totalGodownPcs_${brandId}`).textContent = godownTotalPcs;
+    document.getElementById(`totalGodownKg_${brandId}`).textContent = godownTotalKg.toFixed(2);
+    
+    const dPcsEl = document.getElementById(`totalDiffPcs_${brandId}`);
+    const dKgEl = document.getElementById(`totalDiffKg_${brandId}`);
+    
+    dPcsEl.textContent = (diffTotalPcs > 0 ? '+' : '') + diffTotalPcs;
+    dKgEl.textContent = (diffTotalKg > 0 ? '+' : '') + diffTotalKg.toFixed(2);
+    
+    dPcsEl.className = diffTotalPcs === 0 ? '' : (diffTotalPcs > 0 ? 'diff-plus' : 'diff-minus');
+    dKgEl.className = diffTotalKg === 0 ? '' : (diffTotalKg > 0 ? 'diff-plus' : 'diff-minus');
 }
 
 function clearAuditFilters() {
-    const searchInput = document.getElementById('auditSearch');
-    if (searchInput) searchInput.value = '';
+    if (document.getElementById('auditSearch')) document.getElementById('auditSearch').value = '';
+    if (document.getElementById('auditDateFrom')) document.getElementById('auditDateFrom').value = '';
+    if (document.getElementById('auditDateTo')) document.getElementById('auditDateTo').value = '';
     refreshAuditList();
 }
 
