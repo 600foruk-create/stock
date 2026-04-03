@@ -188,15 +188,12 @@ function switchModule(module) {
         document.querySelectorAll('.menu-item')[0].classList.add('active');
         document.getElementById('finishGoodTabs').style.display = 'flex';
         document.getElementById('settingsPanel').style.display = 'none';
-        let activeTab = document.querySelector('.nav-tab.active');
-        if (activeTab) {
-            let tabName = activeTab.textContent.replace('📊', '').replace('📝', '').replace('📋', '').replace('🏷️', '').replace('👥', '').replace('📦', '').replace('⚠️', '').trim().toLowerCase();
-            showTab(tabName);
-        } else {
-            showTab('dashboard');
-        }
-    } else {
+        showTab('dashboard');
+    } else if (module === 'stock') {
         document.querySelectorAll('.menu-item')[1].classList.add('active');
+        showTab('stockList');
+    } else {
+        document.querySelectorAll('.menu-item')[2].classList.add('active');
         document.getElementById('finishGoodTabs').style.display = 'none';
         document.getElementById('settingsPanel').style.display = 'block';
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -289,16 +286,20 @@ function filterTable(tableId, searchText) {
 }
 
 function showTab(tabName) {
-    if (currentModule !== 'finishGood') return;
+    if (currentModule !== 'finishGood' && currentModule !== 'stock') return;
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-    document.getElementById(tabName).classList.add('active');
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.getAttribute('onclick')?.includes(tabName)) {
+            tab.classList.add('active');
+        }
+    });
+
+    const target = document.getElementById(tabName);
+    if (target) target.classList.add('active');
+
     if (tabName === 'dashboard') refreshDashboard();
     if (tabName === 'orders') refreshOrdersList();
-    if (tabName === 'dataEntry') {
-        refreshTransactions();
-        refreshCompletedOrderDropdown();
-    }
     if (tabName === 'categories') refreshCategoriesView();
     if (tabName === 'customers') refreshCustomersList();
     if (tabName === 'stockList') refreshStockList();

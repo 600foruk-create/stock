@@ -233,11 +233,11 @@
 
         .menu-item.active {
             background: white;
-            color: var(--green-600);
+            color: var(--primary);
         }
 
         .menu-item.active i {
-            color: var(--orange-500);
+            color: var(--primary);
         }
 
         .menu-item i {
@@ -1136,6 +1136,14 @@
         }
 
         /* Modal */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         .modal {
             display: none;
             position: fixed;
