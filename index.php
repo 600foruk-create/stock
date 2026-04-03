@@ -9,6 +9,8 @@
     <title>StockFlow - Modern Stock Manager</title>
     <!-- Modular CSS included here -->
     <link rel="stylesheet" href="assets/css/style.css?v=<?= time(); ?>">
+    <!-- Chart.js for Dashboard Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <!-- Login Page -->
@@ -24,11 +26,12 @@
                     <div class="company-name" id="sidebarCompany" onclick="showCompanySettings()">StockFlow</div>
                 </div>
                 <div class="sidebar-menu">
-                    <button class="menu-item active" onclick="switchModule('finishGood')"><i>📊</i> Finish Good</button>
+                    <button class="menu-item active" onclick="switchModule('finishGood')"><i>🏠</i> Dashboard</button>
+                    <button class="menu-item" onclick="switchModule('stock')"><i>📦</i> Stock/Good</button>
                     <button class="menu-item" onclick="switchModule('settings')"><i>⚙️</i> Settings</button>
                 </div>
                 <div class="sidebar-footer">
-                    <button class="logout-btn" onclick="logout()"><i>🚪</i> Logout</button>
+                    <button class="logout-btn" onclick="logout()"><i>⏻</i> Logout</button>
                 </div>
             </aside>
 
@@ -36,12 +39,11 @@
             <main class="main-content">
                 <!-- Navigation Tabs -->
                 <div class="nav-tabs" id="finishGoodTabs">
-                    <button class="nav-tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
-                    <button class="nav-tab" onclick="showTab('dataEntry')">📝 Data Entry</button>
-                    <button class="nav-tab" onclick="showTab('orders')">📋 Orders</button>
+                    <button class="nav-tab active" onclick="showTab('dashboard')">🏠 Dashboard</button>
+                    <button class="nav-tab" onclick="showTab('stockList')">📋 Inventory</button>
+                    <button class="nav-tab" onclick="showTab('orders')">🛒 Orders</button>
                     <button class="nav-tab" onclick="showTab('categories')">🏷️ Categories</button>
-                    <button class="nav-tab" onclick="showTab('customers')">👥 Customers</button>
-                    <button class="nav-tab" onclick="showTab('stockList')">📦 Stock List</button>
+                    <button class="nav-tab" onclick="showTab('customers')">👥 Suppliers</button>
                     <button class="nav-tab" onclick="showTab('lowStockReport')">⚠️ Low Stock</button>
                 </div>
 
