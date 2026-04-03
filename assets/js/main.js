@@ -899,7 +899,7 @@ function refreshStockList() {
         });
     });
 
-y            let brandCardsHtml = '';
+    let brandCardsHtml = '';
     sortMainCategories(mainCategories).forEach(main => {
         let brandItems = items.filter(i => i.mainId === main.id);
         let totalBrandStock = 0;

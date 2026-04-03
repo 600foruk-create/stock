@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StockFlow - Modern Stock Manager</title>
     <!-- Modular CSS included here -->
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=<?= time(); ?>">
 </head>
 <body>
     <!-- Login Page -->
@@ -67,6 +67,6 @@
     <?php include 'views/modals.php'; ?>
 
     <!-- Modular JS Included here -->
-    <script src="assets/js/main.js"></script>
+    <script src="assets/js/main.js?v=<?= time(); ?>"></script>
 </body>
 </html>
