@@ -4,6 +4,6 @@
                     </div>
                     <h3 style="color:var(--sky-600); margin-bottom:1rem;">📦 Complete Stock</h3>
                     <div id="printableStock">
-                        <div class="brands-container" id="stockListCards"></div>
+                        <div id="stockListCards"></div>
                     </div>
                 </div>

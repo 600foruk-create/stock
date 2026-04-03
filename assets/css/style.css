@@ -600,6 +600,31 @@
             border-bottom: 1px solid var(--gray-200);
         }
 
+        /* Stock Grid Table */
+        .table-responsive {
+            overflow-x: auto;
+            width: 100%;
+        }
+        
+        .stock-grid-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: white;
+            font-size: 0.9rem;
+        }
+
+        .stock-grid-table th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .stock-grid-table th:nth-child(n) {
+            top: 0; /* Adjust depending on layout but main navbar is already tricky */
+        }
+
+
         /* Order Cards */
         .order-card {
             background: white;

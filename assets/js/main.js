@@ -892,40 +892,96 @@
         }
         
         function refreshStockList() {
-            let brandCardsHtml = '';
-            sortMainCategories(mainCategories).forEach(main => {
-                let brandItems = items.filter(i => i.mainId === main.id);
-                let totalBrandStock = brandItems.reduce((sum, i) => sum + (i.stock || 0), 0);
-                let totalKg = brandItems.reduce((sum, i) => sum + ((i.stock || 0) * (i.weight || 0)), 0);
-                
-                let itemsHtml = '';
-                sortItems(brandItems).forEach(item => {
-                    let sub = subCategories.find(s => s.id === item.subId);
-                    let sizeName = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
-                    itemsHtml += `
-                        <div class="stock-item">
-                            <div class="item-info">
-                                <span class="item-size">${sizeName}"</span>
-                                <span class="item-details">${item.length}ft / ${item.weight}KG</span>
-                            </div>
-                            <span class="item-qty">${item.stock || 0}</span>
-                        </div>
-                    `;
+            let orderedQtys = {};
+            orders.filter(o => o.status === 'pending' || o.status === 'processing').forEach(order => {
+                (order.items || []).forEach(item => {
+                    orderedQtys[item.itemId] = (orderedQtys[item.itemId] || 0) + (item.quantity || 0);
                 });
-                
-                brandCardsHtml += `
-                    <div class="brand-card" id="stockCard_${main.id}">
-                        <div class="brand-header" style="background: ${main.color};" onclick="toggleBrandCard(document.getElementById('stockCard_${main.id}'))">
-                            <h4>${main.name}</h4>
-                            <span class="brand-total">${totalBrandStock} PCS | ${totalKg.toFixed(2)} KG</span>
-                        </div>
-                        <div class="brand-body">
-                            ${itemsHtml}
-                        </div>
-                    </div>
-                `;
             });
-            document.getElementById('stockListCards').innerHTML = brandCardsHtml;
+
+            let sizeGroups = {};
+            items.forEach(item => {
+                let sub = subCategories.find(s => s.id === item.subId);
+                let sizeVal = sub ? parseFloat(sub.name.replace(/[^0-9.]/g, '')) || 0 : 0;
+                let sizeStr = sizeVal.toString();
+                let weight = item.weight || 0;
+                
+                if (!sizeGroups[sizeStr]) sizeGroups[sizeStr] = { value: sizeVal, weights: new Set() };
+                sizeGroups[sizeStr].weights.add(weight);
+            });
+
+            let sortedSizes = Object.keys(sizeGroups).sort((a, b) => sizeGroups[a].value - sizeGroups[b].value);
+            let mainCats = sortMainCategories(mainCategories);
+
+            if (sortedSizes.length === 0) {
+                document.getElementById('stockListCards').innerHTML = '<div style="text-align:center; padding: 2rem; color:var(--gray-500);">No stock data available.</div>';
+                return;
+            }
+
+            let html = '<div class="table-responsive"><table class="stock-grid-table">';
+            
+            html += '<thead><tr>';
+            html += '<th rowspan="2" class="col-size" style="background:#90ee90; border:1px solid #000;">Size</th>';
+            html += '<th rowspan="2" class="col-desc" style="background:#90ee90; border:1px solid #000;">Description</th>';
+            mainCats.forEach(main => {
+                html += `<th colspan="3" class="col-brand-header" style="background-color: ${main.color}22; color: #000; font-weight: bold; border: 1px solid #000; text-align: center;">${main.name}</th>`;
+            });
+            html += '</tr><tr>';
+            
+            mainCats.forEach(main => {
+                html += `<th class="sub-col" style="border: 1px solid #000; text-align: center; font-size: 0.85rem; padding: 0.4rem; background: #e5e7eb;">Available</th>`;
+                html += `<th class="sub-col" style="border: 1px solid #000; text-align: center; font-size: 0.85rem; padding: 0.4rem; background: #e5e7eb;">In Order</th>`;
+                html += `<th class="sub-col" style="border: 1px solid #000; text-align: center; font-size: 0.85rem; padding: 0.4rem; background: #e5e7eb;">Result</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            sortedSizes.forEach(sizeStr => {
+                let sortedWeights = Array.from(sizeGroups[sizeStr].weights).sort((a,b) => a - b);
+                
+                sortedWeights.forEach((weight, index) => {
+                    html += '<tr style="border-bottom: 1px solid #e5e7eb;">';
+                    
+                    if (index === 0) {
+                        html += `<td rowspan="${sortedWeights.length}" class="cell-size" style="border: 1px solid #000; font-weight: bold; text-align: center; vertical-align: middle; padding: 0.5rem; background: #fff;">${sizeStr}"</td>`;
+                    }
+                    
+                    let desc = `${sizeStr}"( ${weight.toFixed(1)} ) Kg`;
+                    html += `<td class="cell-desc" style="border: 1px solid #000; padding: 0.5rem; font-size: 0.9rem; white-space: nowrap; background: #fff;">${desc}</td>`;
+                    
+                    mainCats.forEach(main => {
+                        let matchedItem = items.find(i => {
+                            if (i.mainId !== main.id) return false;
+                            if (i.weight !== weight) return false;
+                            let s = subCategories.find(sub => sub.id === i.subId);
+                            let sStr = s ? (parseFloat(s.name.replace(/[^0-9.]/g, '')) || 0).toString() : '';
+                            return sStr === sizeStr;
+                        });
+
+                        let available = 0;
+                        let inOrder = 0;
+                        let result = 0;
+
+                        if (matchedItem) {
+                            available = matchedItem.stock || 0;
+                            inOrder = orderedQtys[matchedItem.id] || 0;
+                            result = available - inOrder;
+                        }
+
+                        let avColor = available === 0 ? '#fbbf24' : '#ea580c';
+                        let ioColor = '#dc2626';
+                        let resColor = result === 0 ? '#374151' : (result < 0 ? '#ef4444' : '#16a34a');
+
+                        html += `<td class="cell-val" style="border: 1px solid #000; text-align: center; font-weight: 600; padding: 0.5rem; color: ${avColor};">${available}</td>`;
+                        html += `<td class="cell-val" style="border: 1px solid #000; text-align: center; font-weight: 600; padding: 0.5rem; color: ${ioColor};">${inOrder}</td>`;
+                        html += `<td class="cell-val" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 0.5rem; color: ${resColor};">${result}</td>`;
+                    });
+                    
+                    html += '</tr>';
+                });
+            });
+
+            html += '</tbody></table></div>';
+            document.getElementById('stockListCards').innerHTML = html;
         }
         
         function refreshLowStockReport() {
