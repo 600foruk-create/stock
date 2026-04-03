@@ -136,12 +136,14 @@
             width: 100%;
             max-width: 1400px;
             margin: 0 auto;
+            height: calc(100vh - 2rem);
         }
 
         .app-wrapper {
             display: flex;
             gap: 1rem;
             background: transparent;
+            height: 100%;
         }
 
         /* Sidebar */
@@ -153,6 +155,7 @@
             color: white;
             display: flex;
             flex-direction: column;
+            overflow-y: auto;
         }
 
         .sidebar-header {
@@ -258,6 +261,8 @@
             border-radius: 1.5rem;
             padding: 1.5rem;
             box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+            height: 100%;
+            overflow-y: auto;
         }
 
         .top-bar {
