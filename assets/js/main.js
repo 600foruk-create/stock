@@ -45,9 +45,6 @@ function updateCompanyDisplay() {
     const nameInput = document.getElementById('companyNameInput');
     if (nameInput) nameInput.value = companySettings.name;
     
-    const dbInput = document.getElementById('databaseNameInput');
-    if (dbInput) dbInput.value = companySettings.databaseName;
-    
     const logoPreview = document.getElementById('logoPreview');
     if (logoPreview) logoPreview.innerHTML = companySettings.logo || '📦';
 }
@@ -61,7 +58,6 @@ function showCompanySettings() {
 
 function saveCompanySettings() {
     companySettings.name = document.getElementById('companyNameInput').value || 'StockFlow';
-    companySettings.databaseName = document.getElementById('databaseNameInput').value || 'stockflow_db';
     localStorage.setItem('stock_company', JSON.stringify(companySettings));
     updateCompanyDisplay();
     alert('Company settings saved!');

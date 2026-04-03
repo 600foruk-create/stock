@@ -7,10 +7,6 @@
                                         <label>Company Name</label>
                                         <input type="text" id="companyNameInput" class="form-control" value="StockFlow">
                                     </div>
-                                    <div class="form-group">
-                                        <label>Database Name</label>
-                                        <input type="text" id="databaseNameInput" class="form-control" value="stockflow_db">
-                                    </div>
                                     <button class="btn btn-primary" onclick="saveCompanySettings()">Save Settings</button>
                                 </div>
                                 <div class="logo-upload">
