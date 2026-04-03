@@ -1259,19 +1259,35 @@
                 color: #000 !important;
             }
             .print-header {
-                display: block !important;
-                text-align: center;
-                margin-bottom: 2rem;
-                border-bottom: 2px solid #000;
-                padding-bottom: 1rem;
+                display: flex !important;
+                align-items: center !important;
+                gap: 1.5rem !important;
+                justify-content: flex-start !important;
+                margin-bottom: 1.5rem !important;
+                border-bottom: 2px solid #000 !important;
+                padding-bottom: 1rem !important;
+                text-align: left !important;
             }
-            .print-header h1 {
-                font-size: 24pt;
-                margin-bottom: 0.5rem;
+            #printLogo {
+                display: block !important;
+                width: 60px !important;
+                height: 60px !important;
+            }
+            #printLogo img {
+                width: 60px !important;
+                height: 60px !important;
+                object-fit: contain !important;
+                border-radius: 0 !important;
+            }
+            #printCompanyName {
+                font-size: 24pt !important;
+                margin: 0 !important;
             }
             .print-header p {
-                font-size: 12pt;
+                margin: 0 !important;
+                font-size: 11pt !important;
                 color: #666;
+                margin-left: auto !important; /* Push date to the right */
             }
         }
 
