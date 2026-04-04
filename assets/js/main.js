@@ -2863,8 +2863,8 @@ async function saveItem() {
         return;
     }
 
-    let main = mainCategories.find(m => m.id == mainId);
-    let sub = subCategories.find(s => s.id == subId);
+    let main = mainCategories.find(m => m.id === mainId);
+    let sub = subCategories.find(s => s.id === subId);
     let minStock = main ? main.lowStockLimit : 10;
 
     let itemData = { id, mainId, subId, length, weight, stock };
