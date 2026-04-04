@@ -7,7 +7,7 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 -- Table structure for table `users`
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `username` varchar(255) NOT NULL,
@@ -16,13 +16,13 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO `users` (`name`, `username`, `password`, `role`) VALUES
+INSERT IGNORE INTO `users` (`name`, `username`, `password`, `role`) VALUES
 ('Admin', 'admin', 'admin123', 'Admin');
 
 -- --------------------------------------------------------
 
 -- Table structure for table `main_categories` (Brands)
-CREATE TABLE `main_categories` (
+CREATE TABLE IF NOT EXISTS `main_categories` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `color` varchar(50) DEFAULT '#2196f3',
@@ -33,7 +33,7 @@ CREATE TABLE `main_categories` (
 -- --------------------------------------------------------
 
 -- Table structure for table `sub_categories` (Sizes)
-CREATE TABLE `sub_categories` (
+CREATE TABLE IF NOT EXISTS `sub_categories` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `main_id` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -44,7 +44,7 @@ CREATE TABLE `sub_categories` (
 -- --------------------------------------------------------
 
 -- Table structure for table `items`
-CREATE TABLE `items` (
+CREATE TABLE IF NOT EXISTS `items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `main_id` int(11) NOT NULL,
   `sub_id` int(11) NOT NULL,
@@ -60,7 +60,7 @@ CREATE TABLE `items` (
 -- --------------------------------------------------------
 
 -- Table structure for table `customers`
-CREATE TABLE `customers` (
+CREATE TABLE IF NOT EXISTS `customers` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `unique_id` varchar(50) NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -72,7 +72,7 @@ CREATE TABLE `customers` (
 -- --------------------------------------------------------
 
 -- Table structure for table `transactions`
-CREATE TABLE `transactions` (
+CREATE TABLE IF NOT EXISTS `transactions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` datetime DEFAULT current_timestamp(),
   `type` varchar(50) NOT NULL, -- 'IN' (Production), 'OUT' (Sale), 'ADJ'
@@ -90,7 +90,7 @@ CREATE TABLE `transactions` (
 -- --------------------------------------------------------
 
 -- Table structure for table `orders`
-CREATE TABLE `orders` (
+CREATE TABLE IF NOT EXISTS `orders` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` datetime DEFAULT current_timestamp(),
   `customer_id` int(11) NOT NULL,
@@ -104,7 +104,7 @@ CREATE TABLE `orders` (
 -- --------------------------------------------------------
 
 -- Table structure for table `order_items`
-CREATE TABLE `order_items` (
+CREATE TABLE IF NOT EXISTS `order_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `order_id` int(11) NOT NULL,
   `item_id` int(11) NOT NULL,
@@ -119,7 +119,7 @@ CREATE TABLE `order_items` (
 -- --------------------------------------------------------
 
 -- Table structure for table `settings`
-CREATE TABLE `settings` (
+CREATE TABLE IF NOT EXISTS `settings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `category` varchar(50) NOT NULL,
   `key` varchar(50) NOT NULL,
@@ -128,14 +128,14 @@ CREATE TABLE `settings` (
   UNIQUE KEY `cat_key` (`category`, `key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO `settings` (`category`, `key`, `value`) VALUES
+INSERT IGNORE INTO `settings` (`category`, `key`, `value`) VALUES
 ('company', 'name', 'StockFlow'),
 ('company', 'logo', '📦');
 
 -- --------------------------------------------------------
 
 -- Table structure for table `audit_records` 
-CREATE TABLE `audit_records` (
+CREATE TABLE IF NOT EXISTS `audit_records` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` datetime DEFAULT current_timestamp(),
   `item_id` int(11) NOT NULL,
@@ -150,7 +150,7 @@ CREATE TABLE `audit_records` (
 -- --------------------------------------------------------
 
 -- Table structure for table `raw_materials`
-CREATE TABLE `raw_materials` (
+CREATE TABLE IF NOT EXISTS `raw_materials` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `category` varchar(100) DEFAULT NULL,
@@ -163,7 +163,7 @@ CREATE TABLE `raw_materials` (
 -- --------------------------------------------------------
 
 -- Table structure for table `store_items`
-CREATE TABLE `store_items` (
+CREATE TABLE IF NOT EXISTS `store_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
