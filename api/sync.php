@@ -100,9 +100,6 @@ try {
         elseif ($action === 'save_settings') {
             $settings = $input['settings'];
             foreach ($settings as $key => $val) {
-                // Ensure value column can handle large data (auto-migration)
-                $conn->exec("ALTER TABLE settings MODIFY COLUMN value MEDIUMTEXT");
-                
                 $stmt = $conn->prepare("INSERT INTO settings (category, `key`, value) VALUES ('company', ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)");
                 $stmt->execute([$key, $val]);
             }

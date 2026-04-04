@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS `settings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `category` varchar(50) NOT NULL,
   `key` varchar(50) NOT NULL,
-  `value` mediumtext DEFAULT NULL,
+  `value` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `cat_key` (`category`, `key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
