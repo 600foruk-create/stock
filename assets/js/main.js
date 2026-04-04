@@ -65,13 +65,39 @@ async function initApp() {
         if (result.status === 'success') {
             console.log('StockFlow: SQL Data loaded successfully.');
             const d = result.data;
+            // Map SQL underscore fields to JS camelCase
             users = d.users || [];
             mainCategories = d.mainCategories || [];
-            subCategories = d.subCategories || [];
-            items = d.items || [];
+            subCategories = (d.subCategories || []).map(s => ({
+                ...s,
+                mainId: s.main_id || s.mainId
+            }));
+            items = (d.items || []).map(i => ({
+                ...i,
+                mainId: i.main_id || i.mainId,
+                subId: i.sub_id || i.subId
+            }));
+            
             customers = d.customers || [];
             orders = d.orders || [];
-            transactions = d.transactions || [];
+            
+            // Map order items too
+            orders.forEach(o => {
+                if (o.items) {
+                    o.items = (o.items || []).map(oi => ({
+                        ...oi,
+                        mainId: oi.main_id || oi.mainId,
+                        subId: oi.sub_id || oi.subId
+                    }));
+                }
+            });
+
+            transactions = (d.transactions || []).map(t => ({
+                ...t,
+                mainId: t.main_id || t.mainId,
+                subId: t.sub_id || t.subId
+            }));
+            
             rawMaterials = d.rawMaterials || [];
             storeItems = d.storeItems || [];
             
@@ -138,33 +164,24 @@ window.addEventListener('DOMContentLoaded', initApp);
 function updateCompanyDisplay() {
     document.title = `${companySettings.name} - Stock Manager`;
     document.getElementById('sidebarCompany').textContent = companySettings.name;
+    document.getElementById('sidebarLogo').innerHTML = companySettings.logo || '📦';
     
-    // Improved Logo Constraints
-    const logoHtml = companySettings.logo.includes('<img') 
-        ? companySettings.logo 
-        : (companySettings.logo || '📦');
-        
-    document.getElementById('sidebarLogo').innerHTML = logoHtml;
-    
-    // Update Login Page
+    // Update Login Page if it exists
     const loginTitle = document.getElementById('loginTitle');
     if (loginTitle) {
-        loginTitle.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; gap:1rem;">
-                                    <div style="max-height:100px; max-width:100%">${logoHtml}</div>
-                                    <span>${companySettings.name}</span>
-                                </div>`;
+        loginTitle.innerHTML = `${companySettings.logo || '📦'} ${companySettings.name}`;
     }
 
-    // Update Settings Page
+    // Update Settings Page inputs
     const nameInput = document.getElementById('companyNameInput');
     if (nameInput) nameInput.value = companySettings.name;
     
     const logoPreview = document.getElementById('logoPreview');
-    if (logoPreview) logoPreview.innerHTML = logoHtml;
+    if (logoPreview) logoPreview.innerHTML = companySettings.logo || '📦';
 
     // Update Print Headers
     const logoElements = document.querySelectorAll('.printLogo, #printLogo, #auditPrintLogo');
-    logoElements.forEach(el => el.innerHTML = logoHtml);
+    logoElements.forEach(el => el.innerHTML = companySettings.logo || '📦');
 
     const nameElements = document.querySelectorAll('.printCompanyName, #printCompanyName, #auditPrintCompanyName');
     nameElements.forEach(el => el.textContent = companySettings.name);
@@ -2863,8 +2880,8 @@ async function saveItem() {
         return;
     }
 
-    let main = mainCategories.find(m => m.id == mainId);
-    let sub = subCategories.find(s => s.id == subId);
+    let main = mainCategories.find(m => m.id === mainId);
+    let sub = subCategories.find(s => s.id === subId);
     let minStock = main ? main.lowStockLimit : 10;
 
     let itemData = { id, mainId, subId, length, weight, stock };
