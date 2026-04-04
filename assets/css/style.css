@@ -33,10 +33,26 @@
 
         /* Login Page */
         #loginPage {
-            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            background: linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%);
+            z-index: 9999;
+        }
+        
+        .company-logo img, #sidebarLogo img, .printLogo img, #printLogo img, #auditPrintLogo img, #logoPreview img {
+            max-width: 100%;
+            max-height: 80px;
+            object-fit: contain;
+        }
+        
+        #sidebarLogo img {
+            max-height: 40px;
         }
 
         .login-container {
@@ -1401,5 +1417,9 @@
         @media print {
             .search-filter-bar {
                 display: none !important;
+            }
+            .printLogo img, #printLogo img, #auditPrintLogo img {
+                max-height: 80px !important;
+                width: auto !important;
             }
         }

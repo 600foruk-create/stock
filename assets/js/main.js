@@ -138,24 +138,33 @@ window.addEventListener('DOMContentLoaded', initApp);
 function updateCompanyDisplay() {
     document.title = `${companySettings.name} - Stock Manager`;
     document.getElementById('sidebarCompany').textContent = companySettings.name;
-    document.getElementById('sidebarLogo').innerHTML = companySettings.logo || '📦';
     
-    // Update Login Page if it exists
+    // Improved Logo Constraints
+    const logoHtml = companySettings.logo.includes('<img') 
+        ? companySettings.logo 
+        : (companySettings.logo || '📦');
+        
+    document.getElementById('sidebarLogo').innerHTML = logoHtml;
+    
+    // Update Login Page
     const loginTitle = document.getElementById('loginTitle');
     if (loginTitle) {
-        loginTitle.innerHTML = `${companySettings.logo || '📦'} ${companySettings.name}`;
+        loginTitle.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; gap:1rem;">
+                                    <div style="max-height:100px; max-width:100%">${logoHtml}</div>
+                                    <span>${companySettings.name}</span>
+                                </div>`;
     }
 
-    // Update Settings Page inputs
+    // Update Settings Page
     const nameInput = document.getElementById('companyNameInput');
     if (nameInput) nameInput.value = companySettings.name;
     
     const logoPreview = document.getElementById('logoPreview');
-    if (logoPreview) logoPreview.innerHTML = companySettings.logo || '📦';
+    if (logoPreview) logoPreview.innerHTML = logoHtml;
 
     // Update Print Headers
     const logoElements = document.querySelectorAll('.printLogo, #printLogo, #auditPrintLogo');
-    logoElements.forEach(el => el.innerHTML = companySettings.logo || '📦');
+    logoElements.forEach(el => el.innerHTML = logoHtml);
 
     const nameElements = document.querySelectorAll('.printCompanyName, #printCompanyName, #auditPrintCompanyName');
     nameElements.forEach(el => el.textContent = companySettings.name);
@@ -244,13 +253,13 @@ function resequenceCodes() {
         let mainCode = main.code || String(main.id).padStart(2, '0');
 
         // Resequence SubCategories (Sizes) within this Brand
-        let brandSubs = subCategories.filter(s => s.mainId === main.id);
+        let brandSubs = subCategories.filter(s => s.mainId == main.id);
         sortSubCategories(brandSubs).forEach((sub, subIndex) => {
             let newSubSeq = subIndex + 1;
             sub.code = mainCode + String(newSubSeq).padStart(3, '0');
 
             // Resequence Items within this Size
-            let subItems = items.filter(i => i.subId === sub.id);
+            let subItems = items.filter(i => i.subId == sub.id);
             sortItems(subItems).forEach((item, itemIndex) => {
                 let newItemSeq = itemIndex + 1;
                 item.code = sub.code + String(newItemSeq).padStart(4, '0');
@@ -568,7 +577,7 @@ function filterCustomers() {
 }
 
 function editCustomer(id) {
-    let customer = customers.find(c => c.id === id);
+    let customer = customers.find(c => c.id == id);
     if (customer) {
         document.getElementById('customerModalTitle').textContent = '✏️ Edit Customer';
         document.getElementById('editCustomerId').value = customer.id;
@@ -958,7 +967,7 @@ function refreshDashboard() {
     // Low stock items by brand
     let lowStockByBrand = {};
     moduleItems.forEach(item => {
-        let main = mainCategories.find(m => m.id === item.mainId);
+        let main = mainCategories.find(m => m.id == item.mainId);
         let min = item.minStock || main?.lowStockLimit || 10;
         if (item.stock <= min) {
             if (!lowStockByBrand[main.id]) {
@@ -1002,13 +1011,13 @@ function refreshDashboard() {
     // Brand Cards with Collapse
     let brandCardsHtml = '';
     sortMainCategories(mainCategories).forEach(main => {
-        let brandItems = items.filter(i => i.mainId === main.id);
+        let brandItems = items.filter(i => i.mainId == main.id);
         let totalBrandStock = brandItems.reduce((sum, i) => sum + (i.stock || 0), 0);
         let totalBrandKg = brandItems.reduce((sum, i) => sum + ((i.stock || 0) * (i.weight || 0)), 0);
 
         let itemsHtml = '';
         sortItems(brandItems).forEach(item => {
-            let sub = subCategories.find(s => s.id === item.subId);
+            let sub = subCategories.find(s => s.id == item.subId);
             let sizeName = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
             itemsHtml += `
                         <div class="stock-item">
@@ -1048,8 +1057,8 @@ function refreshDashboard() {
     // Stock Comparison Table
     let comparisonRows = '';
     moduleItems.forEach(item => {
-        let main = mainCategories.find(m => m.id === item.mainId);
-        let sub = subCategories.find(s => s.id === item.subId);
+        let main = mainCategories.find(m => m.id == item.mainId);
+        let sub = subCategories.find(s => s.id == item.subId);
         if (!main || !sub) return;
 
         let ordered = orderedQtys[item.id] || 0;
@@ -1088,7 +1097,7 @@ function refreshStockList() {
     let brandCardsHtml = '';
     sortMainCategories(mainCategories).forEach(main => {
         const brandMatches = main.name.toLowerCase().includes(search);
-        let brandItems = items.filter(i => i.mainId === main.id);
+        let brandItems = items.filter(i => i.mainId == main.id);
         let totalBrandStock = 0;
         let totalKg = 0;
         let totalInOrder = 0;
@@ -1104,7 +1113,7 @@ function refreshStockList() {
 
         let hasVisibleItems = false;
         sortItems(brandItems).forEach(item => {
-            let sub = subCategories.find(s => s.id === item.subId);
+            let sub = subCategories.find(s => s.id == item.subId);
             let sizeName = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
             
             // Smart Search logic (e.g. "2m" matches 2" and Brand starting with M)
@@ -1191,13 +1200,13 @@ function refreshAuditList() {
 
     let html = '';
     sortMainCategories(mainCategories).forEach(main => {
-        let brandItems = items.filter(i => i.mainId === main.id);
+        let brandItems = items.filter(i => i.mainId == main.id);
         const brandMatches = main.name.toLowerCase().includes(search);
         
         // Group items by size
         let sizeGroups = {};
         brandItems.forEach(item => {
-            let sub = subCategories.find(s => s.id === item.subId);
+            let sub = subCategories.find(s => s.id == item.subId);
             let sizeName = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
             const isMatch = search === '' || brandMatches || sizeName.includes(search);
             if (!isMatch) return;
@@ -1431,7 +1440,7 @@ function refreshLowStockReport() {
     // Group low stock items by brand
     let lowByBrand = {};
     items.forEach(item => {
-        let main = mainCategories.find(m => m.id === item.mainId);
+        let main = mainCategories.find(m => m.id == item.mainId);
         let min = item.minStock || main?.lowStockLimit || 10;
         if (item.stock <= min) {
             if (!lowByBrand[main.id]) {
@@ -1453,8 +1462,8 @@ function refreshLowStockReport() {
             let brand = lowByBrand[brandId];
             let itemsHtml = '';
             brand.items.forEach(item => {
-                let sub = subCategories.find(s => s.id === item.subId);
-                let min = item.minStock || mainCategories.find(m => m.id === item.mainId)?.lowStockLimit || 10;
+                let sub = subCategories.find(s => s.id == item.subId);
+                let min = item.minStock || mainCategories.find(m => m.id == item.mainId)?.lowStockLimit || 10;
                 let stockPercent = (item.stock / min) * 100;
                 let status = stockPercent <= 30 ? 'critical' : 'warning';
                 let size = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
@@ -1801,8 +1810,8 @@ function saveProduction() {
             item.length = length;
         }
 
-        let main = mainCategories.find(m => m.id === item.mainId);
-        let sub = subCategories.find(s => s.id === item.subId);
+        let main = mainCategories.find(m => m.id == item.mainId);
+        let sub = subCategories.find(s => s.id == item.subId);
         item.stock = (item.stock || 0) + qty;
 
         transactions.unshift({
@@ -1865,8 +1874,8 @@ function saveSale() {
             errors.push(`Insufficient stock for ${item.name || 'Item'}. Available: ${item.stock || 0}`);
             continue;
         }
-        let main = mainCategories.find(m => m.id === item.mainId);
-        let sub = subCategories.find(s => s.id === item.subId);
+        let main = mainCategories.find(m => m.id == item.mainId);
+        let sub = subCategories.find(s => s.id == item.subId);
         item.stock = (item.stock || 0) - qty;
         transactions.unshift({
             id: transactionId++,
@@ -1930,8 +1939,8 @@ function saveAdjustment() {
             errors.push(`Cannot remove ${qty} PCS. Available: ${item.stock || 0}`);
             continue;
         }
-        let main = mainCategories.find(m => m.id === item.mainId);
-        let sub = subCategories.find(s => s.id === item.subId);
+        let main = mainCategories.find(m => m.id == item.mainId);
+        let sub = subCategories.find(s => s.id == item.subId);
         if (type === 'add') {
             item.stock = (item.stock || 0) + qty;
         } else {
@@ -1989,8 +1998,8 @@ function saveNewOrder() {
             item.length = length;
         }
 
-        let main = mainCategories.find(m => m.id === item.mainId);
-        let sub = subCategories.find(s => s.id === item.subId);
+        let main = mainCategories.find(m => m.id == item.mainId);
+        let sub = subCategories.find(s => s.id == item.subId);
         orderItems.push({
             itemId: itemId,
             mainId: item.mainId,
@@ -2117,7 +2126,7 @@ function loadCompletedOrderForSale() {
         let row = document.createElement('div');
         row.className = 'entry-row';
 
-        let brand = mainCategories.find(m => m.id === item.mainId);
+        let brand = mainCategories.find(m => m.id == item.mainId);
         let brandOptions = mainCategories.map(m => ({ value: m.id, text: m.name }));
 
         let brandWrapper = createSearchableInput('Brand...', brandOptions, (opt) => {
@@ -2190,9 +2199,9 @@ function completeOrder(orderId) {
                 type: 'SALE',
                 date: new Date().toISOString().slice(0, 16),
                 mainId: invItem.mainId,
-                mainName: mainCategories.find(m => m.id === invItem.mainId)?.name || '',
+                mainName: mainCategories.find(m => m.id == invItem.mainId)?.name || '',
                 subId: invItem.subId,
-                subName: subCategories.find(s => s.id === invItem.subId)?.name || '',
+                subName: subCategories.find(s => s.id == invItem.subId)?.name || '',
                 itemId: item.itemId,
                 itemName: invItem.name,
                 productCode: item.productCode,
@@ -2306,7 +2315,7 @@ function editOrder(orderId) {
         let row = document.createElement('div');
         row.className = 'entry-row';
 
-        let brand = mainCategories.find(m => m.id === item.mainId);
+        let brand = mainCategories.find(m => m.id == item.mainId);
         let brandOptions = mainCategories.map(m => ({ value: m.id, text: m.name }));
 
         let brandWrapper = createSearchableInput('Brand...', brandOptions, (opt) => {
@@ -2443,8 +2452,8 @@ function updateOrder(orderId) {
             item.length = length;
         }
 
-        let main = mainCategories.find(m => m.id === item.mainId);
-        let sub = subCategories.find(s => s.id === item.subId);
+        let main = mainCategories.find(m => m.id == item.mainId);
+        let sub = subCategories.find(s => s.id == item.subId);
 
         let existingItem = order.items.find(i => i.itemId == itemId);
         let fulfilled = existingItem ? existingItem.fulfilled || 0 : 0;
@@ -2507,14 +2516,14 @@ function refreshCategoriesView() {
     
     let html = '';
     sortMainCategories(mainCategories).forEach(main => {
-        let mainSubs = subCategories.filter(s => s.mainId === main.id);
-        let mainItems = items.filter(i => i.mainId === main.id);
+        let mainSubs = subCategories.filter(s => s.mainId == main.id);
+        let mainItems = items.filter(i => i.mainId == main.id);
         let totalStock = mainItems.reduce((sum, i) => sum + (i.stock || 0), 0);
         let mainCode = (main.code) ? main.code : String(main.id).padStart(2, '0');
 
         let subHtml = '';
         sortSubCategories(mainSubs).forEach(sub => {
-            let subItems = items.filter(i => i.mainId === main.id && i.subId === sub.id);
+            let subItems = items.filter(i => i.mainId == main.id && i.subId == sub.id);
             let subTotalStock = subItems.reduce((sum, i) => sum + (i.stock || 0), 0);
             let subCode = (sub.code) ? sub.code : (mainCode + String(sub.id).padStart(3, '0'));
 
@@ -2632,7 +2641,7 @@ function closeAddMainCategoryModal() {
 }
 
 function editMainCategory(id) {
-    let main = mainCategories.find(m => m.id === id);
+    let main = mainCategories.find(m => m.id == id);
     if (main) {
         document.getElementById('mainCategoryModalTitle').textContent = '✏️ Edit Brand';
         document.getElementById('editMainCategoryId').value = main.id;
@@ -2645,7 +2654,7 @@ function editMainCategory(id) {
 }
 
 function deleteMainCategory(id) {
-    let subCount = subCategories.filter(s => s.mainId === id).length;
+    let subCount = subCategories.filter(s => s.mainId == id).length;
     if (subCount > 0) {
         alert(`Cannot delete brand because it has ${subCount} size(s). Please delete all sizes first.`);
         return;
@@ -2724,7 +2733,7 @@ function closeAddSubCategoryModal() {
 }
 
 function editSubCategory(id) {
-    let sub = subCategories.find(s => s.id === id);
+    let sub = subCategories.find(s => s.id == id);
     if (sub) {
         let select = document.getElementById('subCategoryMainSelect');
         select.innerHTML = '';
@@ -2747,7 +2756,7 @@ function editSubCategory(id) {
 }
 
 function deleteSubCategory(id) {
-    let itemCount = items.filter(i => i.subId === id).length;
+    let itemCount = items.filter(i => i.subId == id).length;
     if (itemCount > 0) {
         alert(`Cannot delete size because it has ${itemCount} item(s). Please delete all items first.`);
         return;
@@ -2817,7 +2826,7 @@ function closeAddItemModal() {
 }
 
 function editItem(id) {
-    let item = items.find(i => i.id === id);
+    let item = items.find(i => i.id == id);
     if (item) {
         document.getElementById('itemModalTitle').textContent = '✏️ Edit Item';
         document.getElementById('editItemId').value = item.id;
@@ -2854,8 +2863,8 @@ async function saveItem() {
         return;
     }
 
-    let main = mainCategories.find(m => m.id === mainId);
-    let sub = subCategories.find(s => s.id === subId);
+    let main = mainCategories.find(m => m.id == mainId);
+    let sub = subCategories.find(s => s.id == subId);
     let minStock = main ? main.lowStockLimit : 10;
 
     let itemData = { id, mainId, subId, length, weight, stock };
