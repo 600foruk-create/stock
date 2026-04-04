@@ -3,14 +3,30 @@ let users = [];
 let currentUser = null;
 let currentModule = 'finishGood';
 let usedCompletedOrders = new Set();
-let mainCategories = [];
-let subCategories = [];
-let items = [];
+let mainCategories = [
+    { id: 1, name: 'Master Flex', color: '#2196f3', lowStockLimit: 10 },
+    { id: 2, name: 'Eco Flex', color: '#4caf50', lowStockLimit: 10 }
+];
+let subCategories = [
+    { id: 1, mainId: 1, name: '2"' },
+    { id: 2, mainId: 1, name: '3"' },
+    { id: 3, mainId: 2, name: '2"' },
+    { id: 4, mainId: 2, name: '3"' }
+];
+let items = [
+    { id: 1, mainId: 1, subId: 1, name: '', length: 13, weight: 2.0, stock: 25, minStock: 10 },
+    { id: 2, mainId: 1, subId: 1, name: '', length: 13, weight: 2.5, stock: 15, minStock: 10 },
+    { id: 3, mainId: 1, subId: 2, name: '', length: 13, weight: 2.0, stock: 8, minStock: 10 },
+    { id: 4, mainId: 2, subId: 3, name: '', length: 13, weight: 1.5, stock: 30, minStock: 15 },
+    { id: 5, mainId: 2, subId: 4, name: '', length: 13, weight: 2.0, stock: 5, minStock: 10 }
+];
 let customers = [];
-let orders = [];
 let transactions = [];
+let orders = [];
 let rawMaterials = [];
 let storeItems = [];
+let transactionId = 1;
+let orderId = 1;
 
 // Company Settings
 let companySettings = {
@@ -20,6 +36,7 @@ let companySettings = {
 
 // Initialize App
 async function initApp() {
+    console.log('StockFlow: Initializing App...');
     // Load local session if any
     let savedUser = localStorage.getItem('stock_currentUser');
     if (savedUser) {
@@ -29,9 +46,17 @@ async function initApp() {
     // Fetch all data from SQL
     try {
         const response = await fetch('api/sync.php?action=get_all');
-        const result = await response.json();
+        const text = await response.text();
+        let result;
+        try {
+            result = JSON.parse(text);
+        } catch (parseError) {
+            console.error('Invalid JSON from server:', text);
+            throw new Error('Server returned invalid data format.');
+        }
         
         if (result.status === 'success') {
+            console.log('StockFlow: SQL Data loaded successfully.');
             const d = result.data;
             users = d.users || [];
             mainCategories = d.mainCategories || [];
@@ -51,10 +76,13 @@ async function initApp() {
                     }
                 });
             }
+            saveData(); // Sync to local backup
+        } else {
+            console.warn('StockFlow: SQL returned error state:', result.message);
+            loadLegacyData();
         }
     } catch (e) {
-        console.error('Failed to fetch data from SQL:', e);
-        // Fallback to localStorage for emergency offline/legacy
+        console.error('StockFlow: Init failed, using legacy data.', e);
         loadLegacyData();
     }
 
@@ -70,6 +98,9 @@ async function initApp() {
 function loadLegacyData() {
     let savedCompany = localStorage.getItem('stock_company');
     if (savedCompany) companySettings = JSON.parse(savedCompany);
+    users = JSON.parse(localStorage.getItem('stock_users')) || [
+        { id: 1, name: 'Admin', username: 'admin', password: 'admin123', role: 'Admin' }
+    ];
     mainCategories = JSON.parse(localStorage.getItem('stock_mainCategories')) || [];
     subCategories = JSON.parse(localStorage.getItem('stock_subCategories')) || [];
     items = JSON.parse(localStorage.getItem('stock_items')) || [];
@@ -141,31 +172,7 @@ function handleLogoUpload(event) {
     }
 }
 
-let mainCategories = [
-    { id: 1, name: 'Master Flex', color: '#2196f3', lowStockLimit: 10 },
-    { id: 2, name: 'Eco Flex', color: '#4caf50', lowStockLimit: 10 }
-];
 
-let subCategories = [
-    { id: 1, mainId: 1, name: '2"' },
-    { id: 2, mainId: 1, name: '3"' },
-    { id: 3, mainId: 2, name: '2"' },
-    { id: 4, mainId: 2, name: '3"' }
-];
-
-let items = [
-    { id: 1, mainId: 1, subId: 1, name: '', length: 13, weight: 2.0, stock: 25, minStock: 10 },
-    { id: 2, mainId: 1, subId: 1, name: '', length: 13, weight: 2.5, stock: 15, minStock: 10 },
-    { id: 3, mainId: 1, subId: 2, name: '', length: 13, weight: 2.0, stock: 8, minStock: 10 },
-    { id: 4, mainId: 2, subId: 3, name: '', length: 13, weight: 1.5, stock: 30, minStock: 15 },
-    { id: 5, mainId: 2, subId: 4, name: '', length: 13, weight: 2.0, stock: 5, minStock: 10 }
-];
-
-let customers = [];
-let transactions = [];
-let orders = [];
-let transactionId = 1;
-let orderId = 1;
 
 function loadLocalData() {
     try {
@@ -191,14 +198,15 @@ function loadLocalData() {
 }
 
 function saveData() {
-    localStorage.setItem('stock_orders', JSON.stringify(orders));
-    localStorage.setItem('stock_customers', JSON.stringify(customers));
-    localStorage.setItem('stock_transactions', JSON.stringify(transactions));
-    localStorage.setItem('stock_items', JSON.stringify(items));
-    localStorage.setItem('stock_mainCat', JSON.stringify(mainCategories));
-    localStorage.setItem('stock_subCat', JSON.stringify(subCategories));
-    localStorage.setItem('stock_usedOrders', JSON.stringify(Array.from(usedCompletedOrders)));
+    localStorage.setItem('stock_orders', JSON.stringify(orders || []));
+    localStorage.setItem('stock_customers', JSON.stringify(customers || []));
+    localStorage.setItem('stock_transactions', JSON.stringify(transactions || []));
+    localStorage.setItem('stock_items', JSON.stringify(items || []));
+    localStorage.setItem('stock_mainCat', JSON.stringify(mainCategories || []));
+    localStorage.setItem('stock_subCat', JSON.stringify(subCategories || []));
+    localStorage.setItem('stock_usedOrders', JSON.stringify(Array.from(usedCompletedOrders || [])));
     localStorage.setItem('stock_company', JSON.stringify(companySettings));
+    localStorage.setItem('stock_users', JSON.stringify(users || []));
 }
 
 function saveAll() {
@@ -304,17 +312,34 @@ function togglePassword(fieldId) {
 }
 
 function login() {
-    let username = document.getElementById('username').value;
-    let password = document.getElementById('password').value;
+    console.log('StockFlow: Login attempt...');
+    let usernameInput = document.getElementById('username');
+    let passwordInput = document.getElementById('password');
+    let username = usernameInput ? usernameInput.value : '';
+    let password = passwordInput ? passwordInput.value : '';
+
+    if (!users || users.length === 0) {
+        console.warn('StockFlow: No users loaded, trying legacy fallback...');
+        loadLegacyData();
+        if (!users || users.length === 0) {
+            alert('Error: No users found in database or local backup. Please check your SQL connection or use the default "admin" account after the server responds.');
+            return;
+        }
+    }
+
     let user = users.find(u => u.username === username && u.password === password);
+    console.log('StockFlow: Matching user found:', user ? 'Yes' : 'No');
 
     if (user) {
         currentUser = user;
         localStorage.setItem('stock_currentUser', JSON.stringify(user));
-        loadData();
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        // document.getElementById('usernameDisplay').textContent = username;
+        loadLocalData();
+        
+        const loginPage = document.getElementById('loginPage');
+        const appPage = document.getElementById('app');
+        if (loginPage) loginPage.style.display = 'none';
+        if (appPage) appPage.style.display = 'block';
+        
         updateCompanyDisplay();
         refreshDashboard();
         refreshTransactions();
@@ -326,7 +351,7 @@ function login() {
         refreshCustomersList();
         switchModule('finishGood');
     } else {
-        alert('Invalid username or password!');
+        alert('Invalid entry or account not found. Loaded Users: ' + (users ? users.length : 0));
     }
 }
 
@@ -338,10 +363,9 @@ document.addEventListener('keypress', function (e) {
 
 (function () {
     if (currentUser) {
-        loadData();
+        loadLocalData();
         document.getElementById('loginPage').style.display = 'none';
         document.getElementById('app').style.display = 'block';
-        // document.getElementById('usernameDisplay').textContent = currentUser.username;
         updateCompanyDisplay();
         refreshDashboard();
         refreshTransactions();
@@ -2909,21 +2933,6 @@ function refreshTransactions() {
 }
 
 // Initialize
-document.addEventListener('DOMContentLoaded', function () {
-    if (currentUser) {
-        loadData();
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        document.getElementById('usernameDisplay').textContent = currentUser.username;
-        updateCompanyDisplay();
-        refreshDashboard();
-        refreshTransactions();
-        refreshOrdersList();
-        refreshCategoriesView();
-        refreshStockList();
-        refreshLowStockReport();
-        refreshUsersList();
-        refreshCustomersList();
-        switchModule('finishGood');
-    }
-});
+// document.addEventListener('DOMContentLoaded', function () {
+//    // Combined in initApp() above
+// });
