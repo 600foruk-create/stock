@@ -1,7 +1,8 @@
 <div id="loginPage">
         <div class="login-container">
             <div class="login-header">
-                <h1 id="loginTitle">📦 StockFlow</h1>
+                <div class="login-logo-circle" id="loginLogo">📦</div>
+                <h1 id="loginTitle">StockFlow</h1>
                 <p>Login to your account</p>
             </div>
             <div class="login-form">

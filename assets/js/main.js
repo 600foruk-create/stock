@@ -150,9 +150,13 @@ function updateCompanyDisplay() {
     document.getElementById('sidebarLogo').innerHTML = companySettings.logo || '📦';
     
     // Update Login Page if it exists
+    const loginLogo = document.getElementById('loginLogo');
+    if (loginLogo) {
+        loginLogo.innerHTML = companySettings.logo || '📦';
+    }
     const loginTitle = document.getElementById('loginTitle');
     if (loginTitle) {
-        loginTitle.innerHTML = `${companySettings.logo || '📦'} ${companySettings.name}`;
+        loginTitle.textContent = companySettings.name;
     }
 
     // Update Settings Page inputs
