@@ -101,8 +101,8 @@ function loadLegacyData() {
     users = JSON.parse(localStorage.getItem('stock_users')) || [
         { id: 1, name: 'Admin', username: 'admin', password: 'admin123', role: 'Admin' }
     ];
-    mainCategories = JSON.parse(localStorage.getItem('stock_mainCategories')) || [];
-    subCategories = JSON.parse(localStorage.getItem('stock_subCategories')) || [];
+    mainCategories = JSON.parse(localStorage.getItem('stock_mainCat')) || [];
+    subCategories = JSON.parse(localStorage.getItem('stock_subCat')) || [];
     items = JSON.parse(localStorage.getItem('stock_items')) || [];
     customers = JSON.parse(localStorage.getItem('stock_customers')) || [];
     orders = JSON.parse(localStorage.getItem('stock_orders')) || [];
@@ -152,7 +152,7 @@ function saveCompanySettings() {
     });
     localStorage.setItem('stock_company', JSON.stringify(companySettings));
     updateCompanyDisplay();
-    alert('Company settings saved to Server!');
+    alert('Company settings saved!');
 }
 
 function handleLogoUpload(event) {
@@ -322,7 +322,7 @@ function login() {
         console.warn('StockFlow: No users loaded, trying legacy fallback...');
         loadLegacyData();
         if (!users || users.length === 0) {
-            alert('Error: No users found in database or local backup. Please check your SQL connection or use the default "admin" account after the server responds.');
+            alert('Loading user data. Please try again in a moment or check your connection.');
             return;
         }
     }
@@ -1383,7 +1383,7 @@ async function saveMonthlyAudit() {
             });
             
             saveData(); // Sync local (backup)
-            alert(`✅ Audit Saved to SQL Successfully!\n${itemsToUpdate.length} items updated.`);
+            alert(`✅ Saved successfully!\n${itemsToUpdate.length} items updated.`);
             refreshDashboard();
             refreshStockList();
             refreshAuditList();
@@ -2669,10 +2669,10 @@ async function saveMainCategory() {
             refreshStockList();
             refreshLowStockReport();
             closeAddMainCategoryModal();
-            alert('Brand saved to SQL!');
+            alert('Saved successfully!');
         }
     } catch (e) {
-        alert('Server Error: Brand not saved to SQL.');
+        alert('Error: Not saved to server.');
     }
 }
 
@@ -2755,12 +2755,12 @@ async function saveSubCategory() {
         const result = await response.json();
         
         if (result.status === 'success') {
+            const returnedId = parseInt(result.id);
             if (id) {
-                let sub = subCategories.find(s => s.id == id);
+                let sub = subCategories.find(s => parseInt(s.id) === parseInt(id));
                 if (sub) { sub.mainId = mainId; sub.name = fullName; }
             } else {
-                let newId = result.id;
-                subCategories.push({ id: newId, mainId, name: fullName });
+                subCategories.push({ id: returnedId, mainId, name: fullName });
             }
             resequenceCodes();
             saveData();
@@ -2769,10 +2769,10 @@ async function saveSubCategory() {
             refreshStockList();
             refreshLowStockReport();
             closeAddSubCategoryModal();
-            alert('Size saved to SQL!');
+            alert('Saved successfully');
         }
     } catch (e) {
-        alert('Server Error: Size not saved to SQL.');
+        alert('Error: Not saved to server');
     }
 }
 
@@ -2856,18 +2856,18 @@ async function saveItem() {
             }
             resequenceCodes();
             saveData();
-            alert('Item saved to SQL and Backup!');
+            alert('Saved successfully!');
             closeAddItemModal();
             refreshCategoriesView();
             refreshDashboard();
             refreshStockList();
             refreshLowStockReport();
         } else {
-            alert('SQL Save Error: ' + result.message);
+            alert('Error: ' + result.message);
         }
     } catch (e) {
         console.error('Save failed:', e);
-        alert('Server unreachable. Item not saved to SQL.');
+        alert('Error: Server connection failed.');
     }
 }
 
@@ -2885,7 +2885,7 @@ function saveNewUser() {
     let username = document.getElementById('newUserUsername').value;
     let password = document.getElementById('newUserPassword').value;
     let role = document.getElementById('newUserRole').value;
-    if (!name || !username || !password) { alert('Fill all fields'); return; }
+    if (!name || !username || !password) { alert('Please fill all fields'); return; }
     let newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 2;
     users.push({ id: newId, name, username, password, role, permissions: [] });
     refreshUsersList();
