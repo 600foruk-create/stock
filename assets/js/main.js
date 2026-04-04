@@ -65,15 +65,15 @@ async function initApp() {
         if (result.status === 'success') {
             console.log('StockFlow: SQL Data loaded successfully.');
             const d = result.data;
-            users = d.users || [];
-            mainCategories = d.mainCategories || [];
-            subCategories = d.subCategories || [];
-            items = d.items || [];
-            customers = d.customers || [];
-            orders = d.orders || [];
-            transactions = d.transactions || [];
-            rawMaterials = d.rawMaterials || [];
-            storeItems = d.storeItems || [];
+            users = (d.users || []).map(u => ({ ...u, id: parseInt(u.id) }));
+            mainCategories = (d.mainCategories || []).map(m => ({ ...m, id: parseInt(m.id) }));
+            subCategories = (d.subCategories || []).map(s => ({ ...s, id: parseInt(s.id), mainId: parseInt(s.main_id || s.mainId) }));
+            items = (d.items || []).map(i => ({ ...i, id: parseInt(i.id), mainId: parseInt(i.main_id || i.mainId), subId: parseInt(i.sub_id || i.subId), stock: parseFloat(i.stock || 0), weight: parseFloat(i.weight || 0) }));
+            customers = (d.customers || []).map(c => ({ ...c, id: parseInt(c.id) }));
+            orders = (d.orders || []).map(o => ({ ...o, id: parseInt(o.id) }));
+            transactions = (d.transactions || []).map(t => ({ ...t, id: parseInt(t.id), mainId: parseInt(t.mainId), subId: parseInt(t.subId) }));
+            rawMaterials = (d.rawMaterials || []).map(r => ({ ...r, id: parseInt(r.id) }));
+            storeItems = (d.storeItems || []).map(s => ({ ...s, id: parseInt(s.id) }));
             
             // Map settings
             if (d.settings) {
@@ -84,6 +84,19 @@ async function initApp() {
                 });
             }
             saveData(); // Sync to local backup
+            
+            // Refresh all UI components safely
+            try {
+                refreshCategoriesView();
+                refreshStockList();
+                refreshTransactions();
+                refreshOrdersList();
+                refreshCustomersList();
+                refreshUsersList();
+                refreshLowStockReport();
+            } catch (uiErr) {
+                console.warn('StockFlow: UI Refresh deferred until login.', uiErr);
+            }
         } else {
             console.warn('StockFlow: SQL returned error state:', result.message);
             loadLegacyData();
@@ -138,33 +151,28 @@ window.addEventListener('DOMContentLoaded', initApp);
 function updateCompanyDisplay() {
     document.title = `${companySettings.name} - Stock Manager`;
     document.getElementById('sidebarCompany').textContent = companySettings.name;
+    document.getElementById('sidebarLogo').innerHTML = companySettings.logo || '📦';
     
-    // Improved Logo Constraints
-    const logoHtml = companySettings.logo.includes('<img') 
-        ? companySettings.logo 
-        : (companySettings.logo || '📦');
-        
-    document.getElementById('sidebarLogo').innerHTML = logoHtml;
-    
-    // Update Login Page
+    // Update Login Page if it exists
+    const loginLogo = document.getElementById('loginLogo');
+    if (loginLogo) {
+        loginLogo.innerHTML = companySettings.logo || '📦';
+    }
     const loginTitle = document.getElementById('loginTitle');
     if (loginTitle) {
-        loginTitle.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; gap:1rem;">
-                                    <div style="max-height:100px; max-width:100%">${logoHtml}</div>
-                                    <span>${companySettings.name}</span>
-                                </div>`;
+        loginTitle.textContent = companySettings.name;
     }
 
-    // Update Settings Page
+    // Update Settings Page inputs
     const nameInput = document.getElementById('companyNameInput');
     if (nameInput) nameInput.value = companySettings.name;
     
     const logoPreview = document.getElementById('logoPreview');
-    if (logoPreview) logoPreview.innerHTML = logoHtml;
+    if (logoPreview) logoPreview.innerHTML = companySettings.logo || '📦';
 
     // Update Print Headers
     const logoElements = document.querySelectorAll('.printLogo, #printLogo, #auditPrintLogo');
-    logoElements.forEach(el => el.innerHTML = logoHtml);
+    logoElements.forEach(el => el.innerHTML = companySettings.logo || '📦');
 
     const nameElements = document.querySelectorAll('.printCompanyName, #printCompanyName, #auditPrintCompanyName');
     nameElements.forEach(el => el.textContent = companySettings.name);
