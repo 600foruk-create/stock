@@ -1418,8 +1418,4 @@
             .search-filter-bar {
                 display: none !important;
             }
-            .printLogo img, #printLogo img, #auditPrintLogo img {
-                max-height: 80px !important;
-                width: auto !important;
-            }
         }
