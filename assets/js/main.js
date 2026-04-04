@@ -40,7 +40,14 @@ async function initApp() {
     // Load local session if any
     let savedUser = localStorage.getItem('stock_currentUser');
     if (savedUser) {
-        try { currentUser = JSON.parse(savedUser); } catch (e) { }
+        try { 
+            currentUser = JSON.parse(savedUser); 
+            if (currentUser) {
+                hideLogin();
+                // Show a loading indicator or just the app shell
+                document.getElementById('app').style.opacity = '0.5';
+            }
+        } catch (e) { }
     }
 
     // Fetch all data from SQL
@@ -91,8 +98,25 @@ async function initApp() {
         showLogin();
     } else {
         hideLogin();
+        document.getElementById('app').style.opacity = '1';
+        // Force module refresh to ensure data is displayed
+        switchModule(currentModule || 'finishGood');
         refreshDashboard();
     }
+}
+
+function showLogin() {
+    const loginPage = document.getElementById('loginPage');
+    const appPage = document.getElementById('app');
+    if (loginPage) loginPage.style.display = 'block';
+    if (appPage) appPage.style.display = 'none';
+}
+
+function hideLogin() {
+    const loginPage = document.getElementById('loginPage');
+    const appPage = document.getElementById('app');
+    if (loginPage) loginPage.style.display = 'none';
+    if (appPage) appPage.style.display = 'block';
 }
 
 function loadLegacyData() {
