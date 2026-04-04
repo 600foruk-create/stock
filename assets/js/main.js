@@ -65,15 +65,15 @@ async function initApp() {
         if (result.status === 'success') {
             console.log('StockFlow: SQL Data loaded successfully.');
             const d = result.data;
-            users = d.users || [];
-            mainCategories = d.mainCategories || [];
-            subCategories = d.subCategories || [];
-            items = d.items || [];
-            customers = d.customers || [];
-            orders = d.orders || [];
-            transactions = d.transactions || [];
-            rawMaterials = d.rawMaterials || [];
-            storeItems = d.storeItems || [];
+            users = (d.users || []).map(u => ({ ...u, id: parseInt(u.id) }));
+            mainCategories = (d.mainCategories || []).map(m => ({ ...m, id: parseInt(m.id) }));
+            subCategories = (d.subCategories || []).map(s => ({ ...s, id: parseInt(s.id), mainId: parseInt(s.main_id || s.mainId) }));
+            items = (d.items || []).map(i => ({ ...i, id: parseInt(i.id), mainId: parseInt(i.main_id || i.mainId), subId: parseInt(i.sub_id || i.subId), stock: parseFloat(i.stock || 0), weight: parseFloat(i.weight || 0) }));
+            customers = (d.customers || []).map(c => ({ ...c, id: parseInt(c.id) }));
+            orders = (d.orders || []).map(o => ({ ...o, id: parseInt(o.id) }));
+            transactions = (d.transactions || []).map(t => ({ ...t, id: parseInt(t.id), mainId: parseInt(t.mainId), subId: parseInt(t.subId) }));
+            rawMaterials = (d.rawMaterials || []).map(r => ({ ...r, id: parseInt(r.id) }));
+            storeItems = (d.storeItems || []).map(s => ({ ...s, id: parseInt(s.id) }));
             
             // Map settings
             if (d.settings) {
@@ -84,6 +84,15 @@ async function initApp() {
                 });
             }
             saveData(); // Sync to local backup
+            
+            // Refresh all UI components
+            refreshCategoriesView();
+            refreshStockList();
+            refreshTransactions();
+            refreshOrdersList();
+            refreshCustomersList();
+            refreshUsersList();
+            refreshLowStockReport();
         } else {
             console.warn('StockFlow: SQL returned error state:', result.message);
             loadLegacyData();
