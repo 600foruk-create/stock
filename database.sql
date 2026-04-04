@@ -116,4 +116,59 @@ CREATE TABLE `order_items` (
   FOREIGN KEY (`item_id`) REFERENCES `items`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- --------------------------------------------------------
+
+-- Table structure for table `settings`
+CREATE TABLE `settings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `category` varchar(50) NOT NULL,
+  `key` varchar(50) NOT NULL,
+  `value` text DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `cat_key` (`category`, `key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `settings` (`category`, `key`, `value`) VALUES
+('company', 'name', 'StockFlow'),
+('company', 'logo', '📦');
+
+-- --------------------------------------------------------
+
+-- Table structure for table `audit_records` 
+CREATE TABLE `audit_records` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `date` datetime DEFAULT current_timestamp(),
+  `item_id` int(11) NOT NULL,
+  `system_qty` int(11) NOT NULL,
+  `godown_qty` int(11) NOT NULL,
+  `diff_qty` int(11) NOT NULL,
+  `notes` text DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`item_id`) REFERENCES `items`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+-- Table structure for table `raw_materials`
+CREATE TABLE `raw_materials` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `category` varchar(100) DEFAULT NULL,
+  `unit` varchar(50) DEFAULT 'KG',
+  `stock` decimal(10,2) DEFAULT 0.00,
+  `threshold` decimal(10,2) DEFAULT 10.00,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+-- Table structure for table `store_items`
+CREATE TABLE `store_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `stock` int(11) DEFAULT 0,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 COMMIT;
