@@ -36,49 +36,19 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             background: linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%);
             z-index: 9999;
         }
-
-        .login-logo-circle {
-            width: 100px;
-            height: 100px;
-            background: white;
-            border-radius: 50% !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            margin: 0 auto 1.5rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
-            border: 4px solid var(--white);
-            flex-shrink: 0;
-            aspect-ratio: 1 / 1;
-        }
-
-        .login-logo-circle img {
-            max-width: 80%;
-            max-height: 80%;
-            object-fit: contain;
-        }
         
-        .company-logo img, #sidebarLogo img, .printLogo img, #printLogo img, #auditPrintLogo img, #logoPreview img, .login-header img, .login-header h1 img {
+        .company-logo img, #sidebarLogo img, .printLogo img, #printLogo img, #auditPrintLogo img, #logoPreview img {
             max-width: 100%;
-            max-height: 60px;
+            max-height: 80px;
             object-fit: contain;
-            display: inline-block;
-            vertical-align: middle;
-        }
-
-        @media print {
-            .printLogo img, #printLogo img, #auditPrintLogo img {
-                max-height: 50px !important; /* Smaller for prints */
-            }
         }
         
         #sidebarLogo img {
@@ -1447,5 +1417,9 @@
         @media print {
             .search-filter-bar {
                 display: none !important;
+            }
+            .printLogo img, #printLogo img, #auditPrintLogo img {
+                max-height: 80px !important;
+                width: auto !important;
             }
         }

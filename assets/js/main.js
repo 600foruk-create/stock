@@ -65,15 +65,15 @@ async function initApp() {
         if (result.status === 'success') {
             console.log('StockFlow: SQL Data loaded successfully.');
             const d = result.data;
-            users = (d.users || []).map(u => ({ ...u, id: parseInt(u.id) }));
-            mainCategories = (d.mainCategories || []).map(m => ({ ...m, id: parseInt(m.id) }));
-            subCategories = (d.subCategories || []).map(s => ({ ...s, id: parseInt(s.id), mainId: parseInt(s.main_id || s.mainId) }));
-            items = (d.items || []).map(i => ({ ...i, id: parseInt(i.id), mainId: parseInt(i.main_id || i.mainId), subId: parseInt(i.sub_id || i.subId), stock: parseFloat(i.stock || 0), weight: parseFloat(i.weight || 0) }));
-            customers = (d.customers || []).map(c => ({ ...c, id: parseInt(c.id) }));
-            orders = (d.orders || []).map(o => ({ ...o, id: parseInt(o.id) }));
-            transactions = (d.transactions || []).map(t => ({ ...t, id: parseInt(t.id), mainId: parseInt(t.mainId), subId: parseInt(t.subId) }));
-            rawMaterials = (d.rawMaterials || []).map(r => ({ ...r, id: parseInt(r.id) }));
-            storeItems = (d.storeItems || []).map(s => ({ ...s, id: parseInt(s.id) }));
+            users = d.users || [];
+            mainCategories = d.mainCategories || [];
+            subCategories = d.subCategories || [];
+            items = d.items || [];
+            customers = d.customers || [];
+            orders = d.orders || [];
+            transactions = d.transactions || [];
+            rawMaterials = d.rawMaterials || [];
+            storeItems = d.storeItems || [];
             
             // Map settings
             if (d.settings) {
@@ -84,19 +84,6 @@ async function initApp() {
                 });
             }
             saveData(); // Sync to local backup
-            
-            // Refresh all UI components safely
-            try {
-                refreshCategoriesView();
-                refreshStockList();
-                refreshTransactions();
-                refreshOrdersList();
-                refreshCustomersList();
-                refreshUsersList();
-                refreshLowStockReport();
-            } catch (uiErr) {
-                console.warn('StockFlow: UI Refresh deferred until login.', uiErr);
-            }
         } else {
             console.warn('StockFlow: SQL returned error state:', result.message);
             loadLegacyData();
@@ -154,13 +141,9 @@ function updateCompanyDisplay() {
     document.getElementById('sidebarLogo').innerHTML = companySettings.logo || '📦';
     
     // Update Login Page if it exists
-    const loginLogo = document.getElementById('loginLogo');
-    if (loginLogo) {
-        loginLogo.innerHTML = companySettings.logo || '📦';
-    }
     const loginTitle = document.getElementById('loginTitle');
     if (loginTitle) {
-        loginTitle.textContent = companySettings.name;
+        loginTitle.innerHTML = `${companySettings.logo || '📦'} ${companySettings.name}`;
     }
 
     // Update Settings Page inputs
