@@ -65,39 +65,13 @@ async function initApp() {
         if (result.status === 'success') {
             console.log('StockFlow: SQL Data loaded successfully.');
             const d = result.data;
-            // Map SQL underscore fields to JS camelCase
             users = d.users || [];
             mainCategories = d.mainCategories || [];
-            subCategories = (d.subCategories || []).map(s => ({
-                ...s,
-                mainId: s.main_id || s.mainId
-            }));
-            items = (d.items || []).map(i => ({
-                ...i,
-                mainId: i.main_id || i.mainId,
-                subId: i.sub_id || i.subId
-            }));
-            
+            subCategories = d.subCategories || [];
+            items = d.items || [];
             customers = d.customers || [];
             orders = d.orders || [];
-            
-            // Map order items too
-            orders.forEach(o => {
-                if (o.items) {
-                    o.items = (o.items || []).map(oi => ({
-                        ...oi,
-                        mainId: oi.main_id || oi.mainId,
-                        subId: oi.sub_id || oi.subId
-                    }));
-                }
-            });
-
-            transactions = (d.transactions || []).map(t => ({
-                ...t,
-                mainId: t.main_id || t.mainId,
-                subId: t.sub_id || t.subId
-            }));
-            
+            transactions = d.transactions || [];
             rawMaterials = d.rawMaterials || [];
             storeItems = d.storeItems || [];
             
