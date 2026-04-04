@@ -85,14 +85,18 @@ async function initApp() {
             }
             saveData(); // Sync to local backup
             
-            // Refresh all UI components
-            refreshCategoriesView();
-            refreshStockList();
-            refreshTransactions();
-            refreshOrdersList();
-            refreshCustomersList();
-            refreshUsersList();
-            refreshLowStockReport();
+            // Refresh all UI components safely
+            try {
+                refreshCategoriesView();
+                refreshStockList();
+                refreshTransactions();
+                refreshOrdersList();
+                refreshCustomersList();
+                refreshUsersList();
+                refreshLowStockReport();
+            } catch (uiErr) {
+                console.warn('StockFlow: UI Refresh deferred until login.', uiErr);
+            }
         } else {
             console.warn('StockFlow: SQL returned error state:', result.message);
             loadLegacyData();
