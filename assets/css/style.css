@@ -1457,9 +1457,74 @@
 
             .audit-brand-header {
                 -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
         }
+    }
+}
+
+/* Repeating Print Header Styles */
+@media print {
+    .print-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .print-header-content {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        padding-bottom: 10px;
+        z-index: 1000;
+        text-align: left;
+    }
+    .print-header-spacer {
+        height: 120px; /* Adjust based on header height */
+    }
+    thead {
+        display: table-header-group;
+    }
+    tfoot {
+        display: table-footer-group;
+    }
+    button, .no-print, .search-filter-bar, .nav-tabs, .sidebar, .sidebar-menu, .sidebar-footer {
+        display: none !important;
+    }
+    body {
+        background: white !important;
+        padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+    }
+    #app {
+        display: block !important;
+        max-width: none !important;
+        height: auto !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .app-wrapper {
+        display: block !important;
+        height: auto !important;
+        background: white !important;
+    }
+    .main-content {
+        overflow: visible !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+    }
+    .stock-list-grid {
+        display: block !important;
+    }
+    .stock-card {
+        break-inside: avoid;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--gray-200);
+        page-break-inside: avoid;
+    }
+}
 
 /* Order Filter Button Highlighting */
 .filter-buttons .btn {
