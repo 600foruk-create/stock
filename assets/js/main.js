@@ -2817,6 +2817,8 @@ function editOrder(orderId) {
         }, false, 'brand');
         brandWrapper.querySelector('input').value = brand ? brand.name : '';
         row.dataset.brandId = item.mainId;
+        row.dataset.sizeId = item.subId;
+        row.dataset.itemId = item.itemId;
 
         let sizeWrapper = createSearchableInput('Size...', [], null, true, null);
         let itemWrapper = createSearchableInput('Item...', [], null, true, null);
@@ -2872,12 +2874,11 @@ function editOrder(orderId) {
                     row.dataset.itemWeight = opt.item.weight;
                     row.dataset.itemLength = opt.item.length;
                     lengthInput.value = opt.item.length;
-                }, false, null);
-                newItemWrapper.querySelector('input').value = (item.itemName || 'Item') + ' (' + item.length + 'ft ' + item.weight + 'KG)';
-                row.dataset.itemId = item.itemId;
-                row.replaceChild(newItemWrapper, itemWrapper);
-            }, 50);
-        }, 50);
+                }, false, 'item', { brandId: item.mainId, sizeId: item.subId });
+                itemSearch.querySelector('input').value = (item.itemName || 'Item') + ' (' + item.length + 'ft ' + item.weight + 'KG)';
+                row.replaceChild(itemSearch, itemWrapper);
+            }, 100);
+        }, 100);
     });
 
     document.getElementById('editOrderModal').style.display = 'block';
