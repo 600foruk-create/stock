@@ -867,17 +867,28 @@ function createCustomerSearchable(placeholder, onSelect, initialValue = '') {
         dropdown.classList.add('show');
     });
     input.addEventListener('keydown', (e) => {
-        if (!dropdown.classList.contains('show')) return;
+        if (!dropdown.classList.contains('show')) {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                dropdown.classList.add('show');
+                filterOptions(input.value);
+            }
+            return;
+        }
+        
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
                 selectedIndex = Math.min(selectedIndex + 1, filteredCustomers.length - 1);
                 renderDropdown();
+                const selectedDown = dropdown.querySelector('.searchable-item.selected');
+                if (selectedDown) selectedDown.scrollIntoView({ block: 'nearest' });
                 break;
             case 'ArrowUp':
                 e.preventDefault();
                 selectedIndex = Math.max(selectedIndex - 1, -1);
                 renderDropdown();
+                const selectedUp = dropdown.querySelector('.searchable-item.selected');
+                if (selectedUp) selectedUp.scrollIntoView({ block: 'nearest' });
                 break;
             case 'Enter':
                 e.preventDefault();
@@ -889,10 +900,12 @@ function createCustomerSearchable(placeholder, onSelect, initialValue = '') {
                 }
                 break;
             case 'Escape':
+            case 'Tab':
                 dropdown.classList.remove('show');
                 break;
         }
     });
+
     document.addEventListener('click', (e) => {
         if (!wrapper.contains(e.target)) {
             dropdown.classList.remove('show');
@@ -944,8 +957,9 @@ function createSearchableInput(placeholder, options, onSelect, disabled = false,
         }
 
         if (quickAddType) {
-            html += `<div class="searchable-item quick-add-option" onclick="${quickAddType === 'brand' ? 'showQuickAddBrand()' : quickAddType === 'size' ? 'showQuickAddSize(' + quickAddData + ')' : ''}">
-                        <span class="quick-add-icon">⚡</span> Quick Add New ${quickAddType === 'brand' ? 'Brand' : 'Size'}
+            const isSelected = selectedIndex === filteredOptions.length;
+            html += `<div class="searchable-item quick-add-option ${isSelected ? 'selected' : ''}" onclick="${quickAddType === 'brand' ? 'showQuickAddBrand()' : quickAddType === 'size' ? 'showQuickAddSize(' + quickAddData + ')' : quickAddType === 'item' ? 'showQuickAddItem(' + quickAddData.brandId + ',' + quickAddData.sizeId + ')' : ''}">
+                        <span class="quick-add-icon">⚡</span> Quick Add New ${quickAddType === 'brand' ? 'Brand' : quickAddType === 'size' ? 'Size' : 'Item'}
                     </div>`;
         }
 
@@ -975,28 +989,49 @@ function createSearchableInput(placeholder, options, onSelect, disabled = false,
         dropdown.classList.add('show');
     });
     input.addEventListener('keydown', (e) => {
-        if (!dropdown.classList.contains('show')) return;
+        if (!dropdown.classList.contains('show')) {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                dropdown.classList.add('show');
+                filterOptions(input.value);
+            }
+            return;
+        }
+
+        const totalVisible = filteredOptions.length + (quickAddType ? 1 : 0);
+        
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
-                selectedIndex = Math.min(selectedIndex + 1, filteredOptions.length - 1);
+                selectedIndex = Math.min(selectedIndex + 1, totalVisible - 1);
                 renderDropdown();
+                const selectedDown = dropdown.querySelector('.searchable-item.selected');
+                if (selectedDown) selectedDown.scrollIntoView({ block: 'nearest' });
                 break;
             case 'ArrowUp':
                 e.preventDefault();
                 selectedIndex = Math.max(selectedIndex - 1, -1);
                 renderDropdown();
+                const selectedUp = dropdown.querySelector('.searchable-item.selected');
+                if (selectedUp) selectedUp.scrollIntoView({ block: 'nearest' });
                 break;
             case 'Enter':
                 e.preventDefault();
-                if (selectedIndex >= 0 && filteredOptions[selectedIndex]) {
-                    const opt = filteredOptions[selectedIndex];
-                    input.value = opt.text;
-                    if (onSelect) onSelect(opt);
-                    dropdown.classList.remove('show');
+                if (selectedIndex >= 0) {
+                    if (selectedIndex < filteredOptions.length) {
+                        const opt = filteredOptions[selectedIndex];
+                        input.value = opt.text;
+                        if (onSelect) onSelect(opt);
+                        dropdown.classList.remove('show');
+                    } else if (quickAddType) {
+                        dropdown.classList.remove('show');
+                        if (quickAddType === 'brand') showQuickAddBrand();
+                        else if (quickAddType === 'size') showQuickAddSize(quickAddData);
+                        else if (quickAddType === 'item') showQuickAddItem(quickAddData.brandId, quickAddData.sizeId);
+                    }
                 }
                 break;
             case 'Escape':
+            case 'Tab':
                 dropdown.classList.remove('show');
                 break;
         }
@@ -1114,6 +1149,69 @@ async function saveQuickSize() {
             closeQuickAddSizeModal();
             refreshCategoriesView();
             alert(`Size "${fullName}" added!`);
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (e) {
+        alert('Sync failed.');
+    }
+}
+
+// Quick Add Item Logic
+function showQuickAddItem(brandId, sizeId) {
+    if (!brandId || !sizeId) {
+        alert('Please select Brand and Size first');
+        return;
+    }
+    document.getElementById('quickItemMainId').value = brandId;
+    document.getElementById('quickItemSubId').value = sizeId;
+    document.getElementById('quickItemWeight').value = '';
+    document.getElementById('quickItemLength').value = '13';
+    document.getElementById('quickAddItemModal').style.display = 'block';
+}
+
+function closeQuickAddItemModal() {
+    document.getElementById('quickAddItemModal').style.display = 'none';
+}
+
+async function saveQuickItem() {
+    let weight = parseFloat(document.getElementById('quickItemWeight').value);
+    let length = parseFloat(document.getElementById('quickItemLength').value);
+    let mainId = parseInt(document.getElementById('quickItemMainId').value);
+    let subId = parseInt(document.getElementById('quickItemSubId').value);
+
+    if (!weight || weight <= 0) {
+        alert('Please enter a valid weight');
+        return;
+    }
+
+    let itemData = {
+        mainId,
+        subId,
+        length,
+        weight,
+        stock: 0,
+        minStock: mainCategories.find(m => m.id == mainId)?.lowStockLimit || 10
+    };
+
+    try {
+        const response = await fetch('api/sync.php?action=save_item', {
+            method: 'POST',
+            body: JSON.stringify({ item: itemData })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            itemData.id = result.id;
+            items.push(itemData);
+            saveData();
+            closeQuickAddItemModal();
+            refreshDashboard();
+            refreshCategoriesView();
+            refreshStockList();
+            refreshLowStockReport();
+            alert('New item added successfully!');
+            // Re-render transactions to update the item search dropdown
+            refreshTransactions();
         } else {
             alert('Error: ' + result.message);
         }
@@ -1997,7 +2095,7 @@ function updateItemDropdown(row, brandId, sizeId, type) {
         row.dataset.itemWeight = opt.item.weight;
         row.dataset.itemLength = opt.item.length;
         lengthInput.value = opt.item.length;
-    }, false, null);
+    }, false, 'item', { brandId, sizeId });
     row.replaceChild(newItemWrapper, itemWrapper);
 }
 
@@ -2764,7 +2862,7 @@ function editOrder(orderId) {
                     weight: i.weight,
                     item: i
                 }));
-                let newItemWrapper = createSearchableInput('Item...', itemOptions, (opt) => {
+                const itemSearch = createSearchableInput('Item...', itemOptions, (opt) => {
                     row.dataset.itemId = opt.value;
                     row.dataset.itemName = opt.item.name;
                     row.dataset.itemWeight = opt.item.weight;

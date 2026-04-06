@@ -214,6 +214,26 @@
         </div>
     </div>
 
+    <div id="quickAddItemModal" class="modal">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h3 id="quickAddItemTitle">⚡ Quick Add Item</h3>
+                <span class="close-modal" onclick="closeQuickAddItemModal()">&times;</span>
+            </div>
+            <input type="hidden" id="quickItemMainId">
+            <input type="hidden" id="quickItemSubId">
+            <div class="form-group">
+                <label>Length (ft)</label>
+                <input type="number" id="quickItemLength" class="form-control" value="13" step="0.1">
+            </div>
+            <div class="form-group">
+                <label>Weight (kg)</label>
+                <input type="number" id="quickItemWeight" class="form-control" step="0.01">
+            </div>
+            <button class="btn btn-success" onclick="saveQuickItem()" style="width:100%;">Add Item</button>
+        </div>
+    </div>
+
     <div id="deleteOrderModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">

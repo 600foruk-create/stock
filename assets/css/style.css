@@ -777,8 +777,10 @@
             border-bottom: 1px solid var(--gray-200);
         }
 
-        .searchable-item:hover {
+        .searchable-item:hover, .searchable-item.selected {
             background: var(--sky-100);
+            border-left: 4px solid var(--sky-500);
+            padding-left: 0.25rem;
         }
 
         .customer-badge {
