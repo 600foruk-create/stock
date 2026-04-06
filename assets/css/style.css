@@ -1457,88 +1457,109 @@
 
             .audit-brand-header {
                 -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
         }
     }
 }
 
-/* Repeating Print Header Styles */
+/* --- Improved Printing System --- */
+
+/* 1. Screen Defaults (Hide print specific elements) */
+.print-table-wrapper thead, 
+.print-header-section, 
+.print-header-content, 
+.print-header-spacer {
+    display: none;
+}
+
+/* 2. Print Mode Styles */
 @media print {
-    .print-table {
+    /* Hide ALL UI elements EXCEPT the printable areas */
+    body * {
+        visibility: hidden;
+    }
+    #printableStock, #printableStock *,
+    #printableLowStock, #printableLowStock *,
+    #printableAudit, #printableAudit *,
+    .invoice, .invoice * {
+        visibility: visible;
+    }
+
+    #printableStock, #printableLowStock, #printableAudit, .invoice {
+        position: absolute;
+        left: 0;
+        top: 0;
         width: 100%;
+        background: white !important;
+    }
+
+    /* Table Structure for Repeating Header (Only for Stock List) */
+    .print-table-wrapper {
+        visibility: visible;
+        display: table !important;
+        width: 100% !important;
         border-collapse: collapse;
     }
+    .print-header-section {
+        display: table-header-group !important;
+    }
+    .print-header-spacer {
+        display: block !important;
+        height: 110px; 
+    }
     .print-header-content {
+        display: block !important;
         position: fixed;
         top: 0;
         left: 0;
-        right: 0;
+        width: 100%;
         background: white;
+        z-index: 9999;
+        border-bottom: 2px solid var(--gray-200);
         padding-bottom: 10px;
-        z-index: 1000;
-        text-align: left;
     }
-    .print-header-spacer {
-        height: 120px; /* Adjust based on header height */
+    .print-header-content #printLogo {
+        width: 60px;
+        height: 60px;
     }
-    thead {
-        display: table-header-group;
-    }
-    tfoot {
-        display: table-footer-group;
-    }
-    button, .no-print, .search-filter-bar, .nav-tabs, .sidebar, .sidebar-menu, .sidebar-footer {
-        display: none !important;
-    }
-    body {
-        background: white !important;
-        padding: 0 !important;
-        height: auto !important;
-        overflow: visible !important;
-        display: block !important;
-    }
-    #app {
-        display: block !important;
-        max-width: none !important;
-        height: auto !important;
-        overflow: visible !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-    .app-wrapper {
-        display: block !important;
-        height: auto !important;
-        background: white !important;
-    }
-    .main-content {
-        overflow: visible !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        width: 100% !important;
-    }
+
+    /* Force full width on stock cards */
     .stock-list-grid {
-        display: block !important;
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 1rem !important;
     }
     .stock-card {
+        width: 100% !important;
+        max-width: none !important;
         break-inside: avoid;
-        margin-bottom: 1.5rem;
-        border: 1px solid var(--gray-200);
         page-break-inside: avoid;
+        border: 1px solid var(--gray-300) !important;
+        box-shadow: none !important;
+        margin-bottom: 1.5rem !important;
+    }
+
+    /* Basic cleanup */
+    @page {
+        margin: 1cm;
     }
 }
 
 /* Order Filter Button Highlighting */
 .filter-buttons .btn {
-    background: var(--gray-200);
-    color: var(--gray-700);
-    margin-right: 0.5rem;
-    padding: 0.5rem 1.2rem;
+    opacity: 0.7;
+    transition: all 0.3s ease;
 }
 
 .filter-buttons .btn.active {
-    background: var(--sky-500) !important;
+    opacity: 1;
+    background-color: var(--sky-600) !important;
     color: white !important;
-    box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3);
-    transform: translateY(-1px);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    border: 2px solid white !important;
 }
 
 .filter-buttons .btn:hover:not(.active) {

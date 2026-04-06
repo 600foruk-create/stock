@@ -19,8 +19,8 @@
                     </div>
                     
                     <div id="printableStock">
-                        <table class="print-table">
-                            <thead>
+                        <table class="print-table-wrapper">
+                            <thead class="print-header-section">
                                 <tr>
                                     <td>
                                         <div class="print-header-spacer"></div>
