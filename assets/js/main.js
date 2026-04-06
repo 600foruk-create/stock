@@ -2846,7 +2846,16 @@ async function confirmDeleteOrder() {
             method: 'POST',
             body: JSON.stringify({ id: orderId })
         });
-        const result = await response.json();
+        
+        const rawBody = await response.text();
+        let result;
+        try {
+            result = JSON.parse(rawBody);
+        } catch (parseErr) {
+            alert('Server Error: Delele failed properly (SQL Error possible).\n\nDetails: ' + rawBody.slice(0, 200));
+            return;
+        }
+
         if (result.status === 'success') {
             orders = orders.filter(o => o.id !== orderId);
             saveData();
@@ -2857,10 +2866,11 @@ async function confirmDeleteOrder() {
             refreshLowStockReport();
             alert('Order deleted successfully!');
         } else {
-            alert('Delete failed: ' + result.message);
+            alert('Error: ' + (result.message || 'The server rejected the delete request.'));
         }
     } catch (e) {
-        alert('Sync failed.');
+        console.error('Delete error:', e);
+        alert('Transmission Failed: Could not reach the server to delete the order.');
     }
 }
 

@@ -211,6 +211,24 @@ try {
             }
         }
 
+        elseif ($action === 'delete_order') {
+            $id = $input['id'] ?? $_GET['id'] ?? null;
+            if ($id) {
+                $conn->beginTransaction();
+                try {
+                    $conn->prepare("DELETE FROM order_items WHERE order_id = ?")->execute([$id]);
+                    $conn->prepare("DELETE FROM orders WHERE id = ?")->execute([$id]);
+                    $conn->commit();
+                    echo json_encode(['status' => 'success']);
+                } catch (Exception $e) {
+                    $conn->rollBack();
+                    throw $e;
+                }
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'No ID provided']);
+            }
+        }
+
         elseif ($action === 'delete_category') {
             $id = $input['id'] ?? $_GET['id'] ?? null;
             $type = $input['type'] ?? $_GET['type'] ?? 'main';
