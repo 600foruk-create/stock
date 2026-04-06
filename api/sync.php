@@ -1,5 +1,6 @@
 <?php
 // api/sync.php
+ob_start(); // Buffer output to prevent accidental garbage from breaking JSON
 require_once 'db.php';
 header('Content-Type: application/json');
 
@@ -252,6 +253,8 @@ try {
         }
     }
 } catch (Exception $e) {
+    if (ob_get_level() > 0) ob_clean();
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
+ob_end_flush();
 ?>
