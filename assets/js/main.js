@@ -1391,8 +1391,12 @@ function refreshAuditList() {
     const auditContainer = document.getElementById('auditListContainer');
     if (auditContainer) {
         auditContainer.innerHTML = html || '<p style="text-align:center; padding:3rem; color:var(--gray-500);">No brands or sizes found.</p>';
-        // Initialize totals
-        mainCategories.forEach(m => updateBrandAuditTotals(m.id));
+        
+        // Safety: Initialize totals for visible brands only
+        sortMainCategories(mainCategories).forEach(m => {
+            const hasInput = document.querySelector(`.audit-input-${m.id}`);
+            if (hasInput) updateBrandAuditTotals(m.id);
+        });
     }
 }
 
@@ -1437,29 +1441,46 @@ function updateBrandAuditTotals(brandId) {
 
     brandGroup.querySelectorAll('tbody tr').forEach(row => {
         const itemId = row.id.split('_')[1];
-        sysTotalPcs += parseInt(document.getElementById(`auditSysPcs_${itemId}`).textContent) || 0;
-        sysTotalKg += parseFloat(document.getElementById(`auditSysKg_${itemId}`).textContent) || 0;
-        
-        godownTotalPcs += parseInt(document.getElementById(`auditGodownPcs_${itemId}`).value) || 0;
-        godownTotalKg += parseFloat(document.getElementById(`auditGodownKg_${itemId}`).textContent) || 0;
-        
-        diffTotalPcs += (parseInt(document.getElementById(`auditGodownPcs_${itemId}`).value) || 0) - (parseInt(document.getElementById(`auditSysPcs_${itemId}`).textContent) || 0);
-        diffTotalKg += parseFloat(document.getElementById(`auditDiffKg_${itemId}`).textContent) || 0;
+        const sysPcsEl = document.getElementById(`auditSysPcs_${itemId}`);
+        const sysKgEl = document.getElementById(`auditSysKg_${itemId}`);
+        const gdPcsEl = document.getElementById(`auditGodownPcs_${itemId}`);
+        const gdKgEl = document.getElementById(`auditGodownKg_${itemId}`);
+        const dPcsEl = document.getElementById(`auditDiffPcs_${itemId}`);
+        const dKgEl = document.getElementById(`auditDiffKg_${itemId}`);
+
+        if (sysPcsEl && gdPcsEl) {
+            sysTotalPcs += parseInt(sysPcsEl.textContent) || 0;
+            sysTotalKg += parseFloat(sysKgEl.textContent) || 0;
+            godownTotalPcs += parseInt(gdPcsEl.value) || 0;
+            godownTotalKg += parseFloat(gdKgEl.textContent) || 0;
+            
+            let dPcs = parseInt(dPcsEl.textContent.replace('+', '')) || 0;
+            let dKg = parseFloat(dKgEl.textContent.replace('+', '')) || 0;
+            diffTotalPcs += dPcs;
+            diffTotalKg += dKg;
+        }
     });
 
-    document.getElementById(`totalSysPcs_${brandId}`).textContent = sysTotalPcs;
-    document.getElementById(`totalSysKg_${brandId}`).textContent = sysTotalKg.toFixed(2);
-    document.getElementById(`totalGodownPcs_${brandId}`).textContent = godownTotalPcs;
-    document.getElementById(`totalGodownKg_${brandId}`).textContent = godownTotalKg.toFixed(2);
+    const totSysPcs = document.getElementById(`totalSysPcs_${brandId}`);
+    const totSysKg = document.getElementById(`totalSysKg_${brandId}`);
+    const totGdPcs = document.getElementById(`totalGodownPcs_${brandId}`);
+    const totGdKg = document.getElementById(`totalGodownKg_${brandId}`);
+    const totDiffPcs = document.getElementById(`totalDiffPcs_${brandId}`);
+    const totDiffKg = document.getElementById(`totalDiffKg_${brandId}`);
+
+    if (totSysPcs) totSysPcs.textContent = sysTotalPcs;
+    if (totSysKg) totSysKg.textContent = sysTotalKg.toFixed(2);
+    if (totGdPcs) totGdPcs.textContent = godownTotalPcs;
+    if (totGdKg) totGdKg.textContent = godownTotalKg.toFixed(2);
     
-    const dPcsEl = document.getElementById(`totalDiffPcs_${brandId}`);
-    const dKgEl = document.getElementById(`totalDiffKg_${brandId}`);
-    
-    dPcsEl.textContent = (diffTotalPcs > 0 ? '+' : '') + diffTotalPcs;
-    dKgEl.textContent = (diffTotalKg > 0 ? '+' : '') + diffTotalKg.toFixed(2);
-    
-    dPcsEl.className = diffTotalPcs === 0 ? '' : (diffTotalPcs > 0 ? 'diff-plus' : 'diff-minus');
-    dKgEl.className = diffTotalKg === 0 ? '' : (diffTotalKg > 0 ? 'diff-plus' : 'diff-minus');
+    if (totDiffPcs) {
+        totDiffPcs.textContent = (diffTotalPcs > 0 ? '+' : '') + diffTotalPcs;
+        totDiffPcs.className = diffTotalPcs === 0 ? '' : (diffTotalPcs > 0 ? 'diff-plus' : 'diff-minus');
+    }
+    if (totDiffKg) {
+        totDiffKg.textContent = (diffTotalKg > 0 ? '+' : '') + diffTotalKg.toFixed(2);
+        totDiffKg.className = diffTotalKg === 0 ? '' : (diffTotalKg > 0 ? 'diff-plus' : 'diff-minus');
+    }
 }
 
 async function saveMonthlyAudit() {
