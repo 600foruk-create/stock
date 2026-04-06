@@ -2350,7 +2350,7 @@ function refreshOrdersList(filter = 'all') {
                                 ${itemsHtml}
                             </div>
                             <div class="order-footer">
-                                <span class="order-total">Total: ${order.totalQty} PCS | ${(order.totalKg || 0).toFixed(2)} KG</span>
+                                <span class="order-total">Total: ${order.totalQty} PCS | ${parseFloat(order.totalKg || 0).toFixed(2)} KG</span>
                                 <div class="order-actions">
                                     <button class="btn btn-primary btn-sm" onclick="editOrder(${order.id})">Edit</button>
                                     ${order.status !== 'completed' ? `<button class="btn btn-success btn-sm" onclick="completeOrder(${order.id})">Complete</button>` : ''}
