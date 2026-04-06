@@ -1041,13 +1041,15 @@ function refreshDashboard() {
     // Low stock items by brand
     let lowStockByBrand = {};
     moduleItems.forEach(item => {
-        let main = mainCategories.find(m => m.id === item.mainId);
+        let main = mainCategories.find(m => m.id == item.mainId);
         let min = item.minStock || main?.lowStockLimit || 10;
-        if (item.stock <= min) {
-            if (!lowStockByBrand[main.id]) {
-                lowStockByBrand[main.id] = { name: main.name, count: 0 };
+        if (parseInt(item.stock) <= parseInt(min)) {
+            if (main) {
+                if (!lowStockByBrand[main.id]) {
+                    lowStockByBrand[main.id] = { name: main.name, count: 0 };
+                }
+                lowStockByBrand[main.id].count++;
             }
-            lowStockByBrand[main.id].count++;
         }
     });
 
@@ -1085,13 +1087,13 @@ function refreshDashboard() {
     // Brand Cards with Collapse
     let brandCardsHtml = '';
     sortMainCategories(mainCategories).forEach(main => {
-        let brandItems = items.filter(i => i.mainId === main.id);
-        let totalBrandStock = brandItems.reduce((sum, i) => sum + (i.stock || 0), 0);
-        let totalBrandKg = brandItems.reduce((sum, i) => sum + ((i.stock || 0) * (i.weight || 0)), 0);
+        let brandItems = items.filter(i => i.mainId == main.id);
+        let totalBrandStock = brandItems.reduce((sum, i) => sum + (parseInt(i.stock) || 0), 0);
+        let totalBrandKg = brandItems.reduce((sum, i) => sum + ((parseInt(i.stock) || 0) * (parseFloat(i.weight) || 0)), 0);
 
         let itemsHtml = '';
         sortItems(brandItems).forEach(item => {
-            let sub = subCategories.find(s => s.id === item.subId);
+            let sub = subCategories.find(s => s.id == item.subId);
             let sizeName = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
             itemsHtml += `
                         <div class="stock-item">
@@ -1158,20 +1160,21 @@ function refreshStockList() {
 
     let orderedQtys = {};
     orders.filter(o => {
-        const isPending = o.status === 'pending' || o.status === 'processing';
+        const s = (o.status || '').toLowerCase();
+        const isPending = s === 'pending' || s === 'processing';
         const inDateRange = (!fromDate || new Date(o.date) >= new Date(fromDate)) &&
                            (!toDate || new Date(o.date) <= new Date(toDate));
         return isPending && inDateRange;
     }).forEach(order => {
         (order.items || []).forEach(item => {
-            orderedQtys[item.itemId] = (orderedQtys[item.itemId] || 0) + (item.quantity || 0);
+            orderedQtys[item.itemId] = (orderedQtys[item.itemId] || 0) + (parseInt(item.quantity) || 0);
         });
     });
 
     let brandCardsHtml = '';
     sortMainCategories(mainCategories).forEach(main => {
         const brandMatches = main.name.toLowerCase().includes(search);
-        let brandItems = items.filter(i => i.mainId === main.id);
+        let brandItems = items.filter(i => i.mainId == main.id);
         let totalBrandStock = 0;
         let totalKg = 0;
         let totalInOrder = 0;
@@ -1187,7 +1190,7 @@ function refreshStockList() {
 
         let hasVisibleItems = false;
         sortItems(brandItems).forEach(item => {
-            let sub = subCategories.find(s => s.id === item.subId);
+            let sub = subCategories.find(s => s.id == item.subId);
             let sizeName = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
             
             // Smart Search logic (e.g. "2m" matches 2" and Brand starting with M)
@@ -1262,25 +1265,26 @@ function refreshAuditList() {
     // Calculate pending orders within date range
     let orderedQtys = {};
     orders.filter(o => {
-        const isPending = o.status === 'pending' || o.status === 'processing';
+        const s = (o.status || '').toLowerCase();
+        const isPending = s === 'pending' || s === 'processing';
         const inDateRange = (!fromDate || new Date(o.date) >= new Date(fromDate)) &&
                            (!toDate || new Date(o.date) <= new Date(toDate));
         return isPending && inDateRange;
     }).forEach(order => {
         (order.items || []).forEach(item => {
-            orderedQtys[item.itemId] = (orderedQtys[item.itemId] || 0) + (item.quantity || 0);
+            orderedQtys[item.itemId] = (orderedQtys[item.itemId] || 0) + (parseInt(item.quantity) || 0);
         });
     });
 
     let html = '';
     sortMainCategories(mainCategories).forEach(main => {
-        let brandItems = items.filter(i => i.mainId === main.id);
+        let brandItems = items.filter(i => i.mainId == main.id);
         const brandMatches = main.name.toLowerCase().includes(search);
         
         // Group items by size
         let sizeGroups = {};
         brandItems.forEach(item => {
-            let sub = subCategories.find(s => s.id === item.subId);
+            let sub = subCategories.find(s => s.id == item.subId);
             let sizeName = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
             const isMatch = search === '' || brandMatches || sizeName.includes(search);
             if (!isMatch) return;
