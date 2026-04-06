@@ -25,8 +25,7 @@ let transactions = [];
 let orders = [];
 let rawMaterials = [];
 let storeItems = [];
-let transactionId = 1;
-let orderId = 1;
+// Counter IDs are now handled by SQL Auto-increment
 
 // Company Settings
 let companySettings = {
@@ -110,6 +109,14 @@ function loadLegacyData() {
 
 // Call init on load
 window.addEventListener('DOMContentLoaded', initApp);
+
+// Auto-sync every 60 seconds to ensure life data across devices
+setInterval(() => {
+    if (currentUser) {
+        console.log('StockFlow: Auto-syncing data...');
+        initApp(); 
+    }
+}, 60000);
 
 function updateCompanyDisplay() {
     document.title = `${companySettings.name} - Stock Manager`;
@@ -450,7 +457,7 @@ function closeCustomerModal() {
     document.getElementById('customerModal').style.display = 'none';
 }
 
-function saveCustomer() {
+async function saveCustomer() {
     let id = document.getElementById('editCustomerId').value;
     let name = document.getElementById('customerName').value.trim();
     let address = document.getElementById('customerAddress').value.trim();
@@ -462,30 +469,39 @@ function saveCustomer() {
         return;
     }
 
-    if (id) {
-        let customer = customers.find(c => c.id == id);
-        if (customer) {
-            customer.name = name;
-            customer.address = address;
-            customer.mobile = mobile;
-            if (uniqueInput) customer.uniqueId = uniqueInput;
-        }
-        alert('Customer updated successfully!');
-    } else {
-        let newId = customers.length > 0 ? Math.max(...customers.map(c => c.id)) + 1 : 1;
-        let uniqueId = uniqueInput || 'CUST' + String(newId).padStart(4, '0');
-        customers.push({
-            id: newId,
-            uniqueId: uniqueId,
-            name: name,
-            address: address,
-            mobile: mobile
+    let customerData = {
+        name: name,
+        address: address,
+        mobile: mobile,
+        uniqueId: uniqueInput || (id ? customers.find(c => c.id == id)?.uniqueId : 'CUST' + String(customers.length > 0 ? Math.max(...customers.map(c => c.id)) + 1 : 1).padStart(4, '0'))
+    };
+    if (id) customerData.id = parseInt(id);
+
+    try {
+        const response = await fetch('api/sync.php?action=save_customer', {
+            method: 'POST',
+            body: JSON.stringify({ customer: customerData })
         });
-        alert('Customer added successfully!');
+        const result = await response.json();
+        if (result.status === 'success') {
+            customerData.id = result.id;
+            if (id) {
+                let idx = customers.findIndex(c => c.id == id);
+                if (idx !== -1) customers[idx] = customerData;
+            } else {
+                customers.push(customerData);
+            }
+            saveData();
+            refreshCustomersList();
+            closeCustomerModal();
+            alert(id ? 'Customer updated successfully!' : 'Customer added successfully!');
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (e) {
+        console.error('Customer save failed:', e);
+        alert('Server error. Save failed.');
     }
-    saveAll();
-    refreshCustomersList();
-    closeCustomerModal();
 }
 
 function refreshCustomersList() {
@@ -556,11 +572,25 @@ function editCustomer(id) {
     }
 }
 
-function deleteCustomer(id) {
+async function deleteCustomer(id) {
     if (confirm('Are you sure?')) {
-        customers = customers.filter(c => c.id !== id);
-        saveAll();
-        refreshCustomersList();
+        try {
+            const response = await fetch('api/sync.php?action=delete_customer', {
+                method: 'POST',
+                body: JSON.stringify({ id: id })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                customers = customers.filter(c => c.id !== id);
+                saveData();
+                refreshCustomersList();
+                alert('Customer deleted.');
+            } else {
+                alert('Delete failed: ' + result.message);
+            }
+        } catch (e) {
+            alert('Server error.');
+        }
     }
 }
 
@@ -585,23 +615,33 @@ function refreshBrandLowStockSettings() {
     container.innerHTML = html;
 }
 
-function updateBrandLowStock(brandId) {
+async function updateBrandLowStock(brandId) {
     let input = document.getElementById(`brandLow_${brandId}`);
     let newLimit = parseInt(input.value);
     if (newLimit && newLimit > 0) {
         let brand = mainCategories.find(b => b.id === brandId);
         if (brand) {
             brand.lowStockLimit = newLimit;
-            items.forEach(item => {
-                if (item.mainId === brandId && !item.customMinStock) {
-                    item.minStock = newLimit;
-                }
-            });
-            saveAll();
-            refreshDashboard();
-            refreshStockList();
-            refreshLowStockReport();
-            alert(`${brand.name} limit updated to ${newLimit}`);
+            // Sync to server
+            try {
+                await fetch('api/sync.php?action=save_category', {
+                    method: 'POST',
+                    body: JSON.stringify({ type: 'main', category: brand })
+                });
+                
+                items.forEach(item => {
+                    if (item.mainId === brandId && !item.customMinStock) {
+                        item.minStock = newLimit;
+                    }
+                });
+                saveData();
+                refreshDashboard();
+                refreshStockList();
+                refreshLowStockReport();
+                alert(`${brand.name} limit updated to ${newLimit} and synced to server.`);
+            } catch (e) {
+                alert('Limit updated locally, but server sync failed.');
+            }
         }
     } else {
         alert('Enter valid number');
@@ -829,7 +869,7 @@ function closeQuickAddBrandModal() {
     document.getElementById('quickAddBrandModal').style.display = 'none';
 }
 
-function saveQuickBrand() {
+async function saveQuickBrand() {
     let name = document.getElementById('quickBrandName').value;
     let code = document.getElementById('quickBrandCode').value;
     let color = document.getElementById('quickBrandColor').value;
@@ -840,16 +880,31 @@ function saveQuickBrand() {
         return;
     }
 
-    let newId = mainCategories.length > 0 ? Math.max(...mainCategories.map(m => m.id)) + 1 : 1;
-    mainCategories.push({ id: newId, code: code || String(newId).padStart(2, '0'), name, color, lowStockLimit: lowStock });
-
-    saveAll();
-    closeQuickAddBrandModal();
-    refreshDashboard();
-    refreshCategoriesView();
-    refreshStockList();
-    refreshLowStockReport();
-    alert(`Brand "${name}" added!`);
+    let catData = { name, color, lowStockLimit: lowStock };
+    
+    try {
+        const response = await fetch('api/sync.php?action=save_category', {
+            method: 'POST',
+            body: JSON.stringify({ category: catData, type: 'main' })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            catData.id = result.id;
+            catData.code = code || String(result.id).padStart(2, '0');
+            mainCategories.push(catData);
+            saveData();
+            closeQuickAddBrandModal();
+            refreshDashboard();
+            refreshCategoriesView();
+            refreshStockList();
+            refreshLowStockReport();
+            alert(`Brand "${name}" added!`);
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (e) {
+        alert('Sync failed.');
+    }
 }
 
 function showQuickAddSize(brandId) {
@@ -867,7 +922,7 @@ function closeQuickAddSizeModal() {
     document.getElementById('quickAddSizeModal').style.display = 'none';
 }
 
-function saveQuickSize() {
+async function saveQuickSize() {
     let brandId = parseInt(document.getElementById('quickSizeBrandId').value);
     let sizeValue = document.getElementById('quickSizeName').value;
     let unit = document.getElementById('quickSizeUnit').value;
@@ -877,28 +932,41 @@ function saveQuickSize() {
         return;
     }
 
-    let main = mainCategories.find(m => m.id === brandId);
-    let mainCode = (main && main.code) ? main.code : String(brandId).padStart(2, '0');
-
     let fullName = sizeValue + (unit === 'inch' ? '"' : 'mm');
-    let newId = subCategories.length > 0 ? Math.max(...subCategories.map(s => s.id)) + 1 : 1;
+    let subData = { name: fullName, mainId: brandId };
 
-    let existingSubs = subCategories.filter(s => s.mainId === brandId);
-    let maxSeq = 0;
-    existingSubs.forEach(s => {
-        if (s.code && typeof s.code === 'string') {
-            let seq = parseInt(s.code.slice(mainCode.length)) || 0;
-            if (seq > maxSeq) maxSeq = seq;
+    try {
+        const response = await fetch('api/sync.php?action=save_category', {
+            method: 'POST',
+            body: JSON.stringify({ category: subData, type: 'sub' })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            subData.id = result.id;
+            // Generate code locally for now
+            let main = mainCategories.find(m => m.id === brandId);
+            let mainCode = (main && main.code) ? main.code : String(brandId).padStart(2, '0');
+            let existingSubs = subCategories.filter(s => s.mainId === brandId);
+            let maxSeq = 0;
+            existingSubs.forEach(s => {
+                if (s.code && typeof s.code === 'string') {
+                    let seq = parseInt(s.code.slice(mainCode.length)) || 0;
+                    if (seq > maxSeq) maxSeq = seq;
+                }
+            });
+            subData.code = mainCode + String(maxSeq + 1).padStart(3, '0');
+            
+            subCategories.push(subData);
+            saveData();
+            closeQuickAddSizeModal();
+            refreshCategoriesView();
+            alert(`Size "${fullName}" added!`);
+        } else {
+            alert('Error: ' + result.message);
         }
-    });
-    let newCode = mainCode + String(maxSeq + 1).padStart(3, '0');
-
-    subCategories.push({ id: newId, code: newCode, mainId: brandId, name: fullName });
-
-    saveAll();
-    closeQuickAddSizeModal();
-    refreshCategoriesView();
-    alert(`Size "${fullName}" added!`);
+    } catch (e) {
+        alert('Sync failed.');
+    }
 }
 
 // Collapse Functions
@@ -1757,10 +1825,12 @@ function hideAllForms() {
     document.getElementById('adjustmentForm').style.display = 'none';
 }
 
-function saveProduction() {
+async function saveProduction() {
     let rows = document.getElementById('productionRows').children;
     if (rows.length === 0) { alert('Add at least one item'); return; }
-    let saved = false; let errors = [];
+    let errors = [];
+    let prodDate = document.getElementById('prodDate').value;
+
     for (let row of rows) {
         const itemId = row.dataset.itemId;
         const lengthInput = row.children[3];
@@ -1773,52 +1843,63 @@ function saveProduction() {
         let item = items.find(i => i.id == itemId);
         if (!item) { errors.push('Item not found'); continue; }
 
-        if (length && length > 0) {
-            item.length = length;
-        }
+        if (length && length > 0) item.length = length;
 
         let main = mainCategories.find(m => m.id === item.mainId);
         let sub = subCategories.find(s => s.id === item.subId);
-        item.stock = (item.stock || 0) + qty;
 
-        transactions.unshift({
-            id: transactionId++,
+        let tData = {
             type: 'PRODUCTION',
-            date: document.getElementById('prodDate').value,
+            date: prodDate,
             mainId: item.mainId,
-            mainName: main ? main.name : '',
             subId: item.subId,
-            subName: sub ? sub.name : '',
             itemId: itemId,
-            itemName: item.name,
-            productCode: getProductCode(item, main, sub),
             quantity: qty,
-            weight: item.weight,
-            length: item.length,
-            customer: 'Factory'
-        });
-        saved = true;
+            notes: 'Production'
+        };
+
+        try {
+            const response = await fetch('api/sync.php?action=save_transaction', {
+                method: 'POST',
+                body: JSON.stringify({ transaction: tData })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                item.stock = (item.stock || 0) + qty;
+                transactions.unshift({
+                    id: result.id,
+                    ...tData,
+                    mainName: main ? main.name : '',
+                    subName: sub ? sub.name : '',
+                    productCode: getProductCode(item, main, sub),
+                    itemName: item.name,
+                    weight: item.weight,
+                    length: item.length,
+                    customer: 'Factory'
+                });
+            } else {
+                errors.push(`Failed to save ${item.name}: ${result.message}`);
+            }
+        } catch (e) {
+            errors.push(`Server error for ${item.name}`);
+        }
     }
-    if (errors.length > 0) { alert('Errors:\n' + errors.join('\n')); return; }
-    if (!saved) { alert('No valid items'); return; }
-    saveAll(); refreshTransactions(); refreshDashboard(); refreshStockList(); refreshLowStockReport(); hideAllForms();
-    alert('Production saved!');
+
+    if (errors.length > 0) alert('Errors:\n' + errors.join('\n'));
+    saveData(); refreshTransactions(); refreshDashboard(); refreshStockList(); refreshLowStockReport(); hideAllForms();
+    alert('Process complete.');
 }
 
-function saveSale() {
+async function saveSale() {
     let customerId = document.getElementById('saleCustomerId').value;
-    let customerName = '';
     let customer = customers.find(c => c.id == customerId);
-    if (customer) {
-        customerName = customer.name + ' (' + customer.uniqueId + ')';
-    } else {
-        alert('Select customer');
-        return;
-    }
+    if (!customer) { alert('Select customer'); return; }
+    
+    let customerName = customer.name + ' (' + customer.uniqueId + ')';
     let rows = document.getElementById('saleRows').children;
     if (rows.length === 0) { alert('Add at least one item'); return; }
-    let saved = false; let errors = [];
-
+    let errors = [];
+    let saleDate = document.getElementById('saleDate').value;
     let selectedOrderId = document.getElementById('saleOrderSelect').value;
 
     for (let row of rows) {
@@ -1833,57 +1914,66 @@ function saveSale() {
         let item = items.find(i => i.id == itemId);
         if (!item) { errors.push('Item not found'); continue; }
 
-        if (length && length > 0) {
-            item.length = length;
-        }
-
+        if (length && length > 0) item.length = length;
         if (qty > (item.stock || 0)) {
-            errors.push(`Insufficient stock for ${item.name || 'Item'}. Available: ${item.stock || 0}`);
+            errors.push(`Insufficient stock for ${item.name}. Available: ${item.stock}`);
             continue;
         }
+
         let main = mainCategories.find(m => m.id === item.mainId);
         let sub = subCategories.find(s => s.id === item.subId);
-        item.stock = (item.stock || 0) - qty;
-        transactions.unshift({
-            id: transactionId++,
+
+        let tData = {
             type: 'SALE',
-            date: document.getElementById('saleDate').value,
+            date: saleDate,
             mainId: item.mainId,
-            mainName: main ? main.name : '',
             subId: item.subId,
-            subName: sub ? sub.name : '',
             itemId: itemId,
-            itemName: item.name,
-            productCode: getProductCode(item, main, sub),
             quantity: qty,
-            weight: item.weight,
-            length: item.length,
-            customer: customerName
-        });
-        saved = true;
+            customerId: customerId,
+            notes: 'Sale'
+        };
+
+        try {
+            const response = await fetch('api/sync.php?action=save_transaction', {
+                method: 'POST',
+                body: JSON.stringify({ transaction: tData })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                item.stock = (item.stock || 0) - qty;
+                transactions.unshift({
+                    id: result.id,
+                    ...tData,
+                    mainName: main ? main.name : '',
+                    subName: sub ? sub.name : '',
+                    productCode: getProductCode(item, main, sub),
+                    itemName: item.name,
+                    weight: item.weight,
+                    length: item.length,
+                    customer: customerName
+                });
+            } else {
+                errors.push(`Failed to save ${item.name}: ${result.message}`);
+            }
+        } catch (e) {
+            errors.push(`Server error for ${item.name}`);
+        }
     }
 
-    if (errors.length > 0) { alert('Errors:\n' + errors.join('\n')); return; }
-    if (!saved) { alert('No valid items'); return; }
-
-    if (selectedOrderId) {
-        usedCompletedOrders.add(parseInt(selectedOrderId));
-    }
-
-    saveAll();
-    refreshTransactions();
-    refreshDashboard();
-    refreshStockList();
-    refreshLowStockReport();
-    hideAllForms();
-    refreshCompletedOrderDropdown();
-    alert('Sale completed!');
+    if (errors.length > 0) alert('Errors:\n' + errors.join('\n'));
+    if (selectedOrderId) usedCompletedOrders.add(parseInt(selectedOrderId));
+    
+    saveData(); refreshTransactions(); refreshDashboard(); refreshStockList(); refreshLowStockReport(); hideAllForms(); refreshCompletedOrderDropdown();
+    alert('Process complete.');
 }
 
-function saveAdjustment() {
+async function saveAdjustment() {
     let rows = document.getElementById('adjustmentRows').children;
     if (rows.length === 0) { alert('Add at least one item'); return; }
-    let saved = false; let errors = [];
+    let errors = [];
+    let adjDate = document.getElementById('adjDate').value;
+
     for (let row of rows) {
         const itemId = row.dataset.itemId;
         const lengthInput = row.children[3];
@@ -1898,58 +1988,68 @@ function saveAdjustment() {
         let item = items.find(i => i.id == itemId);
         if (!item) { errors.push('Item not found'); continue; }
 
-        if (length && length > 0) {
-            item.length = length;
-        }
-
+        if (length && length > 0) item.length = length;
         if (type === 'remove' && qty > (item.stock || 0)) {
-            errors.push(`Cannot remove ${qty} PCS. Available: ${item.stock || 0}`);
+            errors.push(`Cannot remove ${qty} PCS. Available: ${item.stock}`);
             continue;
         }
+
         let main = mainCategories.find(m => m.id === item.mainId);
         let sub = subCategories.find(s => s.id === item.subId);
-        if (type === 'add') {
-            item.stock = (item.stock || 0) + qty;
-        } else {
-            item.stock = (item.stock || 0) - qty;
-        }
-        transactions.unshift({
-            id: transactionId++,
+        let finalQty = type === 'add' ? qty : -qty;
+
+        let tData = {
             type: 'ADJUSTMENT',
-            date: document.getElementById('adjDate').value,
+            date: adjDate,
             mainId: item.mainId,
-            mainName: main ? main.name : '',
             subId: item.subId,
-            subName: sub ? sub.name : '',
             itemId: itemId,
-            itemName: item.name,
-            productCode: getProductCode(item, main, sub),
-            quantity: type === 'add' ? qty : -qty,
-            weight: item.weight,
-            length: item.length,
-            customer: 'Adjustment'
-        });
-        saved = true;
+            quantity: finalQty,
+            notes: 'Adjustment'
+        };
+
+        try {
+            const response = await fetch('api/sync.php?action=save_transaction', {
+                method: 'POST',
+                body: JSON.stringify({ transaction: tData })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                item.stock = (item.stock || 0) + finalQty;
+                transactions.unshift({
+                    id: result.id,
+                    ...tData,
+                    mainName: main ? main.name : '',
+                    subName: sub ? sub.name : '',
+                    productCode: getProductCode(item, main, sub),
+                    itemName: item.name,
+                    weight: item.weight,
+                    length: item.length,
+                    customer: 'Adjustment'
+                });
+            } else {
+                errors.push(`Failed to save ${item.name}: ${result.message}`);
+            }
+        } catch (e) {
+            errors.push(`Server error for ${item.name}`);
+        }
     }
-    if (errors.length > 0) { alert('Errors:\n' + errors.join('\n')); return; }
-    if (!saved) { alert('No valid items'); return; }
-    saveAll(); refreshTransactions(); refreshDashboard(); refreshStockList(); refreshLowStockReport(); hideAllForms();
-    alert('Adjustment saved!');
+
+    if (errors.length > 0) alert('Errors:\n' + errors.join('\n'));
+    saveData(); refreshTransactions(); refreshDashboard(); refreshStockList(); refreshLowStockReport(); hideAllForms();
+    alert('Process complete.');
 }
 
-function saveNewOrder() {
+async function saveNewOrder() {
     let customerId = document.getElementById('newCustomerId').value;
-    let customerName = '';
     let customer = customers.find(c => c.id == customerId);
-    if (customer) {
-        customerName = customer.name + ' (' + customer.uniqueId + ')';
-    } else {
-        alert('Select customer');
-        return;
-    }
+    if (!customer) { alert('Select customer'); return; }
+    
+    let customerName = customer.name + ' (' + customer.uniqueId + ')';
     let rows = document.getElementById('newOrderRows').children;
     let orderItems = [];
     let totalQty = 0; let totalKg = 0;
+    
     for (let row of rows) {
         const itemId = row.dataset.itemId;
         const lengthInput = row.children[3];
@@ -1961,9 +2061,7 @@ function saveNewOrder() {
         let item = items.find(i => i.id == itemId);
         if (!item) continue;
 
-        if (length && length > 0) {
-            item.length = length;
-        }
+        if (length && length > 0) item.length = length;
 
         let main = mainCategories.find(m => m.id === item.mainId);
         let sub = subCategories.find(s => s.id === item.subId);
@@ -1983,18 +2081,38 @@ function saveNewOrder() {
         totalQty += qty; totalKg += qty * (item.weight || 0);
     }
     if (orderItems.length === 0) { alert('Add at least one item'); return; }
-    orders.unshift({
-        id: orderId++,
+
+    let orderData = {
         date: document.getElementById('orderDate').value,
-        customerName: customerName,
         customerId: parseInt(customerId),
         items: orderItems,
         totalQty: totalQty,
         totalKg: totalKg,
-        status: 'pending'
-    });
-    saveAll(); refreshOrdersList(); hideNewOrderForm(); refreshDashboard(); refreshStockList();
-    alert('Order created!');
+        status: 'Pending'
+    };
+
+    try {
+        const response = await fetch('api/sync.php?action=save_order', {
+            method: 'POST',
+            body: JSON.stringify({ order: orderData })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            orderData.id = result.id;
+            orderData.customerName = customerName;
+            orders.unshift(orderData);
+            saveData();
+            refreshOrdersList();
+            hideNewOrderForm();
+            refreshDashboard();
+            refreshStockList();
+            alert('Order created!');
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (e) {
+        alert('Sync failed.');
+    }
 }
 
 // Orders Functions
@@ -2137,8 +2255,10 @@ function loadCompletedOrderForSale() {
     });
 }
 
-function completeOrder(orderId) {
+async function completeOrder(orderId) {
     let order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
     let canComplete = true;
     let stockIssues = [];
     (order.items || []).forEach(item => {
@@ -2150,43 +2270,74 @@ function completeOrder(orderId) {
             stockIssues.push(`${item.productCode}: Need ${remainingToFulfill} but only ${invItem.stock || 0} available`);
         }
     });
+
     if (!canComplete) {
         alert('Cannot complete order:\n' + stockIssues.join('\n'));
         return;
     }
-    (order.items || []).forEach(item => {
+
+    if (!confirm(`Are you sure you want to complete Order #${orderId}? This will deduct stock and record sales.`)) return;
+
+    for (let item of (order.items || [])) {
         let invItem = items.find(i => i.id === item.itemId);
-        if (!invItem) return;
+        if (!invItem) continue;
         let remainingToFulfill = (item.quantity || 0) - (item.fulfilled || 0);
         if (remainingToFulfill > 0) {
-            invItem.stock = (invItem.stock || 0) - remainingToFulfill;
-            item.fulfilled = (item.fulfilled || 0) + remainingToFulfill;
-            transactions.unshift({
-                id: transactionId++,
+            let tData = {
                 type: 'SALE',
                 date: new Date().toISOString().slice(0, 16),
                 mainId: invItem.mainId,
-                mainName: mainCategories.find(m => m.id === invItem.mainId)?.name || '',
                 subId: invItem.subId,
-                subName: subCategories.find(s => s.id === invItem.subId)?.name || '',
                 itemId: item.itemId,
-                itemName: invItem.name,
-                productCode: item.productCode,
                 quantity: remainingToFulfill,
-                weight: invItem.weight,
-                length: invItem.length,
-                customer: order.customerName + ' (Order Complete)'
-            });
+                customerId: order.customerId,
+                notes: `Order #${orderId} Fulfillment`
+            };
+
+            try {
+                const response = await fetch('api/sync.php?action=save_transaction', {
+                    method: 'POST',
+                    body: JSON.stringify({ transaction: tData })
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    invItem.stock = (invItem.stock || 0) - remainingToFulfill;
+                    item.fulfilled = (item.fulfilled || 0) + remainingToFulfill;
+                    transactions.unshift({
+                        id: result.id,
+                        ...tData,
+                        mainName: mainCategories.find(m => m.id === invItem.mainId)?.name || '',
+                        subName: subCategories.find(s => s.id === invItem.subId)?.name || '',
+                        productCode: item.productCode,
+                        itemName: invItem.name,
+                        weight: invItem.weight,
+                        length: invItem.length,
+                        customer: order.customerName + ' (Order Complete)'
+                    });
+                }
+            } catch (e) {
+                console.error('Fulfillment save failed for item', item.itemId);
+            }
         }
-    });
-    order.status = 'completed';
-    saveAll();
-    refreshOrdersList();
-    refreshDashboard();
-    refreshStockList();
-    refreshLowStockReport();
-    refreshTransactions();
-    alert(`Order #${orderId} completed!`);
+    }
+
+    // Update order status on server
+    order.status = 'Completed';
+    try {
+        await fetch('api/sync.php?action=save_order', {
+            method: 'POST',
+            body: JSON.stringify({ order: order })
+        });
+        saveData();
+        refreshOrdersList();
+        refreshDashboard();
+        refreshStockList();
+        refreshLowStockReport();
+        refreshTransactions();
+        alert(`Order #${orderId} completed successfully!`);
+    } catch (e) {
+        alert('Order status update failed on server, but stock was deducted.');
+    }
 }
 
 function showInvoice(orderId) {
@@ -2396,7 +2547,7 @@ function addEditOrderRow() {
     container.appendChild(row);
 }
 
-function updateOrder(orderId) {
+async function updateOrder(orderId) {
     let order = orders.find(o => o.id === orderId);
     if (!order) return;
 
@@ -2415,9 +2566,7 @@ function updateOrder(orderId) {
         let item = items.find(i => i.id == itemId);
         if (!item) continue;
 
-        if (length && length > 0) {
-            item.length = length;
-        }
+        if (length && length > 0) item.length = length;
 
         let main = mainCategories.find(m => m.id === item.mainId);
         let sub = subCategories.find(s => s.id === item.subId);
@@ -2441,20 +2590,34 @@ function updateOrder(orderId) {
         totalQty += qty; totalKg += qty * (item.weight || 0);
     }
 
-    if (orderItems.length === 0) {
-        alert('Please add at least one item');
-        return;
+    if (orderItems.length === 0) { alert('Please add at least one item'); return; }
+
+    let updatedData = {
+        ...order,
+        date: document.getElementById('editOrderDate').value,
+        items: orderItems,
+        totalQty: totalQty,
+        totalKg: totalKg
+    };
+
+    try {
+        const response = await fetch('api/sync.php?action=save_order', {
+            method: 'POST',
+            body: JSON.stringify({ order: updatedData })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            Object.assign(order, updatedData);
+            saveData();
+            refreshOrdersList();
+            closeEditModal();
+            alert('Order updated successfully!');
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (e) {
+        alert('Sync failed.');
     }
-
-    order.date = document.getElementById('editOrderDate').value;
-    order.items = orderItems;
-    order.totalQty = totalQty;
-    order.totalKg = totalKg;
-
-    saveAll();
-    refreshOrdersList();
-    closeEditModal();
-    alert('Order updated successfully!');
 }
 
 function closeEditModal() {
@@ -2470,11 +2633,29 @@ function closeDeleteModal() {
     document.getElementById('deleteOrderModal').style.display = 'none';
 }
 
-function confirmDeleteOrder() {
+async function confirmDeleteOrder() {
     let orderId = parseInt(document.getElementById('deleteOrderId').textContent);
-    orders = orders.filter(o => o.id !== orderId);
-    saveAll(); closeDeleteModal(); refreshOrdersList(); refreshDashboard(); refreshStockList(); refreshLowStockReport();
-    alert('Order deleted successfully!');
+    try {
+        const response = await fetch('api/sync.php?action=delete_order', {
+            method: 'POST',
+            body: JSON.stringify({ id: orderId })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            orders = orders.filter(o => o.id !== orderId);
+            saveData();
+            closeDeleteModal();
+            refreshOrdersList();
+            refreshDashboard();
+            refreshStockList();
+            refreshLowStockReport();
+            alert('Order deleted successfully!');
+        } else {
+            alert('Delete failed: ' + result.message);
+        }
+    } catch (e) {
+        alert('Sync failed.');
+    }
 }
 
 function refreshCategoriesView() {
@@ -2620,20 +2801,30 @@ function editMainCategory(id) {
     }
 }
 
-function deleteMainCategory(id) {
+async function deleteMainCategory(id) {
     let subCount = subCategories.filter(s => s.mainId === id).length;
     if (subCount > 0) {
         alert(`Cannot delete brand because it has ${subCount} size(s). Please delete all sizes first.`);
         return;
     }
     if (confirm('Are you sure you want to delete this brand?')) {
-        items = items.filter(i => i.mainId !== id);
-        mainCategories = mainCategories.filter(m => m.id !== id);
-        saveAll();
-        refreshCategoriesView();
-        refreshDashboard();
-        refreshStockList();
-        refreshLowStockReport();
+        try {
+            const response = await fetch('api/sync.php?action=delete_category', {
+                method: 'POST',
+                body: JSON.stringify({ id: id, type: 'main' })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                items = items.filter(i => i.mainId !== id);
+                mainCategories = mainCategories.filter(m => m.id !== id);
+                saveData();
+                refreshCategoriesView();
+                refreshDashboard();
+                refreshStockList();
+                refreshLowStockReport();
+                alert('Brand deleted!');
+            } else { alert('Delete failed: ' + result.message); }
+        } catch (e) { alert('Sync failed.'); }
     }
 }
 
@@ -2722,19 +2913,30 @@ function editSubCategory(id) {
     }
 }
 
-function deleteSubCategory(id) {
+async function deleteSubCategory(id) {
     let itemCount = items.filter(i => i.subId === id).length;
     if (itemCount > 0) {
         alert(`Cannot delete size because it has ${itemCount} item(s). Please delete all items first.`);
         return;
     }
     if (confirm('Are you sure you want to delete this size?')) {
-        subCategories = subCategories.filter(s => s.id !== id);
-        resequenceCodes();
-        refreshCategoriesView();
-        refreshDashboard();
-        refreshStockList();
-        refreshLowStockReport();
+        try {
+            const response = await fetch('api/sync.php?action=delete_category', {
+                method: 'POST',
+                body: JSON.stringify({ id: id, type: 'sub' })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                subCategories = subCategories.filter(s => s.id !== id);
+                resequenceCodes();
+                saveData();
+                refreshCategoriesView();
+                refreshDashboard();
+                refreshStockList();
+                refreshLowStockReport();
+                alert('Size deleted!');
+            } else { alert('Delete failed: ' + result.message); }
+        } catch (e) { alert('Sync failed.'); }
     }
 }
 
@@ -2806,14 +3008,25 @@ function editItem(id) {
     }
 }
 
-function deleteItem(id) {
+async function deleteItem(id) {
     if (confirm('Are you sure you want to delete this item?')) {
-        items = items.filter(i => i.id != id);
-        resequenceCodes();
-        refreshCategoriesView();
-        refreshDashboard();
-        refreshStockList();
-        refreshLowStockReport();
+        try {
+            const response = await fetch('api/sync.php?action=delete_item', {
+                method: 'POST',
+                body: JSON.stringify({ id: id })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                items = items.filter(i => i.id != id);
+                resequenceCodes();
+                saveData();
+                refreshCategoriesView();
+                refreshDashboard();
+                refreshStockList();
+                refreshLowStockReport();
+                alert('Item deleted!');
+            } else { alert('Delete failed: ' + result.message); }
+        } catch (e) { alert('Sync failed.'); }
     }
 }
 

@@ -106,9 +106,147 @@ try {
             echo json_encode(['status' => 'success']);
         }
         
-        // Add more specific actions as needed (categories, orders, etc.)
-    }
-} catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-}
-?>
+        elseif ($action === 'save_transaction') {
+            $t = $input['transaction'];
+            $conn->beginTransaction();
+            try {
+                // Insert transaction
+                $stmt = $conn->prepare("INSERT INTO transactions (date, type, main_id, sub_id, item_id, quantity, customer_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                // Frontend uses 'PRODUCTION', 'SALE', 'ADJUSTMENT'
+                $type = $t['type'] === 'PRODUCTION' ? 'IN' : ($t['type'] === 'SALE' ? 'OUT' : 'ADJ');
+                $stmt->execute([
+                    $t['date'] ?? date('Y-m-d H:i:s'),
+                    $type,
+                    $t['mainId'],
+                    $t['subId'],
+                    $t['itemId'],
+                    $t['quantity'],
+                    $t['customerId'] ?? null,
+                    $t['notes'] ?? ''
+                ]);
+                $tId = $conn->lastInsertId();
+
+                // Update item stock
+                if ($type === 'IN') {
+                    $stmt = $conn->prepare("UPDATE items SET stock = stock + ? WHERE id = ?");
+                } elseif ($type === 'OUT') {
+                    $stmt = $conn->prepare("UPDATE items SET stock = stock - ? WHERE id = ?");
+                } else { // ADJ
+                    // For adjustments, quantity is already signed (e.g., -5 for removal)
+                    $stmt = $conn->prepare("UPDATE items SET stock = stock + ? WHERE id = ?");
+                }
+                $stmt->execute([$t['quantity'], $t['itemId']]);
+                
+                $conn->commit();
+                echo json_encode(['status' => 'success', 'id' => $tId]);
+            } catch (Exception $e) {
+                $conn->rollBack();
+                throw $e;
+            }
+        }
+
+        elseif ($action === 'save_order') {
+            $o = $input['order'];
+            $conn->beginTransaction();
+            try {
+                if (isset($o['id']) && !empty($o['id'])) {
+                    // Update existing order
+                    $stmt = $conn->prepare("UPDATE orders SET date = ?, customer_id = ?, status = ?, total_qty = ?, total_kg = ? WHERE id = ?");
+                    $stmt->execute([$o['date'], $o['customerId'], $o['status'], $o['totalQty'] ?? 0, $o['totalKg'] ?? 0, $o['id']]);
+                    $orderId = $o['id'];
+                    
+                    // Delete existing items for full refresh (simple approach)
+                    $conn->prepare("DELETE FROM order_items WHERE order_id = ?")->execute([$orderId]);
+                } else {
+                    // Insert new order
+                    $stmt = $conn->prepare("INSERT INTO orders (date, customer_id, status, total_qty, total_kg) VALUES (?, ?, ?, ?, ?)");
+                    $stmt->execute([$o['date'], $o['customerId'], $o['status'] ?? 'Pending', $o['totalQty'] ?? 0, $o['totalKg'] ?? 0]);
+                    $orderId = $conn->lastInsertId();
+                }
+
+                // Insert order items
+                foreach ($o['items'] as $item) {
+                    $stmt = $conn->prepare("INSERT INTO order_items (order_id, item_id, quantity, length, fulfilled) VALUES (?, ?, ?, ?, ?)");
+                    $stmt->execute([$orderId, $item['itemId'], $item['quantity'], $item['length'] ?? 13, $item['fulfilled'] ?? 0]);
+                }
+
+                $conn->commit();
+                echo json_encode(['status' => 'success', 'id' => $orderId]);
+            } catch (Exception $e) {
+                $conn->rollBack();
+                throw $e;
+            }
+        }
+
+        elseif ($action === 'save_customer') {
+            $c = $input['customer'];
+            if (isset($c['id']) && !empty($c['id'])) {
+                $stmt = $conn->prepare("UPDATE customers SET unique_id = ?, name = ?, address = ?, mobile = ? WHERE id = ?");
+                $stmt->execute([$c['uniqueId'], $c['name'], $c['address'] ?? '', $c['mobile'] ?? '', $c['id']]);
+            } else {
+                $stmt = $conn->prepare("INSERT INTO customers (unique_id, name, address, mobile) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$c['uniqueId'], $c['name'], $c['address'] ?? '', $c['mobile'] ?? '']);
+                $c['id'] = $conn->lastInsertId();
+            }
+            echo json_encode(['status' => 'success', 'id' => $c['id']]);
+        }
+
+        elseif ($action === 'delete_customer') {
+            $id = $_GET['id'] ?? $input['id'] ?? null;
+            if ($id) {
+                $stmt = $conn->prepare("DELETE FROM customers WHERE id = ?");
+                $stmt->execute([$id]);
+                echo json_encode(['status' => 'success']);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'No ID provided']);
+            }
+        }
+
+        elseif ($action === 'delete_category') {
+            $id = $input['id'] ?? $_GET['id'] ?? null;
+            $type = $input['type'] ?? $_GET['type'] ?? 'main';
+            if ($id) {
+                if ($type === 'main') {
+                    $stmt = $conn->prepare("DELETE FROM main_categories WHERE id = ?");
+                } else {
+                    $stmt = $conn->prepare("DELETE FROM sub_categories WHERE id = ?");
+                }
+                $stmt->execute([$id]);
+                echo json_encode(['status' => 'success']);
+            } else { echo json_encode(['status' => 'error', 'message' => 'No ID']); }
+        }
+
+        elseif ($action === 'delete_item') {
+            $id = $input['id'] ?? $_GET['id'] ?? null;
+            if ($id) {
+                $stmt = $conn->prepare("DELETE FROM items WHERE id = ?");
+                $stmt->execute([$id]);
+                echo json_encode(['status' => 'success']);
+            } else { echo json_encode(['status' => 'error', 'message' => 'No ID']); }
+        }
+
+        elseif ($action === 'save_raw_material') {
+            $rm = $input['material'];
+            if (isset($rm['id']) && !empty($rm['id'])) {
+                $stmt = $conn->prepare("UPDATE raw_materials SET name = ?, category = ?, unit = ?, stock = ?, threshold = ? WHERE id = ?");
+                $stmt->execute([$rm['name'], $rm['category'] ?? '', $rm['unit'] ?? 'KG', $rm['stock'] ?? 0, $rm['threshold'] ?? 10, $rm['id']]);
+            } else {
+                $stmt = $conn->prepare("INSERT INTO raw_materials (name, category, unit, stock, threshold) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$rm['name'], $rm['category'] ?? '', $rm['unit'] ?? 'KG', $rm['stock'] ?? 0, $rm['threshold'] ?? 10]);
+                $rm['id'] = $conn->lastInsertId();
+            }
+            echo json_encode(['status' => 'success', 'id' => $rm['id']]);
+        }
+
+        elseif ($action === 'save_store_item') {
+            $si = $input['item'];
+            if (isset($si['id']) && !empty($si['id'])) {
+                $stmt = $conn->prepare("UPDATE store_items SET name = ?, description = ?, stock = ? WHERE id = ?");
+                $stmt->execute([$si['name'], $si['description'] ?? '', $si['stock'] ?? 0, $si['id']]);
+            } else {
+                $stmt = $conn->prepare("INSERT INTO store_items (name, description, stock) VALUES (?, ?, ?)");
+                $stmt->execute([$si['name'], $si['description'] ?? '', $si['stock'] ?? 0]);
+                $si['id'] = $conn->lastInsertId();
+            }
+            echo json_encode(['status' => 'success', 'id' => $si['id']]);
+        }

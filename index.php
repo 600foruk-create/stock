@@ -22,6 +22,7 @@
                 <div class="sidebar-header">
                     <div class="company-logo" id="sidebarLogo" onclick="showCompanySettings()">📦</div>
                     <div class="company-name" id="sidebarCompany" onclick="showCompanySettings()">StockFlow</div>
+                    <button class="btn btn-icon btn-sm" id="syncBtn" onclick="initApp()" title="Sync Data" style="margin-left: auto; color: var(--gray-400);">🔄</button>
                 </div>
                 <div class="sidebar-menu">
                     <button class="menu-item active" onclick="switchModule('finishGood')"><i>📊</i> Finish Good</button>
