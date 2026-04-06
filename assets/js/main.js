@@ -75,6 +75,20 @@ async function initApp() {
                     }
                 });
             }
+
+            // Post-process transactions to match UI expectations
+            transactions.forEach(t => {
+                if (!t.productCode && t.itemId) {
+                    let item = items.find(i => i.id === t.itemId);
+                    let sub = subCategories.find(s => s.id === (item ? item.subId : t.subId));
+                    let main = mainCategories.find(m => m.id === (item ? item.mainId : t.mainId));
+                    if (item && sub && main) {
+                        t.productCode = getProductCode(item, main, sub);
+                        t.mainName = main.name;
+                    }
+                }
+            });
+
             saveData(); // Sync to local backup
         } else {
             console.warn('StockFlow: SQL returned error state:', result.message);

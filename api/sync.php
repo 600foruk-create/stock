@@ -10,21 +10,21 @@ try {
     if ($method === 'GET') {
         if ($action === 'get_all') {
             $data = [
-                'users' => $conn->query("SELECT * FROM users")->fetchAll(PDO::FETCH_ASSOC),
-                'mainCategories' => $conn->query("SELECT * FROM main_categories")->fetchAll(PDO::FETCH_ASSOC),
-                'subCategories' => $conn->query("SELECT * FROM sub_categories")->fetchAll(PDO::FETCH_ASSOC),
-                'items' => $conn->query("SELECT * FROM items")->fetchAll(PDO::FETCH_ASSOC),
-                'customers' => $conn->query("SELECT * FROM customers")->fetchAll(PDO::FETCH_ASSOC),
-                'orders' => $conn->query("SELECT * FROM orders")->fetchAll(PDO::FETCH_ASSOC),
-                'transactions' => $conn->query("SELECT * FROM transactions")->fetchAll(PDO::FETCH_ASSOC),
-                'settings' => $conn->query("SELECT * FROM settings")->fetchAll(PDO::FETCH_ASSOC),
-                'rawMaterials' => $conn->query("SELECT * FROM raw_materials")->fetchAll(PDO::FETCH_ASSOC),
-                'storeItems' => $conn->query("SELECT * FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
+                'users' => $conn->query("SELECT id, name, username, password, role FROM users")->fetchAll(PDO::FETCH_ASSOC),
+                'mainCategories' => $conn->query("SELECT id, name, color, low_stock_limit AS lowStockLimit FROM main_categories")->fetchAll(PDO::FETCH_ASSOC),
+                'subCategories' => $conn->query("SELECT id, main_id AS mainId, name FROM sub_categories")->fetchAll(PDO::FETCH_ASSOC),
+                'items' => $conn->query("SELECT id, main_id AS mainId, sub_id AS subId, name, length, weight, stock FROM items")->fetchAll(PDO::FETCH_ASSOC),
+                'customers' => $conn->query("SELECT id, unique_id AS uniqueId, name, address, mobile FROM customers")->fetchAll(PDO::FETCH_ASSOC),
+                'orders' => $conn->query("SELECT o.id, o.date, o.customer_id AS customerId, o.status, o.total_qty AS totalQty, o.total_kg AS totalKg, c.name AS customerName FROM orders o JOIN customers c ON o.customer_id = c.id")->fetchAll(PDO::FETCH_ASSOC),
+                'transactions' => $conn->query("SELECT t.id, t.date, t.type, t.main_id AS mainId, t.sub_id AS subId, t.item_id AS itemId, t.quantity, t.customer_id AS customerId, t.notes, mc.name AS mainName, c.name AS customer FROM transactions t LEFT JOIN main_categories mc ON t.main_id = mc.id LEFT JOIN customers c ON t.customer_id = c.id")->fetchAll(PDO::FETCH_ASSOC),
+                'settings' => $conn->query("SELECT id, category, `key`, value FROM settings")->fetchAll(PDO::FETCH_ASSOC),
+                'rawMaterials' => $conn->query("SELECT id, name, category, unit, stock, threshold FROM raw_materials")->fetchAll(PDO::FETCH_ASSOC),
+                'storeItems' => $conn->query("SELECT id, name, description, stock FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
             ];
             
             // Add order items to orders
             foreach ($data['orders'] as &$order) {
-                $stmt = $conn->prepare("SELECT * FROM order_items WHERE order_id = ?");
+                $stmt = $conn->prepare("SELECT id, order_id AS orderId, item_id AS itemId, quantity, length, fulfilled FROM order_items WHERE order_id = ?");
                 $stmt->execute([$order['id']]);
                 $order['items'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
