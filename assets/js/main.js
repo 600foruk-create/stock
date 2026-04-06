@@ -2205,9 +2205,7 @@ async function saveNewOrder() {
     };
 
     try {
-    let response;
-    try {
-        response = await fetch('api/sync.php?action=save_order&t=' + Date.now(), {
+        let response = await fetch('api/sync.php?action=save_order&t=' + Date.now(), {
             method: 'POST',
             body: JSON.stringify({ order: orderData })
         });
@@ -2244,7 +2242,8 @@ async function saveNewOrder() {
 // Orders Functions
 function refreshOrdersList(filter = 'all') {
     let html = '';
-    let filteredOrders = filter === 'all' ? orders : orders.filter(o => o.status === filter);
+    let f = filter.toLowerCase();
+    let filteredOrders = f === 'all' ? orders : orders.filter(o => (o.status || '').toLowerCase() === f);
     if (filteredOrders.length === 0) {
         html = '<div style="text-align:center; padding:2rem;">No orders found</div>';
     } else {
