@@ -1314,7 +1314,7 @@ function refreshDashboard() {
         brandData.push({ name: main.name, stock: totalBrandStock, kg: totalBrandKg, color: main.color });
 
         brandCardsHtml += `
-                    <div class="brand-card">
+                    <div class="brand-card static">
                         <div class="brand-header" style="background: ${main.color};">
                             <h4>${main.name}</h4>
                             <span class="brand-total">${totalBrandStock} PCS<br>${totalBrandKg.toFixed(2)} KG</span>
