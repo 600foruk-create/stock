@@ -1733,11 +1733,10 @@ function printStockList() {
         minute: '2-digit'
     });
     
-    // Update all print header elements (classes and IDs)
-    document.querySelectorAll('.printCompanyName, #printCompanyName').forEach(el => el.textContent = company);
-    document.querySelectorAll('.printLogo, #printLogo').forEach(el => el.innerHTML = logo);
-    document.querySelectorAll('.printDate, #printDate').forEach(el => el.textContent = `Report Date: ${date}`);
-    
+    document.getElementById('printCompanyName').textContent = company;
+    const printLogo = document.getElementById('printLogo');
+    if (printLogo) printLogo.innerHTML = logo;
+    document.getElementById('printDate').textContent = `Report Date: ${date}`;
     window.print();
 }
 
