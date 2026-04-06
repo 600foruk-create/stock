@@ -96,23 +96,30 @@ async function initApp() {
                 }
             });
 
-            // Post-process orders to hydrate items and codes
+            // Post-process orders to hydrate items and codes with fail-safety
             orders.forEach(o => {
-                let customer = customers.find(c => c.id == o.customerId);
-                if (customer) o.customerName = `${customer.name} (${customer.uniqueId})`;
+                try {
+                    let customer = customers.find(c => c.id == o.customerId);
+                    o.customerName = customer ? `${customer.name} (${customer.uniqueId})` : `Unknown Customer (ID:${o.customerId})`;
 
-                (o.items || []).forEach(item => {
-                    let masterItem = items.find(i => i.id == item.itemId);
-                    if (masterItem) {
-                        let sub = subCategories.find(s => s.id == masterItem.subId);
-                        let main = mainCategories.find(m => m.id == masterItem.mainId);
-                        if (sub && main) {
-                            item.productCode = getProductCode(masterItem, main, sub);
-                            item.itemName = masterItem.name;
-                            item.weight = masterItem.weight;
+                    (o.items || []).forEach(item => {
+                        let masterItem = items.find(i => i.id == item.itemId);
+                        if (masterItem) {
+                            let sub = subCategories.find(s => s.id == masterItem.subId);
+                            let main = mainCategories.find(m => m.id == masterItem.mainId);
+                            if (sub && main) {
+                                item.productCode = getProductCode(masterItem, main, sub);
+                                item.itemName = masterItem.name;
+                                item.weight = masterItem.weight;
+                            }
                         }
-                    }
-                });
+                        // Ensure required display fields exist even if master record is missing
+                        item.productCode = item.productCode || 'Deleted Item';
+                        item.itemName = item.itemName || 'N/A';
+                    });
+                } catch (err) {
+                    console.warn('StockFlow: Non-fatal error hydrating order:', o.id, err);
+                }
             });
 
             saveData(); // Sync to local backup
@@ -2198,11 +2205,22 @@ async function saveNewOrder() {
     };
 
     try {
-        const response = await fetch('api/sync.php?action=save_order&t=' + Date.now(), {
+    let response;
+    try {
+        response = await fetch('api/sync.php?action=save_order&t=' + Date.now(), {
             method: 'POST',
             body: JSON.stringify({ order: orderData })
         });
-        const result = await response.json();
+        
+        const rawBody = await response.text();
+        let result;
+        try {
+            result = JSON.parse(rawBody);
+        } catch (parseErr) {
+            alert('Server Error! The server responded with invalid data (Version 6):\n\n' + rawBody.slice(0, 500));
+            return;
+        }
+
         if (result.status === 'success') {
             orderData.id = result.id;
             orderData.status = orderData.status || 'Pending';
@@ -2219,12 +2237,7 @@ async function saveNewOrder() {
         }
     } catch (e) {
         console.error('Order save error:', e);
-        try {
-            const rawBody = await response.text();
-            alert('Sync Failed! (Version 5-Hydration). Technical detail below:\n\n' + rawBody.slice(0, 500));
-        } catch (textErr) {
-            alert('Connection Lost: Could not connect to the server. Check your internet.');
-        }
+        alert('Transmission Failed: Could not reach the server. Please check your internet connection.');
     }
 }
 
