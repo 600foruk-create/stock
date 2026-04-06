@@ -220,6 +220,24 @@ function loadLegacyData() {
     orders = JSON.parse(localStorage.getItem('stock_orders')) || [];
 }
 
+function saveData() {
+    localStorage.setItem('stock_currentUser', JSON.stringify(currentUser));
+    localStorage.setItem('stock_users', JSON.stringify(users));
+    localStorage.setItem('stock_mainCat', JSON.stringify(mainCategories));
+    localStorage.setItem('stock_subCat', JSON.stringify(subCategories));
+    localStorage.setItem('stock_items', JSON.stringify(items));
+    localStorage.setItem('stock_customers', JSON.stringify(customers));
+    localStorage.setItem('stock_orders', JSON.stringify(orders));
+    localStorage.setItem('stock_transactions', JSON.stringify(transactions));
+    localStorage.setItem('stock_rawMaterials', JSON.stringify(rawMaterials));
+    localStorage.setItem('stock_storeItems', JSON.stringify(storeItems));
+}
+
+function saveAll() {
+    saveData();
+    localStorage.setItem('stock_company', JSON.stringify(companySettings));
+}
+
 // Call init on load
 window.addEventListener('DOMContentLoaded', initApp);
 
@@ -2298,7 +2316,7 @@ async function saveNewOrder() {
         }
     } catch (e) {
         console.error('Order save error:', e);
-        alert('Transmission Failed: Could not reach the server. Please check your internet connection.');
+        alert('System Exception: The order saved to the database, but your browser encountered an error while updating the screen.\n\nDetails: ' + e.message);
     }
 }
 
@@ -3186,7 +3204,7 @@ async function saveSubCategory() {
             alert('Saved successfully');
         }
     } catch (e) {
-        alert('Error: Not saved to server');
+        alert('Software Error: Size saved to database, but the app display failed to update.\n\nDetails: ' + e.message);
     }
 }
 
