@@ -48,9 +48,10 @@ async function initApp() {
         try { auditSession = JSON.parse(savedAudit); } catch (e) { }
     }
 
-    // Fetch all data from SQL
+    // Fetch all data from SQL with cache buster
+    const cacheBuster = Date.now();
     try {
-        const response = await fetch('api/sync.php?action=get_all');
+        const response = await fetch(`api/sync.php?action=get_all&v=${cacheBuster}`);
         const text = await response.text();
         let result;
         try {
@@ -85,14 +86,33 @@ async function initApp() {
             // Post-process transactions to match UI expectations
             transactions.forEach(t => {
                 if (!t.productCode && t.itemId) {
-                    let item = items.find(i => i.id === t.itemId);
-                    let sub = subCategories.find(s => s.id === (item ? item.subId : t.subId));
-                    let main = mainCategories.find(m => m.id === (item ? item.mainId : t.mainId));
+                    let item = items.find(i => i.id == t.itemId);
+                    let sub = subCategories.find(s => s.id == (item ? item.subId : t.subId));
+                    let main = mainCategories.find(m => m.id == (item ? item.mainId : t.mainId));
                     if (item && sub && main) {
                         t.productCode = getProductCode(item, main, sub);
                         t.mainName = main.name;
                     }
                 }
+            });
+
+            // Post-process orders to hydrate items and codes
+            orders.forEach(o => {
+                let customer = customers.find(c => c.id == o.customerId);
+                if (customer) o.customerName = `${customer.name} (${customer.uniqueId})`;
+
+                (o.items || []).forEach(item => {
+                    let masterItem = items.find(i => i.id == item.itemId);
+                    if (masterItem) {
+                        let sub = subCategories.find(s => s.id == masterItem.subId);
+                        let main = mainCategories.find(m => m.id == masterItem.mainId);
+                        if (sub && main) {
+                            item.productCode = getProductCode(masterItem, main, sub);
+                            item.itemName = masterItem.name;
+                            item.weight = masterItem.weight;
+                        }
+                    }
+                });
             });
 
             saveData(); // Sync to local backup
@@ -2178,7 +2198,7 @@ async function saveNewOrder() {
     };
 
     try {
-        const response = await fetch('api/sync.php?action=save_order', {
+        const response = await fetch('api/sync.php?action=save_order&t=' + Date.now(), {
             method: 'POST',
             body: JSON.stringify({ order: orderData })
         });
@@ -2193,13 +2213,18 @@ async function saveNewOrder() {
             hideNewOrderForm();
             refreshDashboard();
             refreshStockList();
-            alert('Order created!');
+            alert('Order created successfully!');
         } else {
-            alert('Server Error: ' + (result.message || 'Unknown error'));
+            alert('System Error: ' + (result.message || 'The server rejected the order. Update possibly already exists.'));
         }
     } catch (e) {
         console.error('Order save error:', e);
-        alert('Sync failed: Network or Server error. Please check your connection.');
+        try {
+            const rawBody = await response.text();
+            alert('Sync Failed! (Version 5-Hydration). Technical detail below:\n\n' + rawBody.slice(0, 500));
+        } catch (textErr) {
+            alert('Connection Lost: Could not connect to the server. Check your internet.');
+        }
     }
 }
 
