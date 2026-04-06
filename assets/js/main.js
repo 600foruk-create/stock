@@ -1309,6 +1309,14 @@ function refreshAuditList() {
                 let effectivePcs = systemPcs - ordered; // The stock that should be there
                 let systemKg = (effectivePcs * weightVal).toFixed(2);
                 
+                // Load from persistence
+                let godownPcs = auditSession[item.id] || "";
+                let weightValNum = parseFloat(weightVal);
+                let godownKg = godownPcs !== "" ? (parseInt(godownPcs) * weightValNum).toFixed(2) : "0.00";
+                let diffPcs = godownPcs !== "" ? (parseInt(godownPcs) - effectivePcs) : 0;
+                let diffKg = godownPcs !== "" ? (diffPcs * weightValNum).toFixed(2) : "0.00";
+                let diffClass = diffPcs === 0 ? '' : (diffPcs > 0 ? 'diff-plus' : 'diff-minus');
+                
                 bSysPcs += effectivePcs;
                 bSysKg += parseFloat(systemKg);
 
@@ -1322,12 +1330,13 @@ function refreshAuditList() {
                         <td>
                             <input type="number" step="1" class="godown-input audit-input-${main.id}" 
                                    placeholder="0"
-                                   oninput="calculateAuditRow(${item.id}, ${item.weight || 0}, ${main.id})" 
+                                   value="${godownPcs}"
+                                   oninput="calculateAuditRow(${item.id}, ${weightVal}, ${main.id})" 
                                    id="auditGodownPcs_${item.id}">
                         </td>
-                        <td id="auditGodownKg_${item.id}" class="godown-kg-val">0.00</td>
-                        <td id="auditDiffPcs_${item.id}" class="diff-pcs-val">0</td>
-                        <td id="auditDiffKg_${item.id}" class="diff-kg-val">0.00</td>
+                        <td id="auditGodownKg_${item.id}" class="godown-kg-val">${godownKg}</td>
+                        <td id="auditDiffPcs_${item.id}" class="diff-pcs-val ${diffClass}">${godownPcs !== "" ? (diffPcs > 0 ? '+' : '') + diffPcs : "0"}</td>
+                        <td id="auditDiffKg_${item.id}" class="diff-kg-val ${diffClass}">${godownPcs !== "" ? (diffPcs > 0 ? '+' : '') + diffKg : "0.00"}</td>
                     </tr>
                 `;
             });
@@ -1382,6 +1391,8 @@ function refreshAuditList() {
     const auditContainer = document.getElementById('auditListContainer');
     if (auditContainer) {
         auditContainer.innerHTML = html || '<p style="text-align:center; padding:3rem; color:var(--gray-500);">No brands or sizes found.</p>';
+        // Initialize totals
+        mainCategories.forEach(m => updateBrandAuditTotals(m.id));
     }
 }
 
@@ -1402,12 +1413,15 @@ function calculateAuditRow(itemId, unitWeight, brandId) {
     const diffPcsEl = document.getElementById(`auditDiffPcs_${itemId}`);
     const diffKgEl = document.getElementById(`auditDiffKg_${itemId}`);
     
+    // Save to persistence
+    auditSession[itemId] = godownPcsStr;
+    
     diffPcsEl.textContent = (diffPcs > 0 ? '+' : '') + diffPcs;
     diffKgEl.textContent = (diffPcs > 0 ? '+' : '') + diffKg;
     
     // Color coding
-    diffPcsEl.className = diffPcs === 0 ? '' : (diffPcs > 0 ? 'diff-plus' : 'diff-minus');
-    diffKgEl.className = diffPcs === 0 ? '' : (diffPcs > 0 ? 'diff-plus' : 'diff-minus');
+    diffPcsEl.className = diffPcs === 0 ? 'diff-pcs-val' : (diffPcs > 0 ? 'diff-pcs-val diff-plus' : 'diff-pcs-val diff-minus');
+    diffKgEl.className = diffPcs === 0 ? 'diff-kg-val' : (diffPcs > 0 ? 'diff-kg-val diff-plus' : 'diff-kg-val diff-minus');
 
     // Update Brand Sub-totals
     updateBrandAuditTotals(brandId);
@@ -1450,7 +1464,6 @@ function updateBrandAuditTotals(brandId) {
 
 async function saveMonthlyAudit() {
     const inputs = document.querySelectorAll('.godown-input');
-    let updatedCount = 0;
     let itemsToUpdate = [];
     let auditRecords = [];
 
@@ -1498,6 +1511,13 @@ async function saveMonthlyAudit() {
     } catch (e) {
         console.error('Audit save failed:', e);
         alert('Server connection failed. Audit not saved.');
+    }
+}
+
+function resetAuditSession() {
+    if (confirm('Clear ALL Godown Stock manual entries? This cannot be undone.')) {
+        auditSession = {};
+        refreshAuditList();
     }
 }
 
