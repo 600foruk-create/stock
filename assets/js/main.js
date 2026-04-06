@@ -25,7 +25,8 @@ let transactions = [];
 let orders = [];
 let rawMaterials = [];
 let storeItems = [];
-// Counter IDs are now handled by SQL Auto-increment
+let auditSession = {}; // Correctly initialized global session
+let auditRecords = [];
 
 // Company Settings
 let companySettings = {
