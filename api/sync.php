@@ -62,10 +62,6 @@ try {
                 // Save audit history
                 $stmt = $conn->prepare("INSERT INTO audit_records (item_id, system_qty, godown_qty, diff_qty) VALUES (?, ?, ?, ?)");
                 $stmt->execute([$rec['itemId'], $rec['systemQty'], $rec['godownQty'], $rec['diffQty']]);
-                
-                // Update current stock
-                $stmt = $conn->prepare("UPDATE items SET stock = ? WHERE id = ?");
-                $stmt->execute([$rec['godownQty'], $rec['itemId']]);
             }
             $conn->commit();
             echo json_encode(['status' => 'success']);

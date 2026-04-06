@@ -1489,16 +1489,8 @@ async function saveMonthlyAudit() {
         const result = await response.json();
         
         if (result.status === 'success') {
-            // Update local memory
-            itemsToUpdate.forEach(update => {
-                const item = items.find(i => i.id === update.id);
-                if (item) item.stock = update.stock;
-            });
-            
             saveData(); // Sync local (backup)
-            alert(`✅ Saved successfully!\n${itemsToUpdate.length} items updated.`);
-            refreshDashboard();
-            refreshStockList();
+            alert(`✅ Audit saved as a report!\nLive system stock was NOT changed.`);
             refreshAuditList();
         } else {
             alert('Error saving audit: ' + result.message);
