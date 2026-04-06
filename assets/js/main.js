@@ -2988,6 +2988,8 @@ async function saveMainCategory() {
             refreshLowStockReport();
             closeAddMainCategoryModal();
             alert('Saved successfully!');
+        } else {
+            alert('Server Error: ' + (result.message || 'Unknown error saving brand'));
         }
     } catch (e) {
         alert('Error: Not saved to server.');

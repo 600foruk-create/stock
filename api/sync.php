@@ -73,6 +73,14 @@ try {
             $type = $input['type']; // 'main' or 'sub'
             
             if ($type === 'main') {
+                // AUTO-REPAIR: Ensure 'code' column exists
+                try {
+                    $res = $conn->query("SHOW COLUMNS FROM main_categories LIKE 'code'")->fetch();
+                    if (!$res) {
+                        $conn->exec("ALTER TABLE main_categories ADD COLUMN code VARCHAR(50) AFTER name");
+                    }
+                } catch(Exception $e) { /* ignore already exists error */ }
+
                 if (isset($cat['id']) && !empty($cat['id'])) {
                     $stmt = $conn->prepare("UPDATE main_categories SET name = ?, code = ?, color = ?, low_stock_limit = ? WHERE id = ?");
                     $stmt->execute([$cat['name'], $cat['code'] ?? '', $cat['color'] ?? '#2196f3', $cat['lowStockLimit'] ?? 10, $cat['id']]);
