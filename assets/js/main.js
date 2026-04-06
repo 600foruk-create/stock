@@ -281,9 +281,10 @@ function saveAll() {
 
 // Function to re-sequence all codes to fill gaps and maintain order
 function resequenceCodes() {
+    console.log('StockFlow: Resequencing codes...');
     // Sort main categories to have a consistent base
     sortMainCategories(mainCategories).forEach((main) => {
-        let mainCode = main.code || String(main.id).padStart(2, '0');
+        let mainCode = main.code || '00';
 
         // Resequence SubCategories (Sizes) within this Brand
         let brandSubs = subCategories.filter(s => s.mainId === main.id);
@@ -301,7 +302,6 @@ function resequenceCodes() {
             });
         });
     });
-    saveAll();
 }
 
 function getProductCode(item, main, sub) {
@@ -2786,6 +2786,7 @@ async function confirmDeleteOrder() {
 }
 
 function refreshCategoriesView() {
+    resequenceCodes(); // Force re-sequence to fill gaps before drawing
     const currentExpandedMains = Array.from(document.querySelectorAll('.main-category.expanded')).map(el => el.id);
     const currentExpandedSubs = Array.from(document.querySelectorAll('.sub-category.expanded')).map(el => el.id);
     
@@ -2794,17 +2795,17 @@ function refreshCategoriesView() {
         let mainSubs = subCategories.filter(s => s.mainId === main.id);
         let mainItems = items.filter(i => i.mainId === main.id);
         let totalStock = mainItems.reduce((sum, i) => sum + (i.stock || 0), 0);
-        let mainCode = (main.code) ? main.code : String(main.id).padStart(2, '0');
+        let mainCode = main.code || String(main.id).padStart(2, '0');
 
         let subHtml = '';
         sortSubCategories(mainSubs).forEach(sub => {
             let subItems = items.filter(i => i.mainId === main.id && i.subId === sub.id);
             let subTotalStock = subItems.reduce((sum, i) => sum + (i.stock || 0), 0);
-            let subCode = (sub.code) ? sub.code : (mainCode + String(sub.id).padStart(3, '0'));
+            let subCode = sub.code || 'SIZE_ERR'; 
 
             let itemsHtml = '';
             sortItems(subItems).forEach(item => {
-                let itemCode = item.code || (subCode + String(item.id).padStart(4, '0'));
+                let itemCode = item.code || 'ITEM_ERR';
                 itemsHtml += `
                             <div class="item-row">
                                 <div class="item-info">
@@ -3043,27 +3044,48 @@ function editSubCategory(id) {
 }
 
 async function deleteSubCategory(id) {
+    let sub = subCategories.find(s => s.id === id);
+    if (!sub) return;
     let itemCount = items.filter(i => i.subId === id).length;
     if (itemCount > 0) {
         alert(`Cannot delete size because it has ${itemCount} item(s). Please delete all items first.`);
         return;
     }
-    if (confirm('Are you sure you want to delete this size?')) {
+    if (confirm(`Delete size "${sub.name}"?`)) {
         try {
             const response = await fetch('api/sync.php?action=delete_category', {
                 method: 'POST',
-                body: JSON.stringify({ id: id, type: 'sub' })
+                body: JSON.stringify({ type: 'sub', id: id })
             });
             const result = await response.json();
             if (result.status === 'success') {
                 subCategories = subCategories.filter(s => s.id !== id);
                 resequenceCodes();
-                saveData();
+                refreshCategoriesView();
+                alert('Size deleted!');
+            } else { alert('Delete failed: ' + result.message); }
+        } catch (e) { alert('Sync failed.'); }
+    }
+}
+
+async function deleteItem(id) {
+    let item = items.find(i => i.id === id);
+    if (!item) return;
+    if (confirm('Are you sure you want to delete this item? This will remove all its transaction history.')) {
+        try {
+            const response = await fetch('api/sync.php?action=delete_item', {
+                method: 'POST',
+                body: JSON.stringify({ id: id })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                items = items.filter(i => i.id !== id);
+                resequenceCodes();
                 refreshCategoriesView();
                 refreshDashboard();
                 refreshStockList();
                 refreshLowStockReport();
-                alert('Size deleted!');
+                alert('Item deleted!');
             } else { alert('Delete failed: ' + result.message); }
         } catch (e) { alert('Sync failed.'); }
     }
