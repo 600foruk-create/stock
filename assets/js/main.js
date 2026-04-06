@@ -214,6 +214,9 @@ function saveData() {
     localStorage.setItem('stock_usedOrders', JSON.stringify(Array.from(usedCompletedOrders || [])));
     localStorage.setItem('stock_company', JSON.stringify(companySettings));
     localStorage.setItem('stock_users', JSON.stringify(users || []));
+    if (currentUser) {
+        localStorage.setItem('stock_currentUser', JSON.stringify(currentUser));
+    }
 }
 
 function saveAll() {
@@ -389,8 +392,21 @@ document.addEventListener('keypress', function (e) {
 function logout() {
     currentUser = null;
     localStorage.removeItem('stock_currentUser');
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('loginPage').style.display = 'block';
+    showLogin();
+}
+
+function showLogin() {
+    const loginPage = document.getElementById('loginPage');
+    const appPage = document.getElementById('app');
+    if (loginPage) loginPage.style.display = 'block';
+    if (appPage) appPage.style.display = 'none';
+}
+
+function hideLogin() {
+    const loginPage = document.getElementById('loginPage');
+    const appPage = document.getElementById('app');
+    if (loginPage) loginPage.style.display = 'none';
+    if (appPage) appPage.style.display = 'block';
 }
 
 function formatDate(dateString) {

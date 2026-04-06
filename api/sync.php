@@ -250,3 +250,8 @@ try {
             }
             echo json_encode(['status' => 'success', 'id' => $si['id']]);
         }
+    }
+} catch (Exception $e) {
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+}
+?>
