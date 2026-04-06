@@ -311,7 +311,11 @@ function getProductCode(item, main, sub) {
 }
 
 function sortMainCategories(cats) {
-    return [...cats].sort((a, b) => a.name.localeCompare(b.name));
+    return [...cats].sort((a, b) => {
+        let codeA = a.code || String(a.id).padStart(2, '0');
+        let codeB = b.code || String(b.id).padStart(2, '0');
+        return codeA.localeCompare(codeB);
+    });
 }
 
 function sortSubCategories(subs) {
