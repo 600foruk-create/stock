@@ -1154,10 +1154,13 @@ function refreshDashboard() {
 
     // Low stock items by brand
     let lowStockByBrand = {};
+    let globalLowStockItems = [];
+
     moduleItems.forEach(item => {
         let main = mainCategories.find(m => m.id == item.mainId);
         let min = item.minStock || main?.lowStockLimit || 10;
         if (parseInt(item.stock) <= parseInt(min)) {
+            globalLowStockItems.push({ item, main, min });
             if (main) {
                 if (!lowStockByBrand[main.id]) {
                     lowStockByBrand[main.id] = { name: main.name, count: 0 };
@@ -1191,7 +1194,7 @@ function refreshDashboard() {
                 </div>
                 <div class="stat-card" onclick="toggleStatCard(this)">
                     <h3>Low Stock</h3>
-                    <div class="number">${moduleItems.filter(i => i.stock <= (i.minStock || 10)).length}</div>
+                    <div class="number">${globalLowStockItems.length}</div>
                     <div class="stat-expand">
                         ${lowStockHtml || '<div class="stat-expand-item">No low stock items</div>'}
                     </div>
@@ -1200,10 +1203,14 @@ function refreshDashboard() {
 
     // Brand Cards with Collapse
     let brandCardsHtml = '';
+    let brandStockDistribution = [];
+
     sortMainCategories(mainCategories).forEach(main => {
         let brandItems = items.filter(i => i.mainId == main.id);
         let totalBrandStock = brandItems.reduce((sum, i) => sum + (parseInt(i.stock) || 0), 0);
         let totalBrandKg = brandItems.reduce((sum, i) => sum + ((parseInt(i.stock) || 0) * (parseFloat(i.weight) || 0)), 0);
+
+        brandStockDistribution.push({ name: main.name, stock: totalBrandStock, color: main.color });
 
         let itemsHtml = '';
         sortItems(brandItems).forEach(item => {
@@ -1234,37 +1241,42 @@ function refreshDashboard() {
     });
     document.getElementById('brandStockCards').innerHTML = brandCardsHtml;
 
-    // Pending orders quantities
-    let orderedQtys = {};
-    orders.filter(o => o.status === 'pending' || o.status === 'processing').forEach(order => {
-        (order.items || []).forEach(item => {
-            if (moduleItems.some(i => i.id === item.itemId)) {
-                orderedQtys[item.itemId] = (orderedQtys[item.itemId] || 0) + (item.quantity || 0);
-            }
+    // Render Charts
+    let maxBrandStock = Math.max(...brandStockDistribution.map(b => b.stock), 1);
+    let chartsHtml = brandStockDistribution.map(brand => {
+        let percentage = (brand.stock / maxBrandStock) * 100;
+        return `
+            <div class="chart-row">
+                <div class="chart-label">${brand.name}</div>
+                <div class="chart-bar-wrapper">
+                    <div class="chart-bar-fill" style="width: ${percentage}%; background: ${brand.color};"></div>
+                </div>
+                <div class="chart-value">${brand.stock} PCS</div>
+            </div>
+        `;
+    }).join('');
+    document.getElementById('brandChartsContainer').innerHTML = chartsHtml;
+
+    // Render Alerts
+    let alertsHtml = '';
+    if (globalLowStockItems.length === 0) {
+        alertsHtml = '<div style="grid-column: 1/-1; text-align: center; color: var(--gray-500); padding: 1rem;">No critical low stock alerts</div>';
+    } else {
+        globalLowStockItems.slice(0, 8).forEach(({ item, main, min }) => {
+            let sub = subCategories.find(s => s.id == item.subId);
+            let size = sub ? sub.name : '?';
+            alertsHtml += `
+                <div class="alert-card">
+                    <div class="alert-info">
+                        <h4>${main ? main.name : 'Unknown'} ${size}</h4>
+                        <p>${item.length}ft / ${item.weight}KG (Limit: ${min})</p>
+                    </div>
+                    <div class="alert-qty">${item.stock}</div>
+                </div>
+            `;
         });
-    });
-
-    // Stock Comparison Table
-    let comparisonRows = '';
-    moduleItems.forEach(item => {
-        let main = mainCategories.find(m => m.id === item.mainId);
-        let sub = subCategories.find(s => s.id === item.subId);
-        if (!main || !sub) return;
-
-        let ordered = orderedQtys[item.id] || 0;
-        let remaining = (item.stock || 0) - ordered;
-        let size = sub.name.replace(/[^0-9.]/g, '');
-
-        comparisonRows += `<tr>
-                    <td><span style="color:${main.color};">${main.name}</span></td>
-                    <td>${size}"</td>
-                    <td>${item.length}ft / ${item.weight}KG</td>
-                    <td>${item.stock || 0}</td>
-                    <td>${ordered}</td>
-                    <td style="color: ${remaining >= 0 ? '#16a34a' : '#dc2626'};">${remaining}</td>
-                </tr>`;
-    });
-    document.getElementById('stockComparisonBody').innerHTML = comparisonRows;
+    }
+    document.getElementById('lowStockAlertsContainer').innerHTML = alertsHtml;
 }
 
 function refreshStockList() {

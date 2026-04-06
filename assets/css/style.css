@@ -471,9 +471,11 @@
 
         .brand-total {
             background: rgba(255,255,255,0.2);
-            padding: 0.2rem 0.6rem;
+            padding: 0.3rem 0.8rem;
             border-radius: 50px;
-            font-size: 0.8rem;
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
         }
 
         .brand-body {
@@ -1478,4 +1480,107 @@
 
 .filter-buttons .btn:hover:not(.active) {
     background: var(--gray-300);
+}
+
+/* Dashboard Enhancements */
+.dashboard-section {
+    margin: 2rem 0;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.dashboard-section h3 {
+    margin-bottom: 1.5rem;
+    color: var(--sky-600);
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+/* Custom CSS Charts */
+.chart-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.chart-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.chart-label {
+    width: 100px;
+    font-weight: 600;
+    color: var(--gray-700);
+    font-size: 0.9rem;
+}
+
+.chart-bar-wrapper {
+    flex: 1;
+    height: 24px;
+    background: var(--gray-100);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.chart-bar-fill {
+    height: 100%;
+    transition: width 1s ease-in-out;
+}
+
+.chart-value {
+    margin-left: 1rem;
+    font-weight: 700;
+    color: var(--sky-600);
+    font-size: 0.9rem;
+    min-width: 60px;
+}
+
+/* Alert Cards */
+.alerts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.alert-card {
+    background: #fef2f2;
+    border-left: 5px solid #ef4444;
+    padding: 1rem;
+    border-radius: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: pulse-border 2s infinite;
+}
+
+.alert-info h4 {
+    color: #991b1b;
+    font-size: 0.95rem;
+    margin-bottom: 0.2rem;
+}
+
+.alert-info p {
+    color: #b91c1c;
+    font-size: 0.8rem;
+}
+
+.alert-qty {
+    background: #ef4444;
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+@keyframes pulse-border {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }

@@ -1,20 +1,16 @@
 <div id="dashboard" class="tab-content active">
                     <div class="stats-grid" id="dashboardStats"></div>
                     <div class="brands-container" id="brandStockCards"></div>
-                    <div class="stock-comparison">
-                        <h3 style="margin: 1rem 0; color: var(--sky-600);">📊 Stock vs Pending Orders</h3>
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Brand</th>
-                                    <th>Size</th>
-                                    <th>Product</th>
-                                    <th>Stock</th>
-                                    <th>Pending</th>
-                                    <th>Remaining</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stockComparisonBody"></tbody>
-                        </table>
+                    
+                    <!-- New Charts Section -->
+                    <div id="dashboardCharts" class="dashboard-section">
+                        <h3>📊 Brand Stock Distribution</h3>
+                        <div class="chart-container" id="brandChartsContainer"></div>
+                    </div>
+
+                    <!-- New Alerts Section -->
+                    <div id="lowStockAlerts" class="dashboard-section">
+                        <h3>⚠️ Critical Low Stock Alerts</h3>
+                        <div class="alerts-grid" id="lowStockAlertsContainer"></div>
                     </div>
                 </div>
