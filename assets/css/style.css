@@ -1350,6 +1350,56 @@
                 object-fit: contain !important;
                 border-radius: 0 !important;
             }
+            /* Invoice Styles */
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: white;
+        }
+        .invoice-table th, .invoice-table td {
+            border: 1px solid var(--gray-300);
+            padding: 10px;
+            text-align: left;
+        }
+        .invoice-table th {
+            background-color: var(--sky-50);
+            color: var(--sky-700);
+            font-weight: 700;
+        }
+        .invoice-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            background: var(--gray-50);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        .invoice-total {
+            text-align: right;
+            margin-top: 1.5rem;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--sky-700);
+            border-top: 2px solid var(--gray-200);
+            padding-top: 10px;
+        }
+
+        @media print {
+            .btn, sidebar, aside, .nav-tabs, .action-buttons {
+                display: none !important;
+            }
+            .main-content {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .invoice {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+            }
+        }
             #printCompanyName {
                 font-size: 16pt !important;
                 margin: 0 !important;

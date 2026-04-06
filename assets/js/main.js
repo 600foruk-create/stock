@@ -2453,14 +2453,17 @@ async function saveNewOrder() {
 
         if (result.status === 'success') {
             orderData.id = result.id;
-            orderData.status = orderData.status || 'Pending';
+            orderData.status = (orderData.status || 'pending').toLowerCase();
             orderData.customerName = customerName;
             orders.unshift(orderData);
             saveData();
-            refreshOrdersList();
+            
+            // Immediate UI update
+            refreshOrdersList('all');
             hideNewOrderForm();
             refreshDashboard();
             refreshStockList();
+            
             alert('Order created successfully!');
         } else {
             alert('System Error: ' + (result.message || 'The server rejected the order. Update possibly already exists.'));
@@ -2480,7 +2483,8 @@ function refreshOrdersList(filter = 'all') {
         html = '<div style="text-align:center; padding:2rem;">No orders found</div>';
     } else {
         filteredOrders.forEach(order => {
-            let statusColor = order.status === 'pending' ? '#ffb74d' : (order.status === 'processing' ? '#64b5f6' : '#4caf50');
+            const currentStatus = (order.status || '').toLowerCase();
+            let statusColor = currentStatus === 'pending' ? '#ffb74d' : (currentStatus === 'processing' ? '#64b5f6' : '#4caf50');
             let itemsHtml = '';
             (order.items || []).forEach(item => {
                 itemsHtml += `
@@ -2503,9 +2507,9 @@ function refreshOrdersList(filter = 'all') {
                             <div class="order-footer">
                                 <span class="order-total">Total: ${order.totalQty} PCS | ${parseFloat(order.totalKg || 0).toFixed(2)} KG</span>
                                 <div class="order-actions">
-                                    <button class="btn btn-primary btn-sm" onclick="editOrder(${order.id})">Edit</button>
-                                    ${order.status !== 'completed' ? `<button class="btn btn-success btn-sm" onclick="completeOrder(${order.id})">Complete</button>` : ''}
-                                    <button class="btn btn-print btn-sm" onclick="showInvoice(${order.id})">Invoice</button>
+                                    <button class="btn btn-warning btn-sm" onclick="editOrder(${order.id})">Edit</button>
+                                    ${currentStatus !== 'completed' ? `<button class="btn btn-primary btn-sm" onclick="completeOrder(${order.id})">Complete</button>` : ''}
+                                    <button class="btn btn-info btn-sm" onclick="showInvoice(${order.id})">Invoice</button>
                                     <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${order.id})">Delete</button>
                                 </div>
                             </div>
@@ -2693,7 +2697,7 @@ async function completeOrder(orderId) {
     }
 
     // Update order status on server
-    order.status = 'Completed';
+    order.status = 'completed';
     try {
         await fetch('api/sync.php?action=save_order', {
             method: 'POST',
@@ -2729,10 +2733,10 @@ function showInvoice(orderId) {
     });
 
     let invoiceHtml = `
-                <div class="invoice">
-                    <div class="invoice-header">
-                        <h1>${companySettings.name}</h1>
-                        <p>Invoice #${order.id}</p>
+                <div class="invoice" style="background: white; padding: 20px; color: #333; font-family: 'Segoe UI', sans-serif;">
+                    <div class="invoice-header" style="text-align: center; border-bottom: 2px solid var(--sky-500); padding-bottom: 10px; margin-bottom: 20px;">
+                        <h1 style="margin: 0; color: var(--sky-600);">${companySettings.name}</h1>
+                        <p style="margin: 5px 0; color: var(--gray-500);">Order Invoice #${order.id}</p>
                     </div>
                     <div class="invoice-details">
                         <p><strong>Date:</strong> ${formatDate(order.date)}</p>
