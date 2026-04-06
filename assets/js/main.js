@@ -1180,14 +1180,14 @@ function refreshDashboard() {
 
     document.getElementById('dashboardStats').innerHTML = `
                 <div class="stat-card" onclick="toggleStatCard(this)">
-                    <h3>Total Items | کل آئٹمز</h3>
+                    <h3>Total Items</h3>
                     <div class="number">${totalItems}</div>
                     <div class="stat-expand">
                         <div class="stat-expand-item"><span>Active Items</span><span>${totalItems}</span></div>
                     </div>
                 </div>
                 <div class="stat-card" onclick="toggleStatCard(this)">
-                    <h3>Total Stock | کل سٹاک</h3>
+                    <h3>Total Stock</h3>
                     <div class="number">${totalStock} PCS</div>
                     <div class="sub">${totalKg.toFixed(2)} KG</div>
                     <div class="stat-expand">
@@ -1196,7 +1196,7 @@ function refreshDashboard() {
                     </div>
                 </div>
                 <div class="stat-card" onclick="toggleStatCard(this)">
-                    <h3>Low Stock | کم اسٹاک</h3>
+                    <h3>Low Stock</h3>
                     <div class="number">${globalLowStockItems.length}</div>
                     <div class="stat-expand">
                         ${lowStockHtml || '<div class="stat-expand-item">No low stock items</div>'}
