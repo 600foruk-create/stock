@@ -1201,7 +1201,8 @@ function refreshStockList() {
             if (!isMatch) return;
             hasVisibleItems = true;
 
-            let desc = `${sizeName}"( ${(item.weight || 0).toFixed(1)} ) Kg`;
+            let weightVal = parseFloat(item.weight) || 0;
+            let desc = `${sizeName}"( ${weightVal.toFixed(1)} ) Kg`;
             let available = item.stock || 0;
             let inOrder = orderedQtys[item.id] || 0;
             let result = available - inOrder;
@@ -1302,18 +1303,19 @@ function refreshAuditList() {
         sortedSizes.forEach(sizeName => {
             const group = sortItems(sizeGroups[sizeName]);
             group.forEach((item, index) => {
-                let systemPcs = item.stock || 0;
+                let weightVal = parseFloat(item.weight) || 0;
+                let systemPcs = parseInt(item.stock) || 0;
                 let ordered = orderedQtys[item.id] || 0;
                 let effectivePcs = systemPcs - ordered; // The stock that should be there
-                let systemKg = (effectivePcs * (item.weight || 0)).toFixed(2);
+                let systemKg = (effectivePcs * weightVal).toFixed(2);
                 
                 bSysPcs += effectivePcs;
                 bSysKg += parseFloat(systemKg);
 
                 rowsHtml += `
-                    <tr id="auditRow_${item.id}" data-unit-weight="${item.weight || 0}" data-brand-id="${main.id}">
+                    <tr id="auditRow_${item.id}" data-unit-weight="${weightVal}" data-brand-id="${main.id}">
                         ${index === 0 ? `<td rowspan="${group.length}" style="font-weight:700; background: var(--gray-50); font-size: 1.1rem; border-right: 2px solid var(--gray-300);">${sizeName}"</td>` : ''}
-                        <td>${(item.weight || 0).toFixed(2)} KG</td>
+                        <td>${weightVal.toFixed(2)} KG</td>
                         <td style="color:${main.color}; font-weight:600;">${main.name}</td>
                         <td id="auditSysPcs_${item.id}" class="sys-pcs-val">${effectivePcs}</td>
                         <td id="auditSysKg_${item.id}" class="sys-kg-val">${systemKg}</td>
