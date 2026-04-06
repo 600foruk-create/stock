@@ -145,10 +145,14 @@ try {
             $o = $input['order'];
             $conn->beginTransaction();
             try {
+                // Database Date Format Fix
+                $dateVal = $o['date'] ?? date('Y-m-d H:i:s');
+                $dateVal = str_replace('T', ' ', $dateVal); // Change datetime-local format to MySQL format
+
                 if (isset($o['id']) && !empty($o['id'])) {
                     // Update existing order
                     $stmt = $conn->prepare("UPDATE orders SET date = ?, customer_id = ?, status = ?, total_qty = ?, total_kg = ? WHERE id = ?");
-                    $stmt->execute([$o['date'], $o['customerId'], $o['status'], $o['totalQty'] ?? 0, $o['totalKg'] ?? 0, $o['id']]);
+                    $stmt->execute([$dateVal, $o['customerId'], $o['status'], $o['totalQty'] ?? 0, $o['totalKg'] ?? 0, $o['id']]);
                     $orderId = $o['id'];
                     
                     // Delete existing items for full refresh (simple approach)
@@ -156,7 +160,7 @@ try {
                 } else {
                     // Insert new order
                     $stmt = $conn->prepare("INSERT INTO orders (date, customer_id, status, total_qty, total_kg) VALUES (?, ?, ?, ?, ?)");
-                    $stmt->execute([$o['date'], $o['customerId'], $o['status'] ?? 'Pending', $o['totalQty'] ?? 0, $o['totalKg'] ?? 0]);
+                    $stmt->execute([$dateVal, $o['customerId'], $o['status'] ?? 'Pending', (int)($o['totalQty'] ?? 0), (float)($o['totalKg'] ?? 0)]);
                     $orderId = $conn->lastInsertId();
                 }
 

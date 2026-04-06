@@ -2185,6 +2185,7 @@ async function saveNewOrder() {
         const result = await response.json();
         if (result.status === 'success') {
             orderData.id = result.id;
+            orderData.status = orderData.status || 'Pending';
             orderData.customerName = customerName;
             orders.unshift(orderData);
             saveData();
@@ -2194,10 +2195,11 @@ async function saveNewOrder() {
             refreshStockList();
             alert('Order created!');
         } else {
-            alert('Error: ' + result.message);
+            alert('Server Error: ' + (result.message || 'Unknown error'));
         }
     } catch (e) {
-        alert('Sync failed.');
+        console.error('Order save error:', e);
+        alert('Sync failed: Network or Server error. Please check your connection.');
     }
 }
 
