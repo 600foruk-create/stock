@@ -43,6 +43,11 @@ async function initApp() {
         try { currentUser = JSON.parse(savedUser); } catch (e) { }
     }
 
+    let savedAudit = localStorage.getItem('stock_auditSession');
+    if (savedAudit) {
+        try { auditSession = JSON.parse(savedAudit); } catch (e) { }
+    }
+
     // Fetch all data from SQL
     try {
         const response = await fetch('api/sync.php?action=get_all');
@@ -1420,6 +1425,7 @@ function calculateAuditRow(itemId, unitWeight, brandId) {
     
     // Save to persistence
     auditSession[itemId] = godownPcsStr;
+    localStorage.setItem('stock_auditSession', JSON.stringify(auditSession));
     
     diffPcsEl.textContent = (diffPcs > 0 ? '+' : '') + diffPcs;
     diffKgEl.textContent = (diffPcs > 0 ? '+' : '') + diffKg;
@@ -1539,6 +1545,7 @@ async function saveMonthlyAudit() {
 function resetAuditSession() {
     if (confirm('Clear ALL Godown Stock manual entries? This cannot be undone.')) {
         auditSession = {};
+        localStorage.removeItem('stock_auditSession');
         refreshAuditList();
     }
 }
