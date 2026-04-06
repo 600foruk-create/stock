@@ -1146,6 +1146,9 @@ function toggleSubCategory(header) {
 }
 
 // Dashboard Functions
+let myBarChart = null;
+let myDonutChart = null;
+
 function refreshDashboard() {
     let moduleItems = items;
     let totalItems = moduleItems.length;
@@ -1177,14 +1180,14 @@ function refreshDashboard() {
 
     document.getElementById('dashboardStats').innerHTML = `
                 <div class="stat-card" onclick="toggleStatCard(this)">
-                    <h3>Total Items</h3>
+                    <h3>Total Items | کل آئٹمز</h3>
                     <div class="number">${totalItems}</div>
                     <div class="stat-expand">
                         <div class="stat-expand-item"><span>Active Items</span><span>${totalItems}</span></div>
                     </div>
                 </div>
                 <div class="stat-card" onclick="toggleStatCard(this)">
-                    <h3>Total Stock</h3>
+                    <h3>Total Stock | کل سٹاک</h3>
                     <div class="number">${totalStock} PCS</div>
                     <div class="sub">${totalKg.toFixed(2)} KG</div>
                     <div class="stat-expand">
@@ -1193,7 +1196,7 @@ function refreshDashboard() {
                     </div>
                 </div>
                 <div class="stat-card" onclick="toggleStatCard(this)">
-                    <h3>Low Stock</h3>
+                    <h3>Low Stock | کم اسٹاک</h3>
                     <div class="number">${globalLowStockItems.length}</div>
                     <div class="stat-expand">
                         ${lowStockHtml || '<div class="stat-expand-item">No low stock items</div>'}
@@ -1201,61 +1204,30 @@ function refreshDashboard() {
                 </div>
             `;
 
-    // Brand Cards with Collapse
+    // Brand Cards - Static & Uniform
     let brandCardsHtml = '';
-    let brandStockDistribution = [];
+    let brandData = [];
 
     sortMainCategories(mainCategories).forEach(main => {
         let brandItems = items.filter(i => i.mainId == main.id);
         let totalBrandStock = brandItems.reduce((sum, i) => sum + (parseInt(i.stock) || 0), 0);
         let totalBrandKg = brandItems.reduce((sum, i) => sum + ((parseInt(i.stock) || 0) * (parseFloat(i.weight) || 0)), 0);
 
-        brandStockDistribution.push({ name: main.name, stock: totalBrandStock, color: main.color });
-
-        let itemsHtml = '';
-        sortItems(brandItems).forEach(item => {
-            let sub = subCategories.find(s => s.id == item.subId);
-            let sizeName = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
-            itemsHtml += `
-                        <div class="stock-item">
-                            <div class="item-info">
-                                <span class="item-size">${sizeName}"</span>
-                                <span class="item-details">${item.length}ft / ${item.weight}KG</span>
-                            </div>
-                            <span class="item-qty">${item.stock || 0}</span>
-                        </div>
-                    `;
-        });
+        brandData.push({ name: main.name, stock: totalBrandStock, kg: totalBrandKg, color: main.color });
 
         brandCardsHtml += `
-                    <div class="brand-card" id="brandCard_${main.id}">
-                        <div class="brand-header" style="background: ${main.color};" onclick="toggleBrandCard(document.getElementById('brandCard_${main.id}'))">
+                    <div class="brand-card">
+                        <div class="brand-header" style="background: ${main.color};">
                             <h4>${main.name}</h4>
-                            <span class="brand-total">${totalBrandStock} PCS | ${totalBrandKg.toFixed(2)} KG</span>
-                        </div>
-                        <div class="brand-body">
-                            ${itemsHtml}
+                            <span class="brand-total">${totalBrandStock} PCS<br>${totalBrandKg.toFixed(2)} KG</span>
                         </div>
                     </div>
                 `;
     });
     document.getElementById('brandStockCards').innerHTML = brandCardsHtml;
 
-    // Render Charts
-    let maxBrandStock = Math.max(...brandStockDistribution.map(b => b.stock), 1);
-    let chartsHtml = brandStockDistribution.map(brand => {
-        let percentage = (brand.stock / maxBrandStock) * 100;
-        return `
-            <div class="chart-row">
-                <div class="chart-label">${brand.name}</div>
-                <div class="chart-bar-wrapper">
-                    <div class="chart-bar-fill" style="width: ${percentage}%; background: ${brand.color};"></div>
-                </div>
-                <div class="chart-value">${brand.stock} PCS</div>
-            </div>
-        `;
-    }).join('');
-    document.getElementById('brandChartsContainer').innerHTML = chartsHtml;
+    // Render Advanced Charts
+    renderAdvancedCharts(brandData);
 
     // Render Alerts
     let alertsHtml = '';
@@ -1277,6 +1249,75 @@ function refreshDashboard() {
         });
     }
     document.getElementById('lowStockAlertsContainer').innerHTML = alertsHtml;
+}
+
+function renderAdvancedCharts(brandData) {
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js not loaded yet.');
+        return;
+    }
+
+    const labels = brandData.map(d => d.name);
+    const stocks = brandData.map(d => d.stock);
+    const colors = brandData.map(d => d.color);
+
+    // Bar Chart
+    const ctxBar = document.getElementById('barChart');
+    if (ctxBar) {
+        if (myBarChart) myBarChart.destroy();
+        myBarChart = new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Pieces (PCS)',
+                    data: stocks,
+                    backgroundColor: colors.map(c => c + 'CC'), // 80% opacity
+                    borderColor: colors,
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // Donut Chart
+    const ctxDonut = document.getElementById('donutChart');
+    if (ctxDonut) {
+        if (myDonutChart) myDonutChart.destroy();
+        myDonutChart = new Chart(ctxDonut, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: stocks,
+                    backgroundColor: colors,
+                    borderWidth: 0,
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 20 } }
+                },
+                cutout: '65%'
+            }
+        });
+    }
 }
 
 function refreshStockList() {

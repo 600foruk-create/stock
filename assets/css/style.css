@@ -456,34 +456,34 @@
         }
 
         .brand-header {
-            padding: 0.8rem 1rem;
+            padding: 1.2rem;
             color: white;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
-            font-size: 0.9rem;
-            cursor: pointer;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
         }
 
         .brand-header h4 {
-            font-size: 1rem;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 800;
         }
 
         .brand-total {
             background: rgba(255,255,255,0.2);
-            padding: 0.3rem 0.8rem;
-            border-radius: 50px;
-            font-size: 1rem;
+            padding: 0.4rem 1rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
             font-weight: 800;
-            letter-spacing: 0.5px;
+            width: 100%;
+            display: block;
         }
 
         .brand-body {
-            padding: 0.8rem;
-            background: var(--gray-50);
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
+            display: none !important;
         }
 
         .brand-card.expanded .brand-body {
@@ -1489,6 +1489,17 @@
     padding: 1.5rem;
     border-radius: 1.5rem;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.chart-main-wrapper {
+    margin-top: 1rem;
+}
+
+.chart-box {
+    background: var(--gray-50);
+    padding: 1.5rem;
+    border-radius: 1rem;
+    border: 1px solid var(--gray-200);
 }
 
 .dashboard-section h3 {

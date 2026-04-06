@@ -9,6 +9,7 @@
     <title>StockFlow - Modern Stock Manager</title>
     <!-- Modular CSS included here -->
     <link rel="stylesheet" href="assets/css/style.css?v=<?= time(); ?>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <!-- Login Page -->
