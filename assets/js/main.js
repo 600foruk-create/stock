@@ -90,7 +90,16 @@ async function initApp() {
         showLogin();
     } else {
         hideLogin();
+        // Force refresh all UI components with new SQL data
         refreshDashboard();
+        refreshCategoriesView();
+        refreshStockList();
+        refreshOrdersList();
+        refreshCustomersList();
+        refreshTransactions();
+        refreshUsersList();
+        refreshLowStockReport();
+        refreshAuditList();
     }
 }
 
