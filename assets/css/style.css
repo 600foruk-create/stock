@@ -1460,8 +1460,6 @@
                 print-color-adjust: exact;
             }
         }
-    }
-}
 
 /* --- Improved Printing System --- */
 
@@ -1470,7 +1468,7 @@
 .print-header-section, 
 .print-header-content, 
 .print-header-spacer {
-    display: none;
+    display: none !important;
 }
 
 /* 2. Print Mode Styles */
