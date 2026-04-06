@@ -281,7 +281,7 @@ function saveAll() {
 
 // Function to re-sequence all codes to fill gaps and maintain order
 function resequenceCodes() {
-    // Sort main categories to have a consistent base if they don't have codes
+    // Sort main categories to have a consistent base
     sortMainCategories(mainCategories).forEach((main) => {
         let mainCode = main.code || String(main.id).padStart(2, '0');
 
@@ -289,12 +289,14 @@ function resequenceCodes() {
         let brandSubs = subCategories.filter(s => s.mainId === main.id);
         sortSubCategories(brandSubs).forEach((sub, subIndex) => {
             let newSubSeq = subIndex + 1;
+            // Use 3-digit padding for sub-categories (sizes)
             sub.code = mainCode + String(newSubSeq).padStart(3, '0');
 
             // Resequence Items within this Size
             let subItems = items.filter(i => i.subId === sub.id);
             sortItems(subItems).forEach((item, itemIndex) => {
                 let newItemSeq = itemIndex + 1;
+                // Use 4-digit padding for items
                 item.code = sub.code + String(newItemSeq).padStart(4, '0');
             });
         });
@@ -2961,7 +2963,7 @@ async function saveMainCategory() {
     let lowStockLimit = parseInt(document.getElementById('mainCategoryLowStock').value) || 10;
     if (!name) { alert('Enter brand name'); return; }
 
-    let catData = { id, name, color, lowStockLimit };
+    let catData = { id, name, code, color, lowStockLimit };
     try {
         const response = await fetch('api/sync.php?action=save_category', {
             method: 'POST',
@@ -2973,11 +2975,11 @@ async function saveMainCategory() {
             if (id) {
                 let main = mainCategories.find(m => m.id == id);
                 if (main) {
-                    main.name = name; main.color = color; main.lowStockLimit = lowStockLimit;
+                    main.name = name; main.code = code; main.color = color; main.lowStockLimit = lowStockLimit;
                 }
             } else {
                 let newId = result.id;
-                mainCategories.push({ id: newId, code: code || String(newId).padStart(2, '0'), name, color, lowStockLimit });
+                mainCategories.push({ id: newId, code, name, color, lowStockLimit });
             }
             saveData();
             refreshCategoriesView();

@@ -12,7 +12,7 @@ try {
         if ($action === 'get_all') {
             $data = [
                 'users' => $conn->query("SELECT id, name, username, password, role FROM users")->fetchAll(PDO::FETCH_ASSOC),
-                'mainCategories' => $conn->query("SELECT id, name, color, low_stock_limit AS lowStockLimit FROM main_categories")->fetchAll(PDO::FETCH_ASSOC),
+                'mainCategories' => $conn->query("SELECT id, name, code, color, low_stock_limit AS lowStockLimit FROM main_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'subCategories' => $conn->query("SELECT id, main_id AS mainId, name FROM sub_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'items' => $conn->query("SELECT id, main_id AS mainId, sub_id AS subId, name, length, weight, stock FROM items")->fetchAll(PDO::FETCH_ASSOC),
                 'customers' => $conn->query("SELECT id, unique_id AS uniqueId, name, address, mobile FROM customers")->fetchAll(PDO::FETCH_ASSOC),
@@ -74,11 +74,11 @@ try {
             
             if ($type === 'main') {
                 if (isset($cat['id']) && !empty($cat['id'])) {
-                    $stmt = $conn->prepare("UPDATE main_categories SET name = ?, color = ?, low_stock_limit = ? WHERE id = ?");
-                    $stmt->execute([$cat['name'], $cat['color'] ?? '#2196f3', $cat['lowStockLimit'] ?? 10, $cat['id']]);
+                    $stmt = $conn->prepare("UPDATE main_categories SET name = ?, code = ?, color = ?, low_stock_limit = ? WHERE id = ?");
+                    $stmt->execute([$cat['name'], $cat['code'] ?? '', $cat['color'] ?? '#2196f3', $cat['lowStockLimit'] ?? 10, $cat['id']]);
                 } else {
-                    $stmt = $conn->prepare("INSERT INTO main_categories (name, color, low_stock_limit) VALUES (?, ?, ?)");
-                    $stmt->execute([$cat['name'], $cat['color'] ?? '#2196f3', $cat['lowStockLimit'] ?? 10]);
+                    $stmt = $conn->prepare("INSERT INTO main_categories (name, code, color, low_stock_limit) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$cat['name'], $cat['code'] ?? '', $cat['color'] ?? '#2196f3', $cat['lowStockLimit'] ?? 10]);
                     $cat['id'] = $conn->lastInsertId();
                 }
             } else {
