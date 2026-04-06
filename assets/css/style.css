@@ -1432,8 +1432,31 @@
             .search-filter-bar {
                 display: none !important;
             }
+            
+            /* Print Logo Refinement */
+            .printLogo, #printLogo, #auditPrintLogo {
+                width: 60px !important;
+                height: 60px !important;
+                border-radius: 50% !important;
+                overflow: hidden !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                background: white !important;
+                border: 1px solid #ddd !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
             .printLogo img, #printLogo img, #auditPrintLogo img {
-                max-height: 80px !important;
-                width: auto !important;
+                width: 100% !important;
+                height: 100% !important;
+                max-height: none !important;
+                object-fit: cover !important;
+            }
+
+            .audit-brand-header {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
         }
