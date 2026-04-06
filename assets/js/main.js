@@ -2363,6 +2363,20 @@ function refreshOrdersList(filter = 'all') {
         });
     }
     document.getElementById('customerOrdersList').innerHTML = html;
+
+    // Update active button state
+    const filterContainer = document.querySelector('.filter-buttons');
+    if (filterContainer) {
+        const buttons = filterContainer.querySelectorAll('.btn');
+        buttons.forEach(btn => {
+            const btnText = btn.textContent.toLowerCase();
+            if (btnText === f) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
 }
 
 function filterOrders(status) {
