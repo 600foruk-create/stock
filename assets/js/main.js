@@ -74,6 +74,16 @@ async function initApp() {
             rawMaterials = d.rawMaterials || [];
             storeItems = d.storeItems || [];
             
+            // Sync Audit Session from DB: restore saved counts if they are not currently being edited
+            if (d.latestAudit) {
+                d.latestAudit.forEach(a => {
+                    if (!(a.item_id in auditSession) || !auditSession[a.item_id]) {
+                        auditSession[a.item_id] = String(a.godown_qty);
+                    }
+                });
+                localStorage.setItem('stock_auditSession', JSON.stringify(auditSession));
+            }
+            
             // Map settings
             if (d.settings) {
                 d.settings.forEach(s => {

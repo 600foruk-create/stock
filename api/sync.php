@@ -21,6 +21,7 @@ try {
                 'settings' => $conn->query("SELECT id, category, `key`, value FROM settings")->fetchAll(PDO::FETCH_ASSOC),
                 'rawMaterials' => $conn->query("SELECT id, name, category, unit, stock, threshold FROM raw_materials")->fetchAll(PDO::FETCH_ASSOC),
                 'storeItems' => $conn->query("SELECT id, name, description, stock FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
+                'latestAudit' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id)")->fetchAll(PDO::FETCH_ASSOC),
             ];
             
             // Add order items to orders
