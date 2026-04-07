@@ -2742,59 +2742,65 @@ async function completeOrder(orderId) {
 }
 
 function showInvoice(orderId) {
-    let order = orders.find(o => o.id == orderId);
-    if (!order) {
-        alert('Order not found!');
-        return;
+    try {
+        let order = orders.find(o => o.id == orderId);
+        if (!order) {
+            alert('Order not found!');
+            return;
+        }
+
+        let customer = customers.find(c => c.id == order.customerId);
+        let itemsHtml = '';
+        (order.items || []).forEach(item => {
+            const weight = parseFloat(item.weight || 0);
+            const qty = parseInt(item.quantity || 0);
+            itemsHtml += `<tr>
+                        <td>${item.productCode || 'N/A'}</td>
+                        <td>${item.length || 13} ft</td>
+                        <td>${weight.toFixed(2)} KG</td>
+                        <td>${qty}</td>
+                        <td>${(weight * qty).toFixed(2)} KG</td>
+                    </tr>`;
+        });
+
+        let invoiceHtml = `
+                    <div class="invoice" style="background: white; padding: 20px; color: #333; font-family: 'Segoe UI', sans-serif;">
+                        <div class="invoice-header" style="text-align: center; border-bottom: 2px solid var(--sky-500); padding-bottom: 10px; margin-bottom: 20px;">
+                            <h1 style="margin: 0; color: var(--sky-600);">${companySettings.name || 'StockFlow'}</h1>
+                            <p style="margin: 5px 0; color: var(--gray-500);">Order Invoice #${order.id}</p>
+                        </div>
+                        <div class="invoice-details">
+                            <p><strong>Date:</strong> ${formatDate(order.date)}</p>
+                            <p><strong>Customer:</strong> ${order.customerName || 'N/A'}</p>
+                            ${customer ? `<p><strong>Address:</strong> ${customer.address || 'N/A'}</p>` : ''}
+                            ${customer ? `<p><strong>Mobile:</strong> ${customer.mobile || 'N/A'}</p>` : ''}
+                        </div>
+                        <table class="invoice-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Length</th>
+                                    <th>Weight/Unit</th>
+                                    <th>Quantity</th>
+                                    <th>Total Weight</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                        <div class="invoice-total">
+                            Total Quantity: ${order.totalQty || 0} PCS | Total Weight: ${parseFloat(order.totalKg || 0).toFixed(2)} KG
+                        </div>
+                    </div>
+                `;
+
+        document.getElementById('invoiceContent').innerHTML = invoiceHtml;
+        document.getElementById('invoiceModal').style.display = 'block';
+    } catch (err) {
+        console.error('Invoice generation failed:', err);
+        alert('Invoice Error: One required piece of data is missing or corrupted. \n\nDetails: ' + err.message);
     }
-
-    let customer = customers.find(c => c.id === order.customerId);
-
-    let itemsHtml = '';
-    (order.items || []).forEach(item => {
-        itemsHtml += `<tr>
-                    <td>${item.productCode}</td>
-                    <td>${item.length || 13} ft</td>
-                    <td>${item.weight} KG</td>
-                    <td>${item.quantity}</td>
-                    <td>${(item.weight * item.quantity).toFixed(2)} KG</td>
-                </tr>`;
-    });
-
-    let invoiceHtml = `
-                <div class="invoice" style="background: white; padding: 20px; color: #333; font-family: 'Segoe UI', sans-serif;">
-                    <div class="invoice-header" style="text-align: center; border-bottom: 2px solid var(--sky-500); padding-bottom: 10px; margin-bottom: 20px;">
-                        <h1 style="margin: 0; color: var(--sky-600);">${companySettings.name}</h1>
-                        <p style="margin: 5px 0; color: var(--gray-500);">Order Invoice #${order.id}</p>
-                    </div>
-                    <div class="invoice-details">
-                        <p><strong>Date:</strong> ${formatDate(order.date)}</p>
-                        <p><strong>Customer:</strong> ${order.customerName}</p>
-                        ${customer ? `<p><strong>Address:</strong> ${customer.address || 'N/A'}</p>` : ''}
-                        ${customer ? `<p><strong>Mobile:</strong> ${customer.mobile || 'N/A'}</p>` : ''}
-                    </div>
-                    <table class="invoice-table">
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Length</th>
-                                <th>Weight/Unit</th>
-                                <th>Quantity</th>
-                                <th>Total Weight</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${itemsHtml}
-                        </tbody>
-                    </table>
-                    <div class="invoice-total">
-                        Total Quantity: ${order.totalQty} PCS | Total Weight: ${(order.totalKg || 0).toFixed(2)} KG
-                    </div>
-                </div>
-            `;
-
-    document.getElementById('invoiceContent').innerHTML = invoiceHtml;
-    document.getElementById('invoiceModal').style.display = 'block';
 }
 
 function closeInvoiceModal() {
@@ -2993,12 +2999,12 @@ async function updateOrder(orderId) {
             itemId: itemId,
             mainId: item.mainId,
             subId: item.subId,
-            mainName: main ? main.name : '',
-            subName: sub ? sub.name : '',
-            productCode: getProductCode(item, main, sub),
-            itemName: item.name,
-            weight: item.weight,
-            length: item.length,
+            mainName: main ? main.name : (existingItem ? existingItem.mainName : ''),
+            subName: sub ? sub.name : (existingItem ? existingItem.subName : ''),
+            productCode: getProductCode(item, main, sub) || (existingItem ? existingItem.productCode : 'N/A'),
+            itemName: item.name || (existingItem ? existingItem.itemName : ''),
+            weight: item.weight || (existingItem ? existingItem.weight : 0),
+            length: item.length || (existingItem ? existingItem.length : 13),
             quantity: qty,
             fulfilled: fulfilled
         });
