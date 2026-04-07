@@ -2647,7 +2647,7 @@ function loadCompletedOrderForSale() {
 }
 
 async function completeOrder(orderId) {
-    let order = orders.find(o => o.id === orderId);
+    let order = orders.find(o => o.id == orderId);
     if (!order) return;
 
     let canComplete = true;
@@ -2742,8 +2742,11 @@ async function completeOrder(orderId) {
 }
 
 function showInvoice(orderId) {
-    let order = orders.find(o => o.id === orderId);
-    if (!order) return;
+    let order = orders.find(o => o.id == orderId);
+    if (!order) {
+        alert('Order not found!');
+        return;
+    }
 
     let customer = customers.find(c => c.id === order.customerId);
 
@@ -2810,7 +2813,7 @@ function printInvoice() {
 }
 
 function editOrder(orderId) {
-    let order = orders.find(o => o.id === orderId);
+    let order = orders.find(o => o.id == orderId);
     if (!order) return;
 
     let formHtml = `
@@ -2845,6 +2848,9 @@ function editOrder(orderId) {
         row.dataset.brandId = item.mainId;
         row.dataset.sizeId = item.subId;
         row.dataset.itemId = item.itemId;
+        row.dataset.itemName = item.itemName;
+        row.dataset.itemWeight = item.weight;
+        row.dataset.itemLength = item.length;
 
         let sizeWrapper = createSearchableInput('Size...', [], null, true, null);
         let itemWrapper = createSearchableInput('Item...', [], null, true, null);
@@ -2957,7 +2963,7 @@ function addEditOrderRow() {
 }
 
 async function updateOrder(orderId) {
-    let order = orders.find(o => o.id === orderId);
+    let order = orders.find(o => o.id == orderId);
     if (!order) return;
 
     let rows = document.getElementById('editOrderItems').children;
