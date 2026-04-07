@@ -55,8 +55,15 @@
                     </div>
                     
                     <h3 style="margin:1rem 0; color:var(--sky-600);">Recent Transactions</h3>
-                    <div class="search-box">
-                        <input type="text" id="transSearch" placeholder="Search..." onkeyup="filterTable('transTable', this.value)" style="width:100%; padding:0.5rem; border:1px solid var(--gray-300); border-radius:50px;">
+                    <div class="filter-bar" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; background: var(--gray-50); padding: 1rem; border-radius: 10px; border: 1px solid var(--gray-200);">
+                        <input type="text" id="transSearch" placeholder="Search Brand/Product..." onkeyup="refreshTransactions()" style="flex: 2; min-width: 200px; padding: 0.6rem; border: 1px solid var(--gray-300); border-radius: 8px;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 300px;">
+                            <input type="date" id="transDateFrom" onchange="refreshTransactions()" style="padding: 0.6rem; border: 1px solid var(--gray-300); border-radius: 8px; flex: 1;">
+                            <span style="color: var(--gray-500);">to</span>
+                            <input type="date" id="transDateTo" onchange="refreshTransactions()" style="padding: 0.6rem; border: 1px solid var(--gray-300); border-radius: 8px; flex: 1;">
+                        </div>
+                        <button class="btn btn-warning" onclick="clearTransactionView()" style="white-space: nowrap;">🧹 Clear Screen</button>
+                        <button class="btn btn-info" onclick="resetTransactionFilters()" style="white-space: nowrap;">🔄 Reset</button>
                     </div>
                     <table class="data-table" id="transTable">
                         <thead>

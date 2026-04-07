@@ -2480,12 +2480,40 @@ async function saveNewOrder() {
 }
 
 // Orders Functions
-function refreshOrdersList(filter = 'all') {
+let currentOrderFilter = 'all';
+let ordersViewCleared = false;
+
+function refreshOrdersList(filter = null) {
+    if (filter !== null) currentOrderFilter = filter;
     let html = '';
-    let f = filter.toLowerCase();
-    let filteredOrders = f === 'all' ? orders : orders.filter(o => (o.status || '').toLowerCase() === f);
+    let f = currentOrderFilter.toLowerCase();
+    
+    // Get filter values
+    const search = (document.getElementById('orderSearch')?.value || '').toLowerCase();
+    const fromDate = document.getElementById('orderDateFrom')?.value;
+    const toDate = document.getElementById('orderDateTo')?.value;
+
+    if (ordersViewCleared) {
+        document.getElementById('customerOrdersList').innerHTML = '<div style="text-align:center; padding:3rem; color:var(--gray-500);">Screen cleared. Use filters or click Reset to show orders.</div>';
+        return;
+    }
+
+    let filteredOrders = orders.filter(o => {
+        // Status filter
+        const statusMatch = f === 'all' || (o.status || '').toLowerCase() === f;
+        // Search filter
+        const searchMatch = !search || (o.customerName || '').toLowerCase().includes(search);
+        // Date filter
+        const orderDate = new Date(o.date).setHours(0,0,0,0);
+        const from = fromDate ? new Date(fromDate).setHours(0,0,0,0) : null;
+        const to = toDate ? new Date(toDate).setHours(0,0,0,0) : null;
+        const dateMatch = (!from || orderDate >= from) && (!to || orderDate <= to);
+        
+        return statusMatch && searchMatch && dateMatch;
+    });
+
     if (filteredOrders.length === 0) {
-        html = '<div style="text-align:center; padding:2rem;">No orders found</div>';
+        html = '<div style="text-align:center; padding:2rem;">No orders found matching your filters</div>';
     } else {
         filteredOrders.forEach(order => {
             const currentStatus = (order.status || '').toLowerCase();
@@ -2537,6 +2565,20 @@ function refreshOrdersList(filter = 'all') {
             }
         });
     }
+}
+
+function clearOrdersView() {
+    ordersViewCleared = true;
+    refreshOrdersList();
+}
+
+function resetOrderFilters() {
+    ordersViewCleared = false;
+    document.getElementById('orderSearch').value = '';
+    document.getElementById('orderDateFrom').value = '';
+    document.getElementById('orderDateTo').value = '';
+    currentOrderFilter = 'all';
+    refreshOrdersList();
 }
 
 function filterOrders(status) {
@@ -3581,12 +3623,39 @@ function deleteUser(userId) {
     }
 }
 
+let transViewCleared = false;
+
 function refreshTransactions() {
     let rows = '';
-    if (transactions.length === 0) {
-        rows = '<tr><td colspan="6" style="text-align:center; padding:1rem;">No transactions yet</td></tr>';
+    const search = (document.getElementById('transSearch')?.value || '').toLowerCase();
+    const fromDate = document.getElementById('transDateFrom')?.value;
+    const toDate = document.getElementById('transDateTo')?.value;
+
+    if (transViewCleared) {
+        document.getElementById('transactionsBody').innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--gray-500);">Screen cleared. Use search or dates to find records.</td></tr>';
+        return;
+    }
+
+    let filtered = transactions.filter(t => {
+        const searchMatch = !search || 
+            (t.mainName || '').toLowerCase().includes(search) || 
+            (t.productCode || '').toLowerCase().includes(search) ||
+            (t.customer || '').toLowerCase().includes(search);
+        
+        const tDate = new Date(t.date).setHours(0,0,0,0);
+        const from = fromDate ? new Date(fromDate).setHours(0,0,0,0) : null;
+        const to = toDate ? new Date(toDate).setHours(0,0,0,0) : null;
+        const dateMatch = (!from || tDate >= from) && (!to || tDate <= to);
+
+        return searchMatch && dateMatch;
+    });
+
+    if (filtered.length === 0) {
+        rows = '<tr><td colspan="6" style="text-align:center; padding:1rem;">No transactions found matching your filters</td></tr>';
     } else {
-        transactions.slice(0, 20).forEach(t => {
+        // Show all filtered or limit to 50 if no filter active
+        const displayList = (search || fromDate || toDate) ? filtered : filtered.slice(0, 50);
+        displayList.forEach(t => {
             rows += `<tr>
                         <td style="padding:0.5rem;">${formatDate(t.date)}</td>
                         <td style="padding:0.5rem;">${t.type}</td>
@@ -3598,6 +3667,19 @@ function refreshTransactions() {
         });
     }
     document.getElementById('transactionsBody').innerHTML = rows;
+}
+
+function clearTransactionView() {
+    transViewCleared = true;
+    refreshTransactions();
+}
+
+function resetTransactionFilters() {
+    transViewCleared = false;
+    document.getElementById('transSearch').value = '';
+    document.getElementById('transDateFrom').value = '';
+    document.getElementById('transDateTo').value = '';
+    refreshTransactions();
 }
 
 // Initialize
