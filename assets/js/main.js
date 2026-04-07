@@ -1312,9 +1312,9 @@ function refreshDashboard() {
     });
 
     document.getElementById('dashboardStats').innerHTML = `
-                <div class="stat-card" style="border-top: 4px solid #ef4444;" onclick="toggleStatCard(this)">
+                <div class="stat-card" onclick="toggleStatCard(this)">
                     <h3>Stock Shortage</h3>
-                    <div class="number" style="color: #ef4444;">${shortfallItems.length}</div>
+                    <div class="number">${shortfallItems.length}</div>
                     <div class="sub">Items needed for orders</div>
                 </div>
                 <div class="stat-card" onclick="toggleStatCard(this)">
