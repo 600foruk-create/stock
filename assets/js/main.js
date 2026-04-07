@@ -1280,6 +1280,37 @@ function refreshDashboard() {
         lowStockHtml += `<div class="stat-expand-item"><span>${lowStockByBrand[brandId].name}</span><span>${lowStockByBrand[brandId].count} items</span></div>`;
     }
 
+    // Calculate Shortages (Negative Stock based on Pending Orders)
+    let requiredQtys = {};
+    orders.filter(o => {
+        const s = (o.status || '').toLowerCase();
+        return s === 'pending' || s === 'processing';
+    }).forEach(order => {
+        (order.items || []).forEach(item => {
+            const needed = parseInt(item.quantity || 0) - parseInt(item.fulfilled || 0);
+            if (needed > 0) {
+                requiredQtys[item.itemId] = (requiredQtys[item.itemId] || 0) + needed;
+            }
+        });
+    });
+
+    let shortfallItems = [];
+    moduleItems.forEach(item => {
+        const required = requiredQtys[item.id] || 0;
+        const available = parseInt(item.stock || 0);
+        if (available < required) {
+            let main = mainCategories.find(m => m.id == item.mainId);
+            let sub = subCategories.find(s => s.id == item.subId);
+            shortfallItems.push({ 
+                item, 
+                main, 
+                sub, 
+                shortfall: available - required,
+                required: required
+            });
+        }
+    });
+
     document.getElementById('dashboardStats').innerHTML = `
                 <div class="stat-card" onclick="toggleStatCard(this)">
                     <h3>Total Items</h3>
@@ -1303,6 +1334,11 @@ function refreshDashboard() {
                     <div class="stat-expand">
                         ${lowStockHtml || '<div class="stat-expand-item">No low stock items</div>'}
                     </div>
+                </div>
+                <div class="stat-card" style="border-top: 4px solid #ef4444;" onclick="toggleStatCard(this)">
+                    <h3>Stock Shortage</h3>
+                    <div class="number" style="color: #ef4444;">${shortfallItems.length}</div>
+                    <div class="sub">Items needed for orders</div>
                 </div>
             `;
 
@@ -1328,7 +1364,7 @@ function refreshDashboard() {
     });
     document.getElementById('brandStockCards').innerHTML = brandCardsHtml;
 
-    // Render Advanced Charts
+    // Render Charts
     renderAdvancedCharts(brandData);
 
     // Render Alerts
@@ -1351,6 +1387,27 @@ function refreshDashboard() {
         });
     }
     document.getElementById('lowStockAlertsContainer').innerHTML = alertsHtml;
+
+    // Render Shortage Alerts
+    let shortageHtml = '';
+    if (shortfallItems.length === 0) {
+        shortageHtml = '<div style="grid-column: 1/-1; text-align: center; color: var(--gray-500); padding: 1rem;">All order requirements are met! No shortages.</div>';
+    } else {
+        shortfallItems.forEach(({ item, main, sub, shortfall, required }) => {
+            let size = sub ? sub.name : '?';
+            shortageHtml += `
+                <div class="alert-card" style="border-left: 4px solid #ef4444; background: #fff5f5;">
+                    <div class="alert-info">
+                        <h4 style="color: #b91c1c;">${main ? main.name : 'Unknown'} ${size}</h4>
+                        <p>${item.length}ft / ${item.weight}KG</p>
+                        <p style="font-size: 0.8rem; color: #7f1d1d;">In Stock: ${item.stock} | Required: ${required}</p>
+                    </div>
+                    <div class="alert-qty" style="background: #ef4444; color: white;">${shortfall}</div>
+                </div>
+            `;
+        });
+    }
+    document.getElementById('negativeStockContainer').innerHTML = shortageHtml;
 }
 
 function renderAdvancedCharts(brandData) {
