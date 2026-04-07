@@ -2663,7 +2663,11 @@ async function completeOrder(orderId) {
     });
 
     if (!canComplete) {
-        alert('Cannot complete order:\    if (!confirm(`Are you sure you want to complete Order #${orderId}? This will deduct remaining stock and record sales.`)) return;
+        alert('Cannot complete order:\n' + stockIssues.join('\n'));
+        return;
+    }
+
+    if (!confirm(`Are you sure you want to complete Order #${orderId}? This will deduct remaining stock and record sales.`)) return;
 
     // Track if any stock was actually deducted
     let stockDeducted = false;
