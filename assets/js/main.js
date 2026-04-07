@@ -108,6 +108,10 @@ async function initApp() {
                             let sub = subCategories.find(s => s.id == masterItem.subId);
                             let main = mainCategories.find(m => m.id == masterItem.mainId);
                             if (sub && main) {
+                                item.mainId = masterItem.mainId;
+                                item.subId = masterItem.subId;
+                                item.mainName = main.name;
+                                item.subName = sub.name;
                                 item.productCode = getProductCode(masterItem, main, sub);
                                 item.itemName = masterItem.name;
                                 item.weight = masterItem.weight;
