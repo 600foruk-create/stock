@@ -2716,10 +2716,6 @@ async function completeOrder(orderId) {
             }
         }
     }
-r item', item.itemId);
-            }
-        }
-    }
 
     // Update order status on server
     order.status = 'completed';
