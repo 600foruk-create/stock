@@ -1312,12 +1312,10 @@ function refreshDashboard() {
     });
 
     document.getElementById('dashboardStats').innerHTML = `
-                <div class="stat-card" onclick="toggleStatCard(this)">
-                    <h3>Total Items</h3>
-                    <div class="number">${totalItems}</div>
-                    <div class="stat-expand">
-                        <div class="stat-expand-item"><span>Active Items</span><span>${totalItems}</span></div>
-                    </div>
+                <div class="stat-card" style="border-top: 4px solid #ef4444;" onclick="toggleStatCard(this)">
+                    <h3>Stock Shortage</h3>
+                    <div class="number" style="color: #ef4444;">${shortfallItems.length}</div>
+                    <div class="sub">Items needed for orders</div>
                 </div>
                 <div class="stat-card" onclick="toggleStatCard(this)">
                     <h3>Total Stock</h3>
@@ -1334,11 +1332,6 @@ function refreshDashboard() {
                     <div class="stat-expand">
                         ${lowStockHtml || '<div class="stat-expand-item">No low stock items</div>'}
                     </div>
-                </div>
-                <div class="stat-card" style="border-top: 4px solid #ef4444;" onclick="toggleStatCard(this)">
-                    <h3>Stock Shortage</h3>
-                    <div class="number" style="color: #ef4444;">${shortfallItems.length}</div>
-                    <div class="sub">Items needed for orders</div>
                 </div>
             `;
 
