@@ -119,7 +119,7 @@ async function initApp() {
                         }
                         // Ensure required display fields exist even if master record is missing
                         item.productCode = item.productCode || 'Deleted Item';
-                        item.itemName = item.itemName || 'N/A';
+                        item.itemName = item.itemName || '';
                     });
                 } catch (err) {
                     console.warn('StockFlow: Non-fatal error hydrating order:', o.id, err);
@@ -2879,7 +2879,8 @@ function editOrder(orderId) {
                     row.dataset.itemLength = opt.item.length;
                     lengthInput.value = opt.item.length;
                 }, false, 'item', { brandId: item.mainId, sizeId: item.subId });
-                itemSearch.querySelector('input').value = (item.itemName || 'Item') + ' (' + item.length + 'ft ' + item.weight + 'KG)';
+                const itemLabel = (item.itemName && item.itemName !== 'N/A' && item.itemName !== 'Item') ? item.itemName + ' ' : '';
+                itemSearch.querySelector('input').value = `${itemLabel}(${item.length}ft ${item.weight}KG)`;
                 row.replaceChild(itemSearch, itemWrapper);
             }, 100);
         }, 100);
