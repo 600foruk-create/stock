@@ -2459,6 +2459,7 @@ async function saveNewOrder() {
             orderData.id = result.id;
             orderData.status = (orderData.status || 'pending').toLowerCase();
             orderData.customerName = customerName;
+            orderData.items = orderItems; // Hydrate with items for immediate invoice access
             orders.unshift(orderData);
             saveData();
             
@@ -2546,11 +2547,22 @@ function refreshCompletedOrderDropdown() {
     let select = document.getElementById('saleOrderSelect');
     if (!select) return;
     select.innerHTML = '<option value="">-- Select Completed Order --</option>';
-    let completedOrders = orders.filter(o => o.status === 'completed' && !usedCompletedOrders.has(o.id));
+    
+    // Filter orders: status must be 'completed', it shouldn't be in usedCompletedOrders, 
+    // AND it must have at least one item with unfulfilled quantity (in case it was edited)
+    let completedOrders = orders.filter(o => 
+        (o.status || '').toLowerCase() === 'completed' && 
+        !usedCompletedOrders.has(o.id) &&
+        (o.items || []).some(item => (item.quantity - (item.fulfilled || 0)) > 0)
+    );
+    
     completedOrders.forEach(order => {
         let option = document.createElement('option');
         option.value = order.id;
-        option.textContent = `${order.customerName} - ${formatDate(order.date)} (${order.totalQty} PCS)`;
+        
+        // Calculate remaining items to fulfill
+        let remainingQty = (order.items || []).reduce((acc, item) => acc + (item.quantity - (item.fulfilled || 0)), 0);
+        option.textContent = `${order.customerName} - ${formatDate(order.date)} (${remainingQty} PCS Remaining)`;
         select.appendChild(option);
     });
 }
@@ -2651,17 +2663,18 @@ async function completeOrder(orderId) {
     });
 
     if (!canComplete) {
-        alert('Cannot complete order:\n' + stockIssues.join('\n'));
-        return;
-    }
+        alert('Cannot complete order:\    if (!confirm(`Are you sure you want to complete Order #${orderId}? This will deduct remaining stock and record sales.`)) return;
 
-    if (!confirm(`Are you sure you want to complete Order #${orderId}? This will deduct stock and record sales.`)) return;
+    // Track if any stock was actually deducted
+    let stockDeducted = false;
 
     for (let item of (order.items || [])) {
         let invItem = items.find(i => i.id === item.itemId);
         if (!invItem) continue;
+        
         let remainingToFulfill = (item.quantity || 0) - (item.fulfilled || 0);
         if (remainingToFulfill > 0) {
+            stockDeducted = true;
             let tData = {
                 type: 'SALE',
                 date: new Date().toISOString().slice(0, 16),
@@ -2670,7 +2683,7 @@ async function completeOrder(orderId) {
                 itemId: item.itemId,
                 quantity: remainingToFulfill,
                 customerId: order.customerId,
-                notes: `Order #${orderId} Fulfillment`
+                notes: `Order #${orderId} Auto-Fulfillment`
             };
 
             try {
@@ -2691,11 +2704,15 @@ async function completeOrder(orderId) {
                         itemName: invItem.name,
                         weight: invItem.weight,
                         length: invItem.length,
-                        customer: order.customerName + ' (Order Complete)'
+                        customer: order.customerName + ' (Order Fulfillment)'
                     });
                 }
             } catch (e) {
                 console.error('Fulfillment save failed for item', item.itemId);
+            }
+        }
+    }
+r item', item.itemId);
             }
         }
     }
@@ -2707,12 +2724,17 @@ async function completeOrder(orderId) {
             method: 'POST',
             body: JSON.stringify({ order: order })
         });
+        
+        // If it was auto-fulfilled during "Complete", mark it as used
+        if (stockDeducted) usedCompletedOrders.add(order.id);
+        
         saveData();
         refreshOrdersList();
         refreshDashboard();
         refreshStockList();
         refreshLowStockReport();
         refreshTransactions();
+        refreshCompletedOrderDropdown(); // Added to update sale select immediately
         alert(`Order #${orderId} completed successfully!`);
     } catch (e) {
         alert('Order status update failed on server, but stock was deducted.');
@@ -2882,6 +2904,12 @@ function editOrder(orderId) {
                 const itemLabel = (item.itemName && item.itemName !== 'N/A' && item.itemName !== 'Item') ? item.itemName + ' ' : '';
                 itemSearch.querySelector('input').value = `${itemLabel}(${item.length}ft ${item.weight}KG)`;
                 row.replaceChild(itemSearch, itemWrapper);
+                
+                // If it was completed, and we edited it, let it show up in the dropdown again if new stock is added
+                if (order.status === 'completed') {
+                    usedCompletedOrders.delete(order.id);
+                    refreshCompletedOrderDropdown();
+                }
             }, 100);
         }, 100);
     });
