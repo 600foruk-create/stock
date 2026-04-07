@@ -2901,8 +2901,8 @@ function editOrder(orderId) {
                     row.dataset.itemLength = opt.item.length;
                     lengthInput.value = opt.item.length;
                 }, false, 'item', { brandId: item.mainId, sizeId: item.subId });
-                const itemLabel = (item.itemName && item.itemName !== 'N/A' && item.itemName !== 'Item') ? item.itemName + ' ' : '';
-                itemSearch.querySelector('input').value = `${itemLabel}(${item.length}ft ${item.weight}KG)`;
+                const itemLabel = (item.itemName && item.itemName !== 'N/A') ? item.itemName : 'Item';
+                itemSearch.querySelector('input').value = `${itemLabel} (${item.length}ft ${item.weight}KG)`;
                 row.replaceChild(itemSearch, itemWrapper);
                 
                 // If it was completed, and we edited it, let it show up in the dropdown again if new stock is added
