@@ -1909,7 +1909,7 @@ function addProductionRow() {
         updateSizeDropdown(row, opt.value, 'production');
     }, false, 'brand');
     const sizeWrapper = createSearchableInput('Size...', [], null, true, null);
-    const itemWrapper = createSearchableInput('Item...', [], null, true, null);
+    const itemWrapper = createSearchableInput('...', [], null, true, null);
 
     const lengthInput = document.createElement('input');
     lengthInput.type = 'number';
@@ -1947,7 +1947,7 @@ function addSaleRow() {
         updateSizeDropdown(row, opt.value, 'sale');
     }, false, 'brand');
     const sizeWrapper = createSearchableInput('Size...', [], null, true, null);
-    const itemWrapper = createSearchableInput('Item...', [], null, true, null);
+    const itemWrapper = createSearchableInput('...', [], null, true, null);
 
     const lengthInput = document.createElement('input');
     lengthInput.type = 'number';
@@ -1985,7 +1985,7 @@ function addAdjustmentRow() {
         updateSizeDropdown(row, opt.value, 'adjustment');
     }, false, 'brand');
     const sizeWrapper = createSearchableInput('Size...', [], null, true, null);
-    const itemWrapper = createSearchableInput('Item...', [], null, true, null);
+    const itemWrapper = createSearchableInput('...', [], null, true, null);
 
     const lengthInput = document.createElement('input');
     lengthInput.type = 'number';
@@ -2031,7 +2031,7 @@ function addNewOrderRow() {
         updateSizeDropdown(row, opt.value, 'order');
     }, false, 'brand');
     const sizeWrapper = createSearchableInput('Size...', [], null, true, null);
-    const itemWrapper = createSearchableInput('Item...', [], null, true, null);
+    const itemWrapper = createSearchableInput('...', [], null, true, null);
 
     const lengthInput = document.createElement('input');
     lengthInput.type = 'number';
@@ -2073,7 +2073,7 @@ function updateSizeDropdown(row, brandId, type) {
     }, false, 'size', brandId);
 
     row.replaceChild(newSizeWrapper, sizeWrapper);
-    const newItemWrapper = createSearchableInput('Item...', [], null, true, null);
+    const newItemWrapper = createSearchableInput('...', [], null, true, null);
     row.replaceChild(newItemWrapper, itemWrapper);
 }
 
@@ -2085,7 +2085,7 @@ function updateItemDropdown(row, brandId, sizeId, type) {
         .filter(i => i.mainId == brandId && i.subId == sizeId)
         .map(i => ({
             value: i.id,
-            text: `${i.name || 'Item'} (${i.length}ft ${i.weight}KG)`,
+            text: (i.name ? i.name + ' ' : '') + `(${i.length}ft ${i.weight}KG)`,
             stock: i.stock || 0,
             minStock: i.minStock || mainCategories.find(m => m.id === brandId)?.lowStockLimit || 10,
             length: i.length,
@@ -2888,7 +2888,7 @@ function editOrder(orderId) {
             setTimeout(() => {
                 let itemOptions = items.filter(i => i.mainId == item.mainId && i.subId == item.subId).map(i => ({
                     value: i.id,
-                    text: `${i.name || 'Item'} (${i.length}ft ${i.weight}KG)`,
+                    text: (i.name && i.name !== 'Item' ? i.name + ' ' : '') + `(${i.length}ft ${i.weight}KG)`,
                     stock: i.stock || 0,
                     length: i.length,
                     weight: i.weight,
@@ -2901,8 +2901,8 @@ function editOrder(orderId) {
                     row.dataset.itemLength = opt.item.length;
                     lengthInput.value = opt.item.length;
                 }, false, 'item', { brandId: item.mainId, sizeId: item.subId });
-                const itemLabel = (item.itemName && item.itemName !== 'N/A') ? item.itemName : 'Item';
-                itemSearch.querySelector('input').value = `${itemLabel} (${item.length}ft ${item.weight}KG)`;
+                const itemLabel = (item.itemName && item.itemName !== 'N/A' && item.itemName !== 'Item') ? item.itemName + ' ' : '';
+                itemSearch.querySelector('input').value = `${itemLabel}(${item.length}ft ${item.weight}KG)`;
                 row.replaceChild(itemSearch, itemWrapper);
                 
                 // If it was completed, and we edited it, let it show up in the dropdown again if new stock is added
