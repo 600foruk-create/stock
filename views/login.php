@@ -17,9 +17,6 @@
                     </div>
                 </div>
                 <button class="login-btn" onclick="login()">Login</button>
-                <div class="login-footer">
-                    <p>Default: admin / admin123</p>
-                </div>
             </div>
         </div>
     </div>
