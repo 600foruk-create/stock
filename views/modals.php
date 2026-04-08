@@ -85,9 +85,10 @@
             <input type="hidden" id="itemSubId">
             <div class="form-group">
                 <label>Length</label>
-                <div class="input-group">
-                    <input type="number" id="itemLength" class="form-control" value="13" step="0.1" min="0">
+                <div class="input-group" style="display: flex; gap: 0.5rem; align-items: center;">
+                    <select id="itemLength" class="form-control" style="flex: 1;"></select>
                     <span>ft</span>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="promptNewLength('itemLength')" title="Add New Length" style="padding: 0 8px; font-size: 1.2rem; height: 38px;">+</button>
                 </div>
             </div>
             <div class="form-group">
@@ -225,7 +226,10 @@
             <input type="hidden" id="quickItemSubId">
             <div class="form-group">
                 <label>Length (ft)</label>
-                <input type="number" id="quickItemLength" class="form-control" value="13" step="0.1">
+                <div class="input-group" style="display: flex; gap: 0.5rem; align-items: center;">
+                    <select id="quickItemLength" class="form-control" style="flex: 1;"></select>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="promptNewLength('quickItemLength')" title="Add New Length" style="padding: 0 8px; font-size: 1.2rem; height: 38px;">+</button>
+                </div>
             </div>
             <div class="form-group">
                 <label>Weight (kg)</label>

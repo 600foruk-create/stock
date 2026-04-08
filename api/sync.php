@@ -47,11 +47,11 @@ try {
         elseif ($action === 'save_item') {
             $item = $input['item'];
             if (isset($item['id']) && !empty($item['id'])) {
-                $stmt = $conn->prepare("UPDATE items SET main_id = ?, sub_id = ?, name = ?, weight = ?, stock = ? WHERE id = ?");
-                $stmt->execute([$item['mainId'], $item['subId'], $item['name'] ?? '', $item['weight'] ?? 0, $item['stock'] ?? 0, $item['id']]);
+                $stmt = $conn->prepare("UPDATE items SET main_id = ?, sub_id = ?, name = ?, length = ?, weight = ?, stock = ? WHERE id = ?");
+                $stmt->execute([$item['mainId'], $item['subId'], $item['name'] ?? '', $item['length'] ?? 13, $item['weight'] ?? 0, $item['stock'] ?? 0, $item['id']]);
             } else {
-                $stmt = $conn->prepare("INSERT INTO items (main_id, sub_id, name, weight, stock) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$item['mainId'], $item['subId'], $item['name'] ?? '', $item['weight'] ?? 0, $item['stock'] ?? 0]);
+                $stmt = $conn->prepare("INSERT INTO items (main_id, sub_id, name, length, weight, stock) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$item['mainId'], $item['subId'], $item['name'] ?? '', $item['length'] ?? 13, $item['weight'] ?? 0, $item['stock'] ?? 0]);
                 $item['id'] = $conn->lastInsertId();
             }
             echo json_encode(['status' => 'success', 'id' => $item['id']]);
