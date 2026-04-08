@@ -3726,6 +3726,40 @@ function exportData(type) {
     window.location.href = `api/export.php?action=${type}`;
 }
 
+async function handleRestore(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const confirmed = confirm("⚠️ ATTENTION: This will DELETE all current data and restore from the backup file. Are you absolutely sure?");
+    if (!confirmed) {
+        event.target.value = '';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('api/restore.php', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            alert(result.message);
+            // Full refresh to reload everything from the newly restored database
+            window.location.reload();
+        } else {
+            alert('Restore Error: ' + result.message);
+        }
+    } catch (e) {
+        alert('Server connection failed. Could not restore database.');
+    } finally {
+        event.target.value = '';
+    }
+}
+
 async function importData(type, event) {
     const file = event.target.files[0];
     if (!file) return;

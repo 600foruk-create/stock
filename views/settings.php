@@ -24,7 +24,11 @@
                             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem;">
                                 <div class="data-mgmt-item" style="border:1px solid #e5e7eb; padding:1rem; border-radius:0.8rem; text-align:center;">
                                     <p style="font-weight:600; margin-bottom:0.5rem;">Database</p>
-                                    <button class="btn btn-primary" onclick="window.location.href='api/backup.php'" style="width:100%;">📀 Backup SQL</button>
+                                    <div style="display:flex; gap:0.5rem;">
+                                        <button class="btn btn-primary" onclick="window.location.href='api/backup.php'" style="flex:1;">📀 Backup</button>
+                                        <button class="btn btn-danger" onclick="document.getElementById('restoreFile').click()" style="flex:1;">🔄 Restore</button>
+                                    </div>
+                                    <input type="file" id="restoreFile" accept=".sql" style="display:none;" onchange="handleRestore(event)">
                                 </div>
                                 <div class="data-mgmt-item" style="border:1px solid #e5e7eb; padding:1rem; border-radius:0.8rem; text-align:center;">
                                     <p style="font-weight:600; margin-bottom:0.5rem;">Items & Stock</p>
