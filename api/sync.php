@@ -301,14 +301,22 @@ try {
             echo json_encode(['status' => 'success', 'id' => $si['id']]);
         }
 
-        elseif ($action === 'delete_transaction') {
-            $id = $input['id'] ?? $_GET['id'] ?? null;
-            if ($id) {
-                // Delete transaction record only (per user request: "delet sy stok per asr na pary")
-                $stmt = $conn->prepare("DELETE FROM transactions WHERE id = ?");
-                $stmt->execute([$id]);
                 echo json_encode(['status' => 'success']);
             } else { echo json_encode(['status' => 'error', 'message' => 'No ID provided']); }
+        }
+
+        elseif ($action === 'bulk_delete_transactions') {
+            $period = $input['period'] ?? 'all';
+            if ($period === 'weekly') {
+                $stmt = $conn->prepare("DELETE FROM transactions WHERE date >= (NOW() - INTERVAL 7 DAY)");
+                $stmt->execute();
+            } elseif ($period === 'monthly') {
+                $stmt = $conn->prepare("DELETE FROM transactions WHERE date >= (NOW() - INTERVAL 30 DAY)");
+                $stmt->execute();
+            } else {
+                $conn->query("DELETE FROM transactions");
+            }
+            echo json_encode(['status' => 'success', 'message' => "History cleared ($period)"]);
         }
 
         elseif ($action === 'update_transaction') {
