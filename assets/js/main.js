@@ -3721,6 +3721,45 @@ function refreshUsersList() {
     document.getElementById('usersList').innerHTML = html;
 }
 
+// Data Management
+function exportData(type) {
+    window.location.href = `api/export.php?action=${type}`;
+}
+
+async function importData(type, event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!confirm(`Are you sure you want to import data from this file? This will update your database.`)) {
+        event.target.value = '';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch(`api/import.php?action=${type}`, {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            alert(result.message);
+            // Reload app data to reflect changes
+            initApp();
+        } else {
+            alert('Import Error: ' + result.message);
+        }
+    } catch (e) {
+        alert('Server connection failed. Could not import data.');
+    } finally {
+        // Reset file input
+        event.target.value = '';
+    }
+}
+
 async function deleteUser(userId) {
     if (confirm('Are you sure you want to delete this user?')) {
         try {
