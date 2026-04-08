@@ -57,6 +57,28 @@ try {
             echo json_encode(['status' => 'success', 'id' => $item['id']]);
         }
 
+        elseif ($action === 'save_user') {
+            $user = $input['user'];
+            if (isset($user['id']) && !empty($user['id'])) {
+                $stmt = $conn->prepare("UPDATE users SET name = ?, username = ?, password = ?, role = ? WHERE id = ?");
+                $stmt->execute([$user['name'], $user['username'], $user['password'], $user['role'] ?? 'User', $user['id']]);
+            } else {
+                $stmt = $conn->prepare("INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$user['name'], $user['username'], $user['password'], $user['role'] ?? 'User']);
+                $user['id'] = $conn->lastInsertId();
+            }
+            echo json_encode(['status' => 'success', 'id' => $user['id']]);
+        }
+        
+        elseif ($action === 'delete_user') {
+            $id = $input['id'] ?? $_GET['id'] ?? null;
+            if ($id && $id != 1) { // Prevent deleting primary admin
+                $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
+                $stmt->execute([$id]);
+                echo json_encode(['status' => 'success']);
+            } else { echo json_encode(['status' => 'error', 'message' => 'Cannot delete this user']); }
+        }
+
         elseif ($action === 'save_audit') {
             $auditRecords = $input['records'];
             $conn->beginTransaction();

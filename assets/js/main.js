@@ -3650,17 +3650,30 @@ function closeAddUserModal() {
     document.getElementById('addUserModal').style.display = 'none';
 }
 
-function saveNewUser() {
+async function saveNewUser() {
     let name = document.getElementById('newUserName').value;
     let username = document.getElementById('newUserUsername').value;
     let password = document.getElementById('newUserPassword').value;
     let role = document.getElementById('newUserRole').value;
     if (!name || !username || !password) { alert('Please fill all fields'); return; }
-    let newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 2;
-    users.push({ id: newId, name, username, password, role, permissions: [] });
-    refreshUsersList();
-    closeAddUserModal();
-    alert('User created!');
+
+    try {
+        const response = await fetch('api/sync.php?action=save_user', {
+            method: 'POST',
+            body: JSON.stringify({ user: { name, username, password, role } })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            users.push({ id: result.id, name, username, password, role, permissions: [] });
+            refreshUsersList();
+            closeAddUserModal();
+            alert('User created successfully!');
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (e) {
+        alert('Server connection failed. User not saved.');
+    }
 }
 
 function refreshUsersList() {
@@ -3676,10 +3689,24 @@ function refreshUsersList() {
     document.getElementById('usersList').innerHTML = html;
 }
 
-function deleteUser(userId) {
-    if (confirm('Are you sure?')) {
-        users = users.filter(u => u.id !== userId);
-        refreshUsersList();
+async function deleteUser(userId) {
+    if (confirm('Are you sure you want to delete this user?')) {
+        try {
+            const response = await fetch('api/sync.php?action=delete_user', {
+                method: 'POST',
+                body: JSON.stringify({ id: userId })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                users = users.filter(u => u.id !== userId);
+                refreshUsersList();
+                alert('User deleted.');
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (e) {
+            alert('Server connection failed. Could not delete user.');
+        }
     }
 }
 
