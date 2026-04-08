@@ -55,15 +55,6 @@
                     </div>
                     
                     <h3 style="margin:1rem 0; color:var(--sky-600);">Recent Transactions</h3>
-                    
-                    <div class="cleanup-tools" style="background: #fef2f2; padding: 0.8rem; border: 1px solid #fee2e2; border-radius: 10px; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; border-left: 5px solid #ef4444;">
-                        <span style="font-weight: bold; color: #991b1b; margin-right: 0.5rem;">🗑️ Cleanup:</span>
-                        <button class="btn btn-danger btn-sm" onclick="deleteHistory('weekly')" style="padding: 0.4rem 0.8rem;">Week</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteHistory('monthly')" style="padding: 0.4rem 0.8rem;">Month</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteHistory('all')" style="padding: 0.4rem 0.8rem; background: #7f1d1d;">All</button>
-                        <span style="font-size: 0.75rem; color: #666; margin-left: auto;">* Deletion only removes historical records; <strong>Stock will not change</strong>.</span>
-                    </div>
-
                     <div class="filter-bar" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; background: var(--gray-50); padding: 1rem; border-radius: 10px; border: 1px solid var(--gray-200);">
                         <input type="text" id="transSearch" placeholder="Search Brand/Product..." onkeyup="refreshTransactions()" style="flex: 2; min-width: 200px; padding: 0.6rem; border: 1px solid var(--gray-300); border-radius: 8px;">
                         <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 300px;">

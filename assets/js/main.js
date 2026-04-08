@@ -3846,40 +3846,12 @@ async function deleteTransaction(id) {
     if (!confirm('Are you sure you want to delete this record from history? Note: This will NOT revert the stock change, it only cleans up the list.')) return;
 
     try {
-        const response = await fetch(`api/sync.php?action=delete_transaction`, {
-            method: 'POST',
-            body: JSON.stringify({ id })
-        });
+        const response = await fetch(`api/sync.php?action=delete_transaction&id=${id}`);
         const result = await response.json();
         if (result.status === 'success') {
             transactions = transactions.filter(t => t.id != id);
             refreshTransactions();
             alert('Record deleted from history');
-        } else {
-            alert('Error: ' + result.message);
-        }
-    } catch (e) {
-        alert('Server connection failed');
-    }
-}
-
-async function deleteHistory(period) {
-    const pLabel = period === 'all' ? 'EVERYTHING' : (period === 'weekly' ? 'the LAST 7 DAYS' : 'the LAST 30 DAYS');
-    
-    if (!confirm(`⚠️ DANGER: You are about to permanently DELETE ${pLabel} of transaction history. This is for cleanup only and will NOT change stock. Proceed?`)) return;
-    if (period === 'all') {
-        if (prompt("Type 'DELETE ALL' to confirm wiping all history:") !== 'DELETE ALL') return;
-    }
-
-    try {
-        const response = await fetch('api/sync.php?action=bulk_delete_transactions', {
-            method: 'POST',
-            body: JSON.stringify({ period })
-        });
-        const result = await response.json();
-        if (result.status === 'success') {
-            alert(result.message);
-            initApp();
         } else {
             alert('Error: ' + result.message);
         }
