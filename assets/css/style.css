@@ -36,13 +36,14 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 100%; /* Use 100% instead of 100vw for better compatibility */
+            height: 100%;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
             background: linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%);
             z-index: 9999;
+            overflow-y: auto; /* Allow scrolling if screen is too small */
         }
         
         .company-logo img, #sidebarLogo img, .printLogo img, #printLogo img, #auditPrintLogo img, #logoPreview img {
@@ -77,7 +78,22 @@
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            font-size: 2.5rem;
+            font-size: 2.2rem;
+            margin-bottom: 0.3rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #loginTitle img {
+            width: 120px !important;
+            height: 120px !important;
+            border-radius: 50% !important;
+            object-fit: cover !important;
+            border: 5px solid white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            background: white;
             margin-bottom: 0.5rem;
         }
 
