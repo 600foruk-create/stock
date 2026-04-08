@@ -1592,20 +1592,6 @@ function refreshAuditList() {
     const auditPrintDate = document.getElementById('auditPrintDate');
     if (auditPrintDate) auditPrintDate.textContent = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     
-    // Calculate pending orders within date range
-    let orderedQtys = {};
-    orders.filter(o => {
-        const s = (o.status || '').toLowerCase();
-        const isPending = s === 'pending' || s === 'processing';
-        const inDateRange = (!fromDate || new Date(o.date) >= new Date(fromDate)) &&
-                           (!toDate || new Date(o.date) <= new Date(toDate));
-        return isPending && inDateRange;
-    }).forEach(order => {
-        (order.items || []).forEach(item => {
-            orderedQtys[item.itemId] = (orderedQtys[item.itemId] || 0) + (parseInt(item.quantity) || 0);
-        });
-    });
-
     let html = '';
     sortMainCategories(mainCategories).forEach(main => {
         let brandItems = items.filter(i => i.mainId == main.id);
@@ -1634,8 +1620,7 @@ function refreshAuditList() {
             group.forEach((item, index) => {
                 let weightVal = parseFloat(item.weight) || 0;
                 let systemPcs = parseInt(item.stock) || 0;
-                let ordered = orderedQtys[item.id] || 0;
-                let effectivePcs = systemPcs - ordered; // The stock that should be there
+                let effectivePcs = systemPcs; // Use live system stock as Available Stock
                 let systemKg = (effectivePcs * weightVal).toFixed(2);
                 
                 // Load from persistence
@@ -1869,7 +1854,23 @@ async function saveMonthlyAudit() {
     }
 }
 
+function verifyAdminAction() {
+    const code = prompt("Please enter Admin Code to proceed:");
+    // Check against admin user's password or a preferred hardcoded code
+    const adminUser = users.find(u => u.username === 'admin');
+    const validCode = (adminUser ? adminUser.password : 'admin123');
+    
+    if (code === validCode) {
+        return true;
+    } else {
+        alert("❌ Invalid Admin Code. Action cancelled.");
+        return false;
+    }
+}
+
 async function adjustStockToSystem(itemId) {
+    if (!verifyAdminAction()) return;
+    
     const sysPcsEl = document.getElementById(`auditSysPcs_${itemId}`);
     const diffPcsEl = document.getElementById(`auditDiffPcs_${itemId}`);
     if (!sysPcsEl || !diffPcsEl) return;
@@ -1905,6 +1906,8 @@ async function adjustStockToSystem(itemId) {
 }
 
 async function adjustAllStockToSystem() {
+    if (!verifyAdminAction()) return;
+    
     const rows = document.querySelectorAll('tbody tr[id^="auditRow_"]');
     let adjustments = [];
 
