@@ -3794,6 +3794,72 @@ async function importData(type, event) {
     }
 }
 
+// Transaction Management
+function editTransaction(id) {
+    const t = transactions.find(x => x.id == id);
+    if (!t) return;
+
+    document.getElementById('editTransId').value = t.id;
+    document.getElementById('editTransDate').value = t.date.substring(0, 16); // Format for datetime-local
+    document.getElementById('editTransQty').value = t.quantity;
+    document.getElementById('editTransNotes').value = t.notes || '';
+    
+    // Set info label
+    const typeLabel = t.type === 'IN' ? 'Production' : (t.type === 'OUT' ? 'Sale' : 'Adjustment');
+    document.getElementById('editTransInfo').innerText = `${typeLabel}: ${t.mainName} - ${t.itemName || 'Item'}`;
+    document.getElementById('editTransQtyLabel').innerText = `Quantity (${t.type})`;
+    
+    document.getElementById('editTransactionModal').style.display = 'block';
+}
+
+function closeEditTransactionModal() {
+    document.getElementById('editTransactionModal').style.display = 'none';
+}
+
+async function saveTransactionEdit() {
+    const id = document.getElementById('editTransId').value;
+    const date = document.getElementById('editTransDate').value;
+    const qty = parseFloat(document.getElementById('editTransQty').value);
+    const notes = document.getElementById('editTransNotes').value;
+
+    if (isNaN(qty)) { alert('Please enter a valid quantity'); return; }
+
+    try {
+        const response = await fetch('api/sync.php?action=update_transaction', {
+            method: 'POST',
+            body: JSON.stringify({ transaction: { id, date, quantity: qty, notes } })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            alert('Transaction updated successfully');
+            closeEditTransactionModal();
+            initApp(); // Refresh everything to update stocks and history
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (e) {
+        alert('Server connection failed');
+    }
+}
+
+async function deleteTransaction(id) {
+    if (!confirm('Are you sure you want to delete this record from history? Note: This will NOT revert the stock change, it only cleans up the list.')) return;
+
+    try {
+        const response = await fetch(`api/sync.php?action=delete_transaction&id=${id}`);
+        const result = await response.json();
+        if (result.status === 'success') {
+            transactions = transactions.filter(t => t.id != id);
+            refreshTransactions();
+            alert('Record deleted from history');
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (e) {
+        alert('Server connection failed');
+    }
+}
+
 async function deleteUser(userId) {
     if (confirm('Are you sure you want to delete this user?')) {
         try {
@@ -3824,14 +3890,14 @@ function refreshTransactions() {
     const toDate = document.getElementById('transDateTo')?.value;
 
     if (transViewCleared) {
-        document.getElementById('transactionsBody').innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--gray-500);">Screen cleared. Use search or dates to find records.</td></tr>';
+        document.getElementById('transactionsBody').innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--gray-500);">Screen cleared. Use search or dates to find records.</td></tr>';
         return;
     }
 
     let filtered = transactions.filter(t => {
         const searchMatch = !search || 
             (t.mainName || '').toLowerCase().includes(search) || 
-            (t.productCode || '').toLowerCase().includes(search) ||
+            (t.itemName || '').toLowerCase().includes(search) ||
             (t.customer || '').toLowerCase().includes(search);
         
         const tDate = new Date(t.date).setHours(0,0,0,0);
@@ -3843,18 +3909,23 @@ function refreshTransactions() {
     });
 
     if (filtered.length === 0) {
-        rows = '<tr><td colspan="6" style="text-align:center; padding:1rem;">No transactions found matching your filters</td></tr>';
+        rows = '<tr><td colspan="7" style="text-align:center; padding:1rem;">No transactions found matching your filters</td></tr>';
     } else {
-        // Show all filtered or limit to 50 if no filter active
         const displayList = (search || fromDate || toDate) ? filtered : filtered.slice(0, 50);
         displayList.forEach(t => {
             rows += `<tr>
-                        <td style="padding:0.5rem;">${formatDate(t.date)}</td>
-                        <td style="padding:0.5rem;">${t.type}</td>
-                        <td style="padding:0.5rem;">${t.mainName}</td>
-                        <td style="padding:0.5rem;">${t.productCode}</td>
-                        <td style="padding:0.5rem;">${t.quantity}</td>
-                        <td style="padding:0.5rem;">${t.customer}</td>
+                        <td style="padding:0.5rem; border-bottom:1px solid #eee;">${formatDate(t.date)}</td>
+                        <td style="padding:0.5rem; border-bottom:1px solid #eee;"><span class="badge badge-${t.type.toLowerCase()}">${t.type}</span></td>
+                        <td style="padding:0.5rem; border-bottom:1px solid #eee;">${t.mainName || 'N/A'}</td>
+                        <td style="padding:0.5rem; border-bottom:1px solid #eee;">${t.itemName || t.subName || 'N/A'}</td>
+                        <td style="padding:0.5rem; border-bottom:1px solid #eee;"><strong>${t.quantity}</strong></td>
+                        <td style="padding:0.5rem; border-bottom:1px solid #eee;">${t.customer || '-'}</td>
+                        <td style="padding:0.5rem; border-bottom:1px solid #eee;">
+                            <div style="display:flex; gap:0.3rem;">
+                                <button class="btn btn-primary btn-sm" onclick="editTransaction(${t.id})" title="Edit"><i class="fas fa-edit"></i> Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteTransaction(${t.id})" title="Hide from history"><i class="fas fa-trash"></i> Delete</button>
+                            </div>
+                        </td>
                     </tr>`;
         });
     }

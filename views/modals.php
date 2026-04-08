@@ -248,3 +248,29 @@
             </div>
         </div>
     </div>
+
+    <div id="editTransactionModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>✏️ Edit Transaction</h3>
+                <span class="close-modal" onclick="closeEditTransactionModal()">&times;</span>
+            </div>
+            <input type="hidden" id="editTransId">
+            <div class="form-group">
+                <label id="editTransInfo" style="font-weight: bold; color: var(--sky-600);"></label>
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="datetime-local" id="editTransDate" class="form-control">
+            </div>
+            <div class="form-group">
+                <label id="editTransQtyLabel">Quantity</label>
+                <input type="number" id="editTransQty" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea id="editTransNotes" class="form-control" rows="2"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="saveTransactionEdit()" style="width:100%;">Update Transaction</button>
+        </div>
+    </div>

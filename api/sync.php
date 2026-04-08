@@ -17,7 +17,7 @@ try {
                 'items' => $conn->query("SELECT id, main_id AS mainId, sub_id AS subId, name, length, weight, stock FROM items")->fetchAll(PDO::FETCH_ASSOC),
                 'customers' => $conn->query("SELECT id, unique_id AS uniqueId, name, address, mobile FROM customers")->fetchAll(PDO::FETCH_ASSOC),
                 'orders' => $conn->query("SELECT o.id, o.date, o.customer_id AS customerId, o.status, o.total_qty AS totalQty, o.total_kg AS totalKg, c.name AS customerName FROM orders o LEFT JOIN customers c ON o.customer_id = c.id")->fetchAll(PDO::FETCH_ASSOC),
-                'transactions' => $conn->query("SELECT t.id, t.date, t.type, t.main_id AS mainId, t.sub_id AS subId, t.item_id AS itemId, t.quantity, t.customer_id AS customerId, t.notes, mc.name AS mainName, c.name AS customer FROM transactions t LEFT JOIN main_categories mc ON t.main_id = mc.id LEFT JOIN customers c ON t.customer_id = c.id")->fetchAll(PDO::FETCH_ASSOC),
+                'transactions' => $conn->query("SELECT t.id, t.date, t.type, t.main_id AS mainId, t.sub_id AS subId, t.item_id AS itemId, t.quantity, t.customer_id AS customerId, t.notes, mc.name AS mainName, sc.name AS subName, i.name AS itemName, c.name AS customer FROM transactions t LEFT JOIN main_categories mc ON t.main_id = mc.id LEFT JOIN sub_categories sc ON t.sub_id = sc.id LEFT JOIN items i ON t.item_id = i.id LEFT JOIN customers c ON t.customer_id = c.id ORDER BY t.date DESC")->fetchAll(PDO::FETCH_ASSOC),
                 'settings' => $conn->query("SELECT id, category, `key`, value FROM settings")->fetchAll(PDO::FETCH_ASSOC),
                 'rawMaterials' => $conn->query("SELECT id, name, category, unit, stock, threshold FROM raw_materials")->fetchAll(PDO::FETCH_ASSOC),
                 'storeItems' => $conn->query("SELECT id, name, description, stock FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
@@ -299,6 +299,49 @@ try {
                 $si['id'] = $conn->lastInsertId();
             }
             echo json_encode(['status' => 'success', 'id' => $si['id']]);
+        }
+
+        elseif ($action === 'delete_transaction') {
+            $id = $input['id'] ?? $_GET['id'] ?? null;
+            if ($id) {
+                // Delete transaction record only (per user request: "delet sy stok per asr na pary")
+                $stmt = $conn->prepare("DELETE FROM transactions WHERE id = ?");
+                $stmt->execute([$id]);
+                echo json_encode(['status' => 'success']);
+            } else { echo json_encode(['status' => 'error', 'message' => 'No ID provided']); }
+        }
+
+        elseif ($action === 'update_transaction') {
+            $t = $input['transaction'];
+            $conn->beginTransaction();
+            try {
+                // 1. Get old transaction to calculate diff
+                $stmt = $conn->prepare("SELECT item_id, quantity, type FROM transactions WHERE id = ?");
+                $stmt->execute([$t['id']]);
+                $old = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($old) {
+                    $diff = $t['quantity'] - $old['quantity'];
+                    
+                    // 2. Update transaction
+                    $stmt = $conn->prepare("UPDATE transactions SET date = ?, quantity = ?, notes = ? WHERE id = ?");
+                    $stmt->execute([$t['date'], $t['quantity'], $t['notes'] ?? '', $t['id']]);
+
+                    // 3. Update stock by difference
+                    // modifier: IN increases stock, OUT decreases stock, ADJ is signed already
+                    $modifier = ($old['type'] === 'IN') ? 1 : (($old['type'] === 'OUT') ? -1 : 1);
+                    $stockChange = $diff * $modifier;
+
+                    $stmt = $conn->prepare("UPDATE items SET stock = stock + ? WHERE id = ?");
+                    $stmt->execute([$stockChange, $old['item_id']]);
+                }
+
+                $conn->commit();
+                echo json_encode(['status' => 'success']);
+            } catch (Exception $e) {
+                $conn->rollBack();
+                throw $e;
+            }
         }
     }
 } catch (Exception $e) {

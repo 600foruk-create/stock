@@ -65,17 +65,20 @@
                         <button class="btn btn-warning" onclick="clearTransactionView()" style="white-space: nowrap;">🧹 Clear Screen</button>
                         <button class="btn btn-info" onclick="resetTransactionFilters()" style="white-space: nowrap;">🔄 Reset</button>
                     </div>
-                    <table class="data-table" id="transTable">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Type</th>
-                                <th>Brand</th>
-                                <th>Product</th>
-                                <th>Qty</th>
-                                <th>Customer</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transactionsBody"></tbody>
-                    </table>
+                    <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--gray-200); border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: white;">
+                        <table class="data-table" id="transTable" style="margin-bottom: 0;">
+                            <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 10; box-shadow: 0 1px 0 #e2e8f0;">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Brand</th>
+                                    <th>Product</th>
+                                    <th>Qty</th>
+                                    <th>Customer</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsBody"></tbody>
+                        </table>
+                    </div>
                 </div>
