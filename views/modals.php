@@ -135,9 +135,10 @@
     <div id="addUserModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>➕ Add User</h3>
+                <h3 id="userModalTitle">➕ Add User</h3>
                 <span class="close-modal" onclick="closeAddUserModal()">&times;</span>
             </div>
+            <input type="hidden" id="editUserId">
             <div class="form-group">
                 <label>Full Name</label>
                 <input type="text" id="newUserName" class="form-control">
@@ -159,7 +160,7 @@
                     <option value="viewer">Viewer</option>
                 </select>
             </div>
-            <button class="btn btn-success" onclick="saveNewUser()" style="width:100%;">Create User</button>
+            <button id="userSaveBtn" class="btn btn-success" onclick="saveNewUser()" style="width:100%;">Create User</button>
         </div>
     </div>
 
