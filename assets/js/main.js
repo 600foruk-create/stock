@@ -1641,9 +1641,9 @@ function refreshAuditList() {
                 // Load from persistence
                 let godownPcs = auditSession[item.id] || "";
                 let weightValNum = parseFloat(weightVal);
-                let godownKg = godownPcs !== "" ? (parseInt(godownPcs) * weightValNum).toFixed(2) : "0.00";
-                let diffPcs = godownPcs !== "" ? (parseInt(godownPcs) - effectivePcs) : 0;
-                let diffKg = godownPcs !== "" ? (diffPcs * weightValNum).toFixed(2) : "0.00";
+                let godownKg = (parseInt(godownPcs) || 0) * weightValNum;
+                let diffPcs = (parseInt(godownPcs) || 0) - effectivePcs;
+                let diffKg = (diffPcs * weightValNum).toFixed(2);
                 let diffClass = diffPcs === 0 ? '' : (diffPcs > 0 ? 'diff-plus' : 'diff-minus');
                 
                 bSysPcs += effectivePcs;
@@ -1663,9 +1663,12 @@ function refreshAuditList() {
                                    oninput="calculateAuditRow(${item.id}, ${weightVal}, ${main.id})" 
                                    id="auditGodownPcs_${item.id}">
                         </td>
-                        <td id="auditGodownKg_${item.id}" class="godown-kg-val">${godownKg}</td>
-                        <td id="auditDiffPcs_${item.id}" class="diff-pcs-val ${diffClass}">${godownPcs !== "" ? (diffPcs > 0 ? '+' : '') + diffPcs : "0"}</td>
-                        <td id="auditDiffKg_${item.id}" class="diff-kg-val ${diffClass}">${godownPcs !== "" ? (diffPcs > 0 ? '+' : '') + diffKg : "0.00"}</td>
+                        <td id="auditGodownKg_${item.id}" class="godown-kg-val">${godownKg.toFixed(2)}</td>
+                        <td id="auditDiffPcs_${item.id}" class="diff-pcs-val ${diffClass}">${(diffPcs > 0 ? '+' : '') + diffPcs}</td>
+                        <td id="auditDiffKg_${item.id}" class="diff-kg-val ${diffClass}">${(diffPcs > 0 ? '+' : '') + diffKg}</td>
+                        <td class="no-print">
+                            <button class="btn btn-primary btn-sm" onclick="adjustStockToSystem(${item.id})" title="Adjust system stock to match manual count">Adjust</button>
+                        </td>
                     </tr>
                 `;
             });
@@ -1687,6 +1690,7 @@ function refreshAuditList() {
                                 <th colspan="2" style="background: var(--sky-50);">Result Stock (System)</th>
                                 <th colspan="2" style="background: var(--orange-50);">Godown Stock (Manual)</th>
                                 <th colspan="2" style="background: var(--green-50);">Difference</th>
+                                <th rowspan="2" class="no-print">Action</th>
                             </tr>
                             <tr>
                                 <th style="background: var(--sky-50);">Pieces</th>
@@ -1862,6 +1866,86 @@ async function saveMonthlyAudit() {
     } catch (e) {
         console.error('Audit save failed:', e);
         alert('Server connection failed. Audit not saved.');
+    }
+}
+
+async function adjustStockToSystem(itemId) {
+    const sysPcsEl = document.getElementById(`auditSysPcs_${itemId}`);
+    const diffPcsEl = document.getElementById(`auditDiffPcs_${itemId}`);
+    if (!sysPcsEl || !diffPcsEl) return;
+
+    const diff = parseInt(diffPcsEl.textContent.replace('+', '')) || 0;
+    if (diff === 0) {
+        alert('Stock is already synchronized.');
+        return;
+    }
+
+    if (!confirm(`Adjust system stock by ${diff > 0 ? '+' : ''}${diff} pcs to synchronize with manual count?`)) return;
+
+    try {
+        const response = await fetch('api/sync.php?action=adjust_stock', {
+            method: 'POST',
+            body: JSON.stringify({ adjustment: { itemId: itemId, diff: diff, notes: 'Manual Audit Adjustment' } })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            // Update local memory
+            const item = items.find(i => i.id == itemId);
+            if (item) item.stock = parseInt(item.stock) + diff;
+            saveData();
+            alert('✅ Stock adjusted successfully!');
+            refreshAuditList();
+        } else {
+            alert('Error adjusting stock: ' + result.message);
+        }
+    } catch (e) {
+        console.error('Adjustment failed:', e);
+        alert('Server connection failed.');
+    }
+}
+
+async function adjustAllStockToSystem() {
+    const rows = document.querySelectorAll('tbody tr[id^="auditRow_"]');
+    let adjustments = [];
+
+    rows.forEach(row => {
+        const itemId = parseInt(row.id.replace('auditRow_', ''));
+        const diffEl = document.getElementById(`auditDiffPcs_${itemId}`);
+        const diff = parseInt(diffEl?.textContent.replace('+', '')) || 0;
+        
+        if (diff !== 0) {
+            adjustments.push({ itemId: itemId, diff: diff, notes: 'Bulk Audit Adjustment' });
+        }
+    });
+
+    if (adjustments.length === 0) {
+        alert('All items are already synchronized.');
+        return;
+    }
+
+    if (!confirm(`Are you sure you want to adjust system stock for ${adjustments.length} items to match manual counts?`)) return;
+
+    try {
+        const response = await fetch('api/sync.php?action=bulk_adjust_stock', {
+            method: 'POST',
+            body: JSON.stringify({ adjustments: adjustments })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            // Update local memory
+            adjustments.forEach(adj => {
+                const item = items.find(i => i.id == adj.itemId);
+                if (item) item.stock = parseInt(item.stock) + adj.diff;
+            });
+            saveData();
+            alert(`✅ Successfully adjusted ${adjustments.length} items!`);
+            refreshAuditList();
+        } else {
+            alert('Error during bulk adjustment: ' + result.message);
+        }
+    } catch (e) {
+        console.error('Bulk adjustment failed:', e);
+        alert('Server connection failed.');
     }
 }
 

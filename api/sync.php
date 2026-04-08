@@ -343,6 +343,32 @@ try {
                 throw $e;
             }
         }
+        elseif ($action === 'adjust_stock' || $action === 'bulk_adjust_stock') {
+            $adjustments = $action === 'adjust_stock' ? [$input['adjustment']] : $input['adjustments'];
+            $conn->beginTransaction();
+            try {
+                foreach ($adjustments as $adj) {
+                    $itemId = $adj['itemId'];
+                    $diff = $adj['diff']; // The difference to add/subtract
+                    $notes = $adj['notes'] ?? 'Audit Adjustment';
+                    $date = date('Y-m-d H:i:s');
+
+                    // 1. Update item stock
+                    $stmt = $conn->prepare("UPDATE items SET stock = stock + ? WHERE id = ?");
+                    $stmt->execute([$diff, $itemId]);
+
+                    // 2. Insert transaction record
+                    $stmt = $conn->prepare("INSERT INTO transactions (date, type, main_id, sub_id, item_id, quantity, notes) 
+                                           SELECT ?, 'ADJ', main_id, sub_id, id, ?, ? FROM items WHERE id = ?");
+                    $stmt->execute([$date, $diff, $notes, $itemId]);
+                }
+                $conn->commit();
+                echo json_encode(['status' => 'success']);
+            } catch (Exception $e) {
+                $conn->rollBack();
+                throw $e;
+            }
+        }
     }
 } catch (Exception $e) {
     if (ob_get_level() > 0) ob_clean();
