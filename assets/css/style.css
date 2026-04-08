@@ -66,6 +66,7 @@
             max-width: 400px;
             padding: 2.5rem 2rem;
             border-top: 6px solid var(--sky-500);
+            margin: auto; /* Fallback for centering */
         }
 
         .login-header {
