@@ -3643,6 +3643,13 @@ async function saveItem() {
 
 // User Management
 function showAddUserModal() {
+    document.getElementById('editUserId').value = '';
+    document.getElementById('newUserName').value = '';
+    document.getElementById('newUserUsername').value = '';
+    document.getElementById('newUserPassword').value = '';
+    document.getElementById('newUserRole').value = 'admin';
+    document.getElementById('userModalTitle').innerText = '➕ Add User';
+    document.getElementById('userSaveBtn').innerText = 'Create User';
     document.getElementById('addUserModal').style.display = 'block';
 }
 
@@ -3651,6 +3658,7 @@ function closeAddUserModal() {
 }
 
 async function saveNewUser() {
+    let editId = document.getElementById('editUserId').value;
     let name = document.getElementById('newUserName').value;
     let username = document.getElementById('newUserUsername').value;
     let password = document.getElementById('newUserPassword').value;
@@ -3660,14 +3668,20 @@ async function saveNewUser() {
     try {
         const response = await fetch('api/sync.php?action=save_user', {
             method: 'POST',
-            body: JSON.stringify({ user: { name, username, password, role } })
+            body: JSON.stringify({ user: { id: editId, name, username, password, role } })
         });
         const result = await response.json();
         if (result.status === 'success') {
-            users.push({ id: result.id, name, username, password, role, permissions: [] });
+            if (editId) {
+                let idx = users.findIndex(u => u.id == editId);
+                if (idx !== -1) users[idx] = { id: editId, name, username, password, role, permissions: users[idx].permissions || [] };
+                alert('User updated successfully!');
+            } else {
+                users.push({ id: result.id, name, username, password, role, permissions: [] });
+                alert('User created successfully!');
+            }
             refreshUsersList();
             closeAddUserModal();
-            alert('User created successfully!');
         } else {
             alert('Error: ' + result.message);
         }
@@ -3676,14 +3690,32 @@ async function saveNewUser() {
     }
 }
 
+function editUser(userId) {
+    let user = users.find(u => u.id == userId);
+    if (!user) return;
+    
+    document.getElementById('editUserId').value = user.id;
+    document.getElementById('newUserName').value = user.name;
+    document.getElementById('newUserUsername').value = user.username;
+    document.getElementById('newUserPassword').value = user.password;
+    document.getElementById('newUserRole').value = user.role || 'admin';
+    
+    document.getElementById('userModalTitle').innerText = '✏️ Edit User';
+    document.getElementById('userSaveBtn').innerText = 'Update User';
+    document.getElementById('addUserModal').style.display = 'block';
+}
+
 function refreshUsersList() {
     let html = '';
     users.forEach(user => {
         html += `<tr>
-                    <td style="padding:0.5rem;">${user.name}</td>
-                    <td style="padding:0.5rem;">${user.username}</td>
-                    <td style="padding:0.5rem;">${user.role}</td>
-                    <td style="padding:0.5rem;">${user.id !== 1 ? '<button class="btn btn-danger btn-sm" onclick="deleteUser(' + user.id + ')">Delete</button>' : ''}</td>
+                    <td style="padding:0.5rem; border-bottom:1px solid #eee;">${user.name}</td>
+                    <td style="padding:0.5rem; border-bottom:1px solid #eee;">${user.username}</td>
+                    <td style="padding:0.5rem; border-bottom:1px solid #eee;">${user.role}</td>
+                    <td style="padding:0.5rem; border-bottom:1px solid #eee;">
+                        <button class="btn btn-success btn-sm" onclick="editUser(${user.id})">Edit</button>
+                        ${user.id != 1 ? `<button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">Delete</button>` : ''}
+                    </td>
                 </tr>`;
     });
     document.getElementById('usersList').innerHTML = html;
