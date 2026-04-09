@@ -47,6 +47,7 @@
                     <button class="nav-tab" onclick="showTab('stockList')">Stock List</button>
                     <button class="nav-tab" onclick="showTab('audit')">Monthly Audit</button>
                     <button class="nav-tab" onclick="showTab('lowStockReport')">Low Stock</button>
+                    <button class="nav-tab" onclick="showTab('reports'); if(window.refreshReportsList) refreshReportsList();">Reports History</button>
                 </div>
 
                 <!-- Modular Tab Content Includes -->
@@ -58,6 +59,7 @@
                 <?php include 'views/stocklist.php'; ?>
                 <?php include 'views/monthlyaudit.php'; ?>
                 <?php include 'views/lowstockreport.php'; ?>
+                <?php include 'views/reports.php'; ?>
 
                 <!-- New Modules Placeholders -->
                 <div id="rawMaterialsPanel" style="display: none; padding: 2rem; text-align: center;">
@@ -86,5 +88,6 @@
 
     <!-- Modular JS Included here -->
     <script src="assets/js/main.js?v=<?= time(); ?>"></script>
+    <script src="assets/js/reports.js?v=<?= time(); ?>"></script>
 </body>
 </html>
