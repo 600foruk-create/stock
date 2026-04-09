@@ -1316,10 +1316,11 @@
             #printableStock, #printableStock *,
             #printableLowStock, #printableLowStock *,
             #printableAudit, #printableAudit *,
-            .invoice, .invoice * {
+            .invoice, .invoice *,
+            #reportDetailSection, #reportDetailSection * {
                 visibility: visible;
             }
-            #printableStock, #printableLowStock, #printableAudit, .invoice {
+            #printableStock, #printableLowStock, #printableAudit, .invoice, #reportDetailSection {
                 position: absolute;
                 left: 0;
                 top: 0;

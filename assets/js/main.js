@@ -2008,27 +2008,37 @@ async function saveMonthlyAudit() {
     const title = prompt("Enter a name for this report:", "Monthly Audit - " + new Date().toLocaleDateString('en-GB'));
     if (!title) return; // Cancelled
 
-    // Capture the entire state of the printable audit area
-    const brandsData = [];
-    sortMainCategories(mainCategories).forEach(m => {
-        const brandsInput = document.querySelector(`.audit-input-${m.id}`);
-        if (brandsInput) {
-            brandsData.push({
-                name: m.name,
-                color: m.color,
-                sysPcs: document.getElementById(`totalSysPcs_${m.id}`)?.textContent || '0',
-                sysKg: document.getElementById(`totalSysKg_${m.id}`)?.textContent || '0.00',
-                godownPcs: document.getElementById(`totalGodownPcs_${m.id}`)?.textContent || '0',
-                godownKg: document.getElementById(`totalGodownKg_${m.id}`)?.textContent || '0.00'
-            });
-        }
+    // Capture full item details for detailed exports
+    const allItemsData = [];
+    inputs.forEach(input => {
+        const itemId = parseInt(input.id.replace('auditGodownPcs_', ''));
+        // Extract brandId from class list (e.g. "audit-input-5")
+        const brandClass = Array.from(input.classList).find(c => c.startsWith('audit-input-'));
+        const brandId = brandClass ? brandClass.replace('audit-input-', '') : null;
+        
+        const main = mainCategories.find(m => m.id == brandId);
+        const item = items.find(i => i.id == itemId);
+        const sub = item ? subCategories.find(s => s.id == item.subId) : null;
+        
+        allItemsData.push({
+            brand: main ? main.name : 'Unknown',
+            size: sub ? sub.name : '?',
+            length: item ? item.length : '?',
+            weight: item ? item.weight : '0',
+            sysPcs: document.getElementById(`auditSysPcs_${itemId}`)?.textContent || '0',
+            godownPcs: input.value || '0',
+            godownKg: document.getElementById(`auditGodownKg_${itemId}`)?.textContent || '0.00',
+            diffPcs: document.getElementById(`auditDiffPcs_${itemId}`)?.textContent || '0',
+            diffKg: document.getElementById(`auditDiffKg_${itemId}`)?.textContent || '0.00'
+        });
     });
 
     const reportSnapshot = {
         title: title,
         date: new Date().toISOString(),
         contentHtml: document.getElementById('auditListContainer').innerHTML,
-        brands: brandsData
+        brands: brandsData,
+        items: allItemsData
     };
 
     // Save to SQL
@@ -4438,12 +4448,15 @@ async function refreshReportsList() {
         const result = await response.json();
         
         if (result.status === 'success') {
-            savedReports = result.reports;
-            renderReportsTable();
+            savedReports = result.reports || [];
+        } else {
+            savedReports = [];
         }
     } catch (err) {
         console.error('Fetch reports failed:', err);
+        savedReports = [];
     }
+    renderReportsTable();
 }
 
 function renderReportsTable() {
@@ -4534,28 +4547,44 @@ async function deleteReport(id, closeDetails = false) {
 }
 
 function exportReportToExcel(report) {
-    if (!report || !report.details || !report.details.brands) {
+    if (!report || !report.details) {
         alert('Incomplete report data for export.');
         return;
     }
 
     // Prepare CSV Content
     let csv = `REPORT: ${report.title}\n`;
-    csv += `Exported: ${new Date().toLocaleString()}\n\n`;
-    csv += `Brand,Sys Pcs,Sys Kg,Godown Pcs,Godown Kg,Diff Pcs,Diff Kg\n`;
+    csv += `Date: ${new Date(report.created_at).toLocaleString()}\n\n`;
     
-    report.details.brands.forEach(b => {
-        const diffP = (parseInt(b.godownPcs) || 0) - (parseInt(b.sysPcs) || 0);
-        const diffK = (parseFloat(b.godownKg) || 0) - (parseFloat(b.sysKg) || 0);
-        csv += `"${b.name}",${b.sysPcs},${b.sysKg},${b.godownPcs},${b.godownKg},${diffP},${diffK.toFixed(2)}\n`;
-    });
+    // Check if we have detailed items (new format) or just brand totals (old format)
+    if (report.details.items && report.details.items.length > 0) {
+        csv += `Brand,Size,Length,Weight,System Pcs,Godown Pcs,Godown Kg,Diff Pcs,Diff Kg\n`;
+        report.details.items.forEach(i => {
+            // Remove any extra characters or formatting from captured text
+            const sysP = (i.sysPcs || '0').trim();
+            const godownP = (i.godownPcs || '0').trim();
+            const godownK = (i.godownKg || '0.00').trim();
+            const dP = (i.diffPcs || '0').trim();
+            const dK = (i.diffKg || '0.00').trim();
+
+            csv += `"${i.brand}","${i.size}",${i.length},${i.weight},${sysP},${godownP},${godownK},${dP},${dK}\n`;
+        });
+    } else if (report.details.brands) {
+        // Fallback for older reports that only saved brand totals
+        csv += `Brand,Sys Pcs,Sys Kg,Godown Pcs,Godown Kg,Diff Pcs,Diff Kg\n`;
+        report.details.brands.forEach(b => {
+            const diffP = (parseInt(b.godownPcs) || 0) - (parseInt(b.sysPcs) || 0);
+            const diffK = (parseFloat(b.godownKg) || 0) - (parseFloat(b.sysKg) || 0);
+            csv += `"${b.name}",${b.sysPcs},${b.sysKg},${b.godownPcs},${b.godownKg},${diffP},${diffK.toFixed(2)}\n`;
+        });
+    }
 
     // Create Download Link
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `${report.title.replace(/[^a-z0-9]/gi, '_')}.csv`);
+    link.setAttribute("download", `${report.title.replace(/[^a-z0-9]/gi, '_')}_detailed.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
