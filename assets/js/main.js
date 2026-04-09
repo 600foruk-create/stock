@@ -1843,12 +1843,16 @@ function refreshAuditList() {
                 bSysPcs += effectivePcs;
                 bSysKg += parseFloat(systemKg);
 
-                // Add bold border to last row of group
-                let rowStyle = (index === group.length - 1) ? 'border-bottom: 2.5px solid var(--gray-400);' : '';
+                // Add bold border class to last row of group
+                let rowClass = (index === group.length - 1) ? 'group-row-end' : '';
+                // Since Size cell uses rowspan, it belongs to the FIRST row of the group.
+                // We must apply the bold border to its bottom if it's the last row of its group (handled by class if it was single row, but here it's indexed)
+                // Actually, the rowspan cell inherently spans multiple rows, its bottom coincides with the last row's bottom.
+                // In CSS, apply border-bottom to the rowspan cell specifically.
 
                 rowsHtml += `
-                    <tr id="auditRow_${item.id}" data-unit-weight="${weightVal}" data-brand-id="${main.id}" style="${rowStyle}">
-                        ${index === 0 ? `<td rowspan="${group.length}" style="font-weight:700; background: var(--gray-50); font-size: 1.1rem; border-right: 2px solid var(--gray-300); border-bottom: 2.5px solid var(--gray-400);">${sizeName}"</td>` : ''}
+                    <tr id="auditRow_${item.id}" data-unit-weight="${weightVal}" data-brand-id="${main.id}" class="${rowClass}">
+                        ${index === 0 ? `<td rowspan="${group.length}" class="group-row-end" style="font-weight:700; background: var(--gray-50); font-size: 1.1rem; border-right: 2px solid var(--gray-300);">${sizeName}"</td>` : ''}
                         <td>${weightVal.toFixed(2)} KG</td>
                         <td style="text-align:center;">${item.length} ft</td>
                         <td style="color:${main.color}; font-weight:600;">${main.name}</td>

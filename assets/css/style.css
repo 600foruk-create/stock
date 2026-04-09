@@ -1760,3 +1760,8 @@
     70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
     100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
 }
+
+/* Monthly Audit Enhancements */
+.group-row-end td {
+    border-bottom: 3px solid #64748b !important; /* Bolder, darker slate color */
+}
