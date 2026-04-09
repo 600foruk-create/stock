@@ -719,12 +719,41 @@
             margin-bottom: 1rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             border-left: 6px solid;
+            transition: all 0.3s ease;
         }
 
         .order-header {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             margin-bottom: 0.8rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        
+        .order-header:hover {
+            background: var(--gray-100);
+        }
+
+        .order-card.collapsed .order-details {
+            display: none;
+        }
+        
+        .order-card.collapsed .order-header {
+            margin-bottom: 0;
+        }
+
+        .expand-icon {
+            margin-left: 10px;
+            font-size: 0.8rem;
+            transition: transform 0.3s;
+            color: var(--gray-500);
+        }
+        
+        .order-card:not(.collapsed) .expand-icon {
+            transform: rotate(180deg);
         }
 
         .customer-name {

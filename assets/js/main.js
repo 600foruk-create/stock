@@ -2737,21 +2737,26 @@ function refreshOrdersList(filter = null) {
             });
 
             html += `
-                        <div class="order-card" style="border-left-color: ${statusColor};">
-                            <div class="order-header">
-                                <span class="customer-name">${order.customerName}</span>
+                        <div class="order-card collapsed" style="border-left-color: ${statusColor};" id="order-card-${order.id}">
+                            <div class="order-header" onclick="toggleOrderDetails(this)">
+                                <div style="display:flex; align-items:center;">
+                                    <span class="customer-name">${order.customerName}</span>
+                                    <span class="expand-icon">▼</span>
+                                </div>
                                 <span class="order-date">${formatDate(order.date)}</span>
                             </div>
-                            <div class="order-items">
-                                ${itemsHtml}
-                            </div>
-                            <div class="order-footer">
-                                <span class="order-total">Total: ${order.totalQty} PCS | ${parseFloat(order.totalKg || 0).toFixed(2)} KG</span>
-                                <div class="order-actions">
-                                    <button class="btn btn-warning btn-sm" onclick="editOrder(${order.id})">Edit</button>
-                                    ${currentStatus !== 'completed' ? `<button class="btn btn-primary btn-sm" onclick="completeOrder(${order.id})">Complete</button>` : ''}
-                                    <button class="btn btn-info btn-sm" onclick="showInvoice(${order.id})">Invoice</button>
-                                    <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${order.id})">Delete</button>
+                            <div class="order-details">
+                                <div class="order-items">
+                                    ${itemsHtml}
+                                </div>
+                                <div class="order-footer">
+                                    <span class="order-total">Total: ${order.totalQty} PCS | ${parseFloat(order.totalKg || 0).toFixed(2)} KG</span>
+                                    <div class="order-actions">
+                                        <button class="btn btn-warning btn-sm" onclick="editOrder(${order.id})">Edit</button>
+                                        ${currentStatus !== 'completed' ? `<button class="btn btn-primary btn-sm" onclick="completeOrder(${order.id})">Complete</button>` : ''}
+                                        <button class="btn btn-info btn-sm" onclick="showInvoice(${order.id})">Invoice</button>
+                                        <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${order.id})">Delete</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2773,6 +2778,11 @@ function refreshOrdersList(filter = null) {
             }
         });
     }
+}
+
+function toggleOrderDetails(headerElement) {
+    const card = headerElement.closest('.order-card');
+    card.classList.toggle('collapsed');
 }
 
 function clearOrdersView() {
