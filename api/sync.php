@@ -18,6 +18,9 @@ try {
                 $cols = $conn->query("SHOW COLUMNS FROM customers")->fetchAll(PDO::FETCH_COLUMN);
                 if (!in_array('main_id', $cols)) $conn->exec("ALTER TABLE customers ADD COLUMN main_id INT DEFAULT NULL");
                 if (!in_array('sub_id', $cols)) $conn->exec("ALTER TABLE customers ADD COLUMN sub_id INT DEFAULT NULL");
+                
+                // Audit Reports Table
+                $conn->exec("CREATE TABLE IF NOT EXISTS audit_saved_reports (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255), created_at DATETIME DEFAULT CURRENT_TIMESTAMP, report_data LONGTEXT)");
             } catch (Exception $e) {}
 
             $data = [
@@ -44,6 +47,21 @@ try {
             }
             
             echo json_encode(['status' => 'success', 'data' => $data]);
+        }
+        elseif ($action === 'get_reports') {
+            $reports = $conn->query("SELECT id, title, created_at FROM audit_saved_reports ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode(['status' => 'success', 'reports' => $reports]);
+        }
+        elseif ($action === 'get_report_details') {
+            $id = $_GET['id'] ?? null;
+            $stmt = $conn->prepare("SELECT * FROM audit_saved_reports WHERE id = ?");
+            $stmt->execute([$id]);
+            $report = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($report) {
+                echo json_encode(['status' => 'success', 'report' => $report]);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'Report not found']);
+            }
         }
     } 
     elseif ($method === 'POST') {
@@ -437,6 +455,19 @@ try {
                 $conn->rollBack();
                 throw $e;
             }
+        }
+        elseif ($action === 'save_audit_report') {
+            $title = $input['title'] ?? 'Audit Report';
+            $data = $input['report_data']; // JSON string
+            $stmt = $conn->prepare("INSERT INTO audit_saved_reports (title, report_data) VALUES (?, ?)");
+            $stmt->execute([$title, $data]);
+            echo json_encode(['status' => 'success', 'id' => $conn->lastInsertId()]);
+        }
+        elseif ($action === 'delete_report') {
+            $id = $input['id'] ?? null;
+            $stmt = $conn->prepare("DELETE FROM audit_saved_reports WHERE id = ?");
+            $stmt->execute([$id]);
+            echo json_encode(['status' => 'success']);
         }
     }
 } catch (Exception $e) {

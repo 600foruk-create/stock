@@ -195,6 +195,7 @@ function showTab(tabName) {
     if (tabName === 'users') refreshUsersList();
     if (tabName === 'lowStockReport') refreshLowStockReport();
     if (tabName === 'audit') refreshAuditList();
+    if (tabName === 'reports') refreshReportsList();
 }
 
 function switchModule(module) {
@@ -4419,3 +4420,140 @@ async function deleteCustDistrict(id) {
 
 // Initialize
 initApp();
+
+// --- REPORTS MODULE ---
+let savedReports = [];
+let currentViewingReport = null;
+
+async function refreshReportsList() {
+    const reportsTableBody = document.getElementById('reportsTableBody');
+    if (!reportsTableBody) return;
+
+    try {
+        const response = await fetch('api/sync.php?action=get_reports');
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            savedReports = result.reports;
+            renderReportsTable();
+        }
+    } catch (err) {
+        console.error('Fetch reports failed:', err);
+    }
+}
+
+function renderReportsTable() {
+    const tbody = document.getElementById('reportsTableBody');
+    const search = (document.getElementById('reportSearch')?.value || '').toLowerCase();
+    
+    const filtered = savedReports.filter(r => 
+        r.title.toLowerCase().includes(search) || 
+        r.created_at.includes(search)
+    );
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 2rem; color:var(--gray-500);">No saved reports found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(r => `
+        <tr>
+            <td>${new Date(r.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+            <td style="font-weight: 600; color: var(--sky-600);">${r.title}</td>
+            <td style="text-align: center;">
+                <button class="btn btn-success btn-sm" onclick="viewReport(${r.id})">👁️ View</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteReport(${r.id})">🗑️ Delete</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function viewReport(id) {
+    try {
+        const response = await fetch(`api/sync.php?action=get_report_details&id=${id}`);
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            const report = result.report;
+            const data = JSON.parse(report.report_data);
+            currentViewingReport = { ...report, details: data };
+
+            document.getElementById('reportsListSection').style.display = 'none';
+            document.getElementById('reportDetailSection').style.display = 'block';
+            
+            const container = document.getElementById('reportContentView');
+            container.innerHTML = `
+                <div class="report-meta">
+                    <h2 style="margin: 0 0 0.5rem 0; color: var(--sky-600);">${report.title}</h2>
+                    <p style="color: var(--gray-500); margin: 0;">Saved on: ${new Date(report.created_at).toLocaleString()}</p>
+                </div>
+                ${data.contentHtml}
+            `;
+
+            // Update button actions
+            document.getElementById('exportExcelBtn').onclick = () => exportReportToExcel(currentViewingReport);
+            document.getElementById('deleteReportBtn').onclick = () => deleteReport(id, true);
+
+        } else {
+            alert('Error loading report details: ' + result.message);
+        }
+    } catch (err) {
+        console.error('Load report details failed:', err);
+    }
+}
+
+function backToReportsList() {
+    document.getElementById('reportsListSection').style.display = 'block';
+    document.getElementById('reportDetailSection').style.display = 'none';
+    currentViewingReport = null;
+    refreshReportsList();
+}
+
+async function deleteReport(id, closeDetails = false) {
+    if (!confirm('Are you sure you want to permanently delete this report?')) return;
+
+    try {
+        const response = await fetch('api/sync.php?action=delete_report', {
+            method: 'POST',
+            body: JSON.stringify({ id: id })
+        });
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            alert('Report deleted.');
+            if (closeDetails) backToReportsList();
+            else refreshReportsList();
+        }
+    } catch (err) {
+        alert('Failed to delete report.');
+    }
+}
+
+function exportReportToExcel(report) {
+    if (!report || !report.details || !report.details.brands) {
+        alert('Incomplete report data for export.');
+        return;
+    }
+
+    // Prepare CSV Content
+    let csv = `REPORT: ${report.title}\n`;
+    csv += `Exported: ${new Date().toLocaleString()}\n\n`;
+    csv += `Brand,Sys Pcs,Sys Kg,Godown Pcs,Godown Kg,Diff Pcs,Diff Kg\n`;
+    
+    report.details.brands.forEach(b => {
+        const diffP = (parseInt(b.godownPcs) || 0) - (parseInt(b.sysPcs) || 0);
+        const diffK = (parseFloat(b.godownKg) || 0) - (parseFloat(b.sysKg) || 0);
+        csv += `"${b.name}",${b.sysPcs},${b.sysKg},${b.godownPcs},${b.godownKg},${diffP},${diffK.toFixed(2)}\n`;
+    });
+
+    // Create Download Link
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${report.title.replace(/[^a-z0-9]/gi, '_')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
