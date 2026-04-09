@@ -1843,9 +1843,12 @@ function refreshAuditList() {
                 bSysPcs += effectivePcs;
                 bSysKg += parseFloat(systemKg);
 
+                // Add bold border to last row of group
+                let rowStyle = (index === group.length - 1) ? 'border-bottom: 2.5px solid var(--gray-400);' : '';
+
                 rowsHtml += `
-                    <tr id="auditRow_${item.id}" data-unit-weight="${weightVal}" data-brand-id="${main.id}">
-                        ${index === 0 ? `<td rowspan="${group.length}" style="font-weight:700; background: var(--gray-50); font-size: 1.1rem; border-right: 2px solid var(--gray-300);">${sizeName}"</td>` : ''}
+                    <tr id="auditRow_${item.id}" data-unit-weight="${weightVal}" data-brand-id="${main.id}" style="${rowStyle}">
+                        ${index === 0 ? `<td rowspan="${group.length}" style="font-weight:700; background: var(--gray-50); font-size: 1.1rem; border-right: 2px solid var(--gray-300); border-bottom: 2.5px solid var(--gray-400);">${sizeName}"</td>` : ''}
                         <td>${weightVal.toFixed(2)} KG</td>
                         <td style="text-align:center;">${item.length} ft</td>
                         <td style="color:${main.color}; font-weight:600;">${main.name}</td>
@@ -1902,13 +1905,14 @@ function refreshAuditList() {
                         </tbody>
                         <tfoot>
                             <tr style="background: var(--gray-100); font-weight: 800;">
-                                <td colspan="3" style="text-align: right; padding-right: 1.5rem;">${main.name} TOTAL:</td>
+                                <td colspan="4" style="text-align: right; padding-right: 1.5rem;">${main.name} TOTAL:</td>
                                 <td id="totalSysPcs_${main.id}">${bSysPcs}</td>
                                 <td id="totalSysKg_${main.id}">${bSysKg.toFixed(2)}</td>
                                 <td id="totalGodownPcs_${main.id}">0</td>
                                 <td id="totalGodownKg_${main.id}">0.00</td>
                                 <td id="totalDiffPcs_${main.id}">0</td>
                                 <td id="totalDiffKg_${main.id}">0.00</td>
+                                <td class="no-print"></td>
                             </tr>
                         </tfoot>
                     </table>
