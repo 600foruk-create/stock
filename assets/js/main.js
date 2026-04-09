@@ -1697,6 +1697,7 @@ function refreshStockList() {
         itemsHtml += '<thead><tr>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100);">Size</th>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100);">Description</th>';
+        itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">Length</th>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">Available</th>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">In Order</th>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">Result</th>';
@@ -1732,6 +1733,7 @@ function refreshStockList() {
                         <tr style="background: white;">
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200);"><strong>${sizeName}"</strong></td>
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); color: var(--gray-700);">${desc}</td>
+                            <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center;">${item.length} ft</td>
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:600; color:var(--orange-500);">${available}</td>
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:600; color:${ioColor};">${inOrder}</td>
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:700; color:${resColor};">${result}</td>
@@ -1823,6 +1825,7 @@ function refreshAuditList() {
                     <tr id="auditRow_${item.id}" data-unit-weight="${weightVal}" data-brand-id="${main.id}">
                         ${index === 0 ? `<td rowspan="${group.length}" style="font-weight:700; background: var(--gray-50); font-size: 1.1rem; border-right: 2px solid var(--gray-300);">${sizeName}"</td>` : ''}
                         <td>${weightVal.toFixed(2)} KG</td>
+                        <td style="text-align:center;">${item.length} ft</td>
                         <td style="color:${main.color}; font-weight:600;">${main.name}</td>
                         <td id="auditSysPcs_${item.id}" class="sys-pcs-val">${effectivePcs}</td>
                         <td id="auditSysKg_${item.id}" class="sys-kg-val">${systemKg}</td>
@@ -1856,6 +1859,7 @@ function refreshAuditList() {
                             <tr>
                                 <th rowspan="2">Size</th>
                                 <th rowspan="2">KG/Pcs</th>
+                                <th rowspan="2">Length</th>
                                 <th rowspan="2">Brand</th>
                                 <th colspan="2" style="background: var(--sky-50);">Result Stock (System)</th>
                                 <th colspan="2" style="background: var(--orange-50);">Godown Stock (Manual)</th>
