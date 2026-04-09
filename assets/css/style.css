@@ -1762,6 +1762,6 @@
 }
 
 /* Monthly Audit Enhancements */
-.group-row-end td {
+.group-row-end, .group-row-end td {
     border-bottom: 3px solid #64748b !important; /* Bolder, darker slate color */
 }
