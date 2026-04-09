@@ -2000,53 +2000,57 @@ function updateBrandAuditTotals(brandId) {
 
 async function saveMonthlyAudit() {
     const inputs = document.querySelectorAll('.godown-input');
-    let itemsToUpdate = [];
-    let auditRecords = [];
+    if (inputs.length === 0) {
+        alert('No audit data found to save. Please make sure the table is loaded.');
+        return;
+    }
 
-    inputs.forEach(input => {
-        const val = input.value.trim();
-        if (val !== "" && val !== "0") {
-            const itemId = parseInt(input.id.replace('auditGodownPcs_', ''));
-            const newStock = parseInt(val) || 0;
-            const sysStock = parseInt(document.getElementById(`auditSysPcs_${itemId}`).textContent) || 0;
-            
-            itemsToUpdate.push({ id: itemId, stock: newStock });
-            auditRecords.push({
-                itemId: itemId,
-                systemQty: sysStock,
-                godownQty: newStock,
-                diffQty: newStock - sysStock
+    const title = prompt("Enter a name for this report:", "Monthly Audit - " + new Date().toLocaleDateString('en-GB'));
+    if (!title) return; // Cancelled
+
+    // Capture the entire state of the printable audit area
+    const brandsData = [];
+    sortMainCategories(mainCategories).forEach(m => {
+        const brandsInput = document.querySelector(`.audit-input-${m.id}`);
+        if (brandsInput) {
+            brandsData.push({
+                name: m.name,
+                color: m.color,
+                sysPcs: document.getElementById(`totalSysPcs_${m.id}`)?.textContent || '0',
+                sysKg: document.getElementById(`totalSysKg_${m.id}`)?.textContent || '0.00',
+                godownPcs: document.getElementById(`totalGodownPcs_${m.id}`)?.textContent || '0',
+                godownKg: document.getElementById(`totalGodownKg_${m.id}`)?.textContent || '0.00'
             });
         }
     });
 
-    if (itemsToUpdate.length === 0) {
-        alert('No godown counts entered to save.');
-        return;
-    }
-
-    if (!confirm(`Are you sure you want to Save Audit and Update SQL for ${itemsToUpdate.length} items?`)) {
-        return;
-    }
+    const reportSnapshot = {
+        title: title,
+        date: new Date().toISOString(),
+        contentHtml: document.getElementById('auditListContainer').innerHTML,
+        brands: brandsData
+    };
 
     // Save to SQL
     try {
-        const response = await fetch('api/sync.php?action=save_audit', {
+        const response = await fetch('api/sync.php?action=save_audit_report', {
             method: 'POST',
-            body: JSON.stringify({ records: auditRecords })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                title: title,
+                report_data: JSON.stringify(reportSnapshot)
+            })
         });
         const result = await response.json();
         
         if (result.status === 'success') {
-            saveData(); // Sync local (backup)
-            alert(`✅ Audit saved as a report!\nLive system stock was NOT changed.`);
-            refreshAuditList();
+            alert(`✅ Audit report saved successfully! You can view it in the Reports tab.`);
         } else {
-            alert('Error saving audit: ' + result.message);
+            alert('Error saving report: ' + result.message);
         }
-    } catch (e) {
-        console.error('Audit save failed:', e);
-        alert('Server connection failed. Audit not saved.');
+    } catch (error) {
+        console.error('Audit report save failed:', error);
+        alert('Server connection failed. Report not saved.');
     }
 }
 
