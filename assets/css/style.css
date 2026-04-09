@@ -1320,12 +1320,35 @@
                 visibility: visible;
             }
             #printableStock, #printableLowStock, #printableAudit, .invoice {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
+                width: 100% !important;
                 background: white;
                 padding: 0;
+                margin: 0 !important;
+                display: block !important;
+            }
+            
+            /* Repeating Header for Audit */
+            .print-only-header {
+                display: none;
+            }
+            
+            @media print {
+                .print-only-header {
+                    display: table-row !important;
+                }
+                .audit-print-logo {
+                    font-size: 2.5rem !important;
+                    margin-right: 1rem;
+                }
+                .audit-print-title {
+                    margin: 0;
+                    font-size: 1.8rem;
+                }
+                .audit-print-meta {
+                    color: #555;
+                    font-size: 0.9rem;
+                    margin: 0;
+                }
             }
             .no-print, .sidebar, .top-bar, .nav-tabs, .action-buttons, .menu-item, .search-filter-bar {
                 display: none !important;

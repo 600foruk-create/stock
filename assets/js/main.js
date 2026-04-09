@@ -1801,6 +1801,10 @@ function refreshAuditList() {
     const auditPrintDate = document.getElementById('auditPrintDate');
     if (auditPrintDate) auditPrintDate.textContent = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     
+    const companyName = document.getElementById('sidebarCompany')?.textContent || 'StockFlow';
+    const companyLogo = document.getElementById('sidebarLogo')?.innerHTML || '📦';
+    const finalDateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
     let html = '';
     sortMainCategories(mainCategories).forEach(main => {
         let brandItems = items.filter(i => i.mainId == main.id);
@@ -1879,12 +1883,29 @@ function refreshAuditList() {
         if (rowsHtml) {
             html += `
                 <div class="audit-group" style="margin-bottom: 2rem;">
-                    <div class="audit-brand-header" style="background:${main.color};">
+                    <div class="audit-brand-header no-print" style="background:${main.color};">
                         <span>${main.name} Audit</span>
                         <span style="font-size:0.85rem; font-weight:400;">Total Sizes: ${sortedSizes.length}</span>
                     </div>
                     <table class="audit-table">
                         <thead>
+                            <tr class="print-only-header">
+                                <th colspan="11" style="text-align: left; padding: 1rem; border: none; background: white;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 0.5rem; width: 100%;">
+                                        <div style="display: flex; align-items: center; gap: 1rem;">
+                                            <div class="audit-print-logo">${companyLogo}</div>
+                                            <div>
+                                                <h1 class="audit-print-title">${companyName}</h1>
+                                                <p class="audit-print-meta">Monthly Stock Audit Report</p>
+                                            </div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <p class="audit-print-meta" style="font-weight: bold;">Date: ${finalDateStr}</p>
+                                            <p class="audit-print-meta">Module: Finish Good</p>
+                                        </div>
+                                    </div>
+                                </th>
+                            </tr>
                             <tr>
                                 <th rowspan="2">Size</th>
                                 <th rowspan="2">KG/Pcs</th>
