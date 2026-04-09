@@ -10,12 +10,24 @@ $action = $_GET['action'] ?? '';
 try {
     if ($method === 'GET') {
         if ($action === 'get_all') {
+            // AUTO-REPAIR: Customer Locations Schema
+            try {
+                $conn->exec("CREATE TABLE IF NOT EXISTS customer_main_categories (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL)");
+                $conn->exec("CREATE TABLE IF NOT EXISTS customer_sub_categories (id INT AUTO_INCREMENT PRIMARY KEY, main_id INT NOT NULL, name VARCHAR(255) NOT NULL)");
+                
+                $cols = $conn->query("SHOW COLUMNS FROM customers")->fetchAll(PDO::FETCH_COLUMN);
+                if (!in_array('main_id', $cols)) $conn->exec("ALTER TABLE customers ADD COLUMN main_id INT DEFAULT NULL");
+                if (!in_array('sub_id', $cols)) $conn->exec("ALTER TABLE customers ADD COLUMN sub_id INT DEFAULT NULL");
+            } catch (Exception $e) {}
+
             $data = [
                 'users' => $conn->query("SELECT id, name, username, password, role FROM users")->fetchAll(PDO::FETCH_ASSOC),
                 'mainCategories' => $conn->query("SELECT id, name, code, color, low_stock_limit AS lowStockLimit FROM main_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'subCategories' => $conn->query("SELECT id, main_id AS mainId, name FROM sub_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'items' => $conn->query("SELECT id, main_id AS mainId, sub_id AS subId, name, length, weight, stock FROM items")->fetchAll(PDO::FETCH_ASSOC),
-                'customers' => $conn->query("SELECT id, unique_id AS uniqueId, name, address, mobile FROM customers")->fetchAll(PDO::FETCH_ASSOC),
+                'customers' => $conn->query("SELECT id, unique_id AS uniqueId, name, address, mobile, main_id AS mainId, sub_id AS subId FROM customers")->fetchAll(PDO::FETCH_ASSOC),
+                'customerProvinces' => $conn->query("SELECT id, name FROM customer_main_categories")->fetchAll(PDO::FETCH_ASSOC),
+                'customerDistricts' => $conn->query("SELECT id, main_id AS mainId, name FROM customer_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'orders' => $conn->query("SELECT o.id, o.date, o.customer_id AS customerId, o.status, o.total_qty AS totalQty, o.total_kg AS totalKg, c.name AS customerName FROM orders o LEFT JOIN customers c ON o.customer_id = c.id")->fetchAll(PDO::FETCH_ASSOC),
                 'transactions' => $conn->query("SELECT t.id, t.date, t.type, t.main_id AS mainId, t.sub_id AS subId, t.item_id AS itemId, t.quantity, t.customer_id AS customerId, t.notes, mc.name AS mainName, sc.name AS subName, i.name AS itemName, c.name AS customer FROM transactions t LEFT JOIN main_categories mc ON t.main_id = mc.id LEFT JOIN sub_categories sc ON t.sub_id = sc.id LEFT JOIN items i ON t.item_id = i.id LEFT JOIN customers c ON t.customer_id = c.id ORDER BY t.date DESC")->fetchAll(PDO::FETCH_ASSOC),
                 'settings' => $conn->query("SELECT id, category, `key`, value FROM settings")->fetchAll(PDO::FETCH_ASSOC),
@@ -173,6 +185,58 @@ try {
             }
         }
 
+        elseif ($action === 'save_cust_category') {
+            $cat = $input['category'];
+            $type = $input['type']; // 'main' or 'sub'
+            
+            if ($type === 'main') {
+                if (isset($cat['id']) && !empty($cat['id'])) {
+                    $stmt = $conn->prepare("UPDATE customer_main_categories SET name = ? WHERE id = ?");
+                    $stmt->execute([$cat['name'], $cat['id']]);
+                } else {
+                    $stmt = $conn->prepare("INSERT INTO customer_main_categories (name) VALUES (?)");
+                    $stmt->execute([$cat['name']]);
+                    $cat['id'] = $conn->lastInsertId();
+                }
+            } else {
+                if (isset($cat['id']) && !empty($cat['id'])) {
+                    $stmt = $conn->prepare("UPDATE customer_sub_categories SET name = ?, main_id = ? WHERE id = ?");
+                    $stmt->execute([$cat['name'], $cat['mainId'], $cat['id']]);
+                } else {
+                    $stmt = $conn->prepare("INSERT INTO customer_sub_categories (name, main_id) VALUES (?, ?)");
+                    $stmt->execute([$cat['name'], $cat['mainId']]);
+                    $cat['id'] = $conn->lastInsertId();
+                }
+            }
+            echo json_encode(['status' => 'success', 'id' => $cat['id']]);
+        }
+
+        elseif ($action === 'delete_cust_category') {
+            $id = $input['id'] ?? null;
+            $type = $input['type'] ?? '';
+            
+            if ($type === 'main') {
+                $count = $conn->prepare("SELECT COUNT(*) FROM customer_sub_categories WHERE main_id = ?");
+                $count->execute([$id]);
+                if ($count->fetchColumn() > 0) {
+                    echo json_encode(['status' => 'error', 'message' => 'Cannot delete Province because it has Districts.']);
+                    exit;
+                }
+                $stmt = $conn->prepare("DELETE FROM customer_main_categories WHERE id = ?");
+                $stmt->execute([$id]);
+            } else {
+                $count = $conn->prepare("SELECT COUNT(*) FROM customers WHERE sub_id = ?");
+                $count->execute([$id]);
+                if ($count->fetchColumn() > 0) {
+                    echo json_encode(['status' => 'error', 'message' => 'Cannot delete District because it has Customers, please delete or move customers first.']);
+                    exit;
+                }
+                $stmt = $conn->prepare("DELETE FROM customer_sub_categories WHERE id = ?");
+                $stmt->execute([$id]);
+            }
+            echo json_encode(['status' => 'success']);
+        }
+
         elseif ($action === 'save_order') {
             $o = $input['order'];
             $conn->beginTransaction();
@@ -213,11 +277,11 @@ try {
         elseif ($action === 'save_customer') {
             $c = $input['customer'];
             if (isset($c['id']) && !empty($c['id'])) {
-                $stmt = $conn->prepare("UPDATE customers SET unique_id = ?, name = ?, address = ?, mobile = ? WHERE id = ?");
-                $stmt->execute([$c['uniqueId'], $c['name'], $c['address'] ?? '', $c['mobile'] ?? '', $c['id']]);
+                $stmt = $conn->prepare("UPDATE customers SET unique_id = ?, name = ?, address = ?, mobile = ?, main_id = ?, sub_id = ? WHERE id = ?");
+                $stmt->execute([$c['uniqueId'], $c['name'], $c['address'] ?? '', $c['mobile'] ?? '', $c['mainId'] ?? null, $c['subId'] ?? null, $c['id']]);
             } else {
-                $stmt = $conn->prepare("INSERT INTO customers (unique_id, name, address, mobile) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$c['uniqueId'], $c['name'], $c['address'] ?? '', $c['mobile'] ?? '']);
+                $stmt = $conn->prepare("INSERT INTO customers (unique_id, name, address, mobile, main_id, sub_id) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$c['uniqueId'], $c['name'], $c['address'] ?? '', $c['mobile'] ?? '', $c['mainId'] ?? null, $c['subId'] ?? null]);
                 $c['id'] = $conn->lastInsertId();
             }
             echo json_encode(['status' => 'success', 'id' => $c['id']]);

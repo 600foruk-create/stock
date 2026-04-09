@@ -21,6 +21,8 @@ let items = [
     { id: 5, mainId: 2, subId: 4, name: '', length: 13, weight: 2.0, stock: 5, minStock: 10 }
 ];
 let customers = [];
+let customerProvinces = [];
+let customerDistricts = [];
 let transactions = [];
 let orders = [];
 let rawMaterials = [];
@@ -70,6 +72,8 @@ async function initApp() {
             subCategories = d.subCategories || [];
             items = d.items || [];
             customers = d.customers || [];
+            customerProvinces = d.customerProvinces || [];
+            customerDistricts = d.customerDistricts || [];
             orders = d.orders || [];
             transactions = d.transactions || [];
             rawMaterials = d.rawMaterials || [];
@@ -646,9 +650,16 @@ async function saveCustomer() {
         name: name,
         address: address,
         mobile: mobile,
-        uniqueId: uniqueInput || (id ? customers.find(c => c.id == id)?.uniqueId : 'CUST' + String(customers.length > 0 ? Math.max(...customers.map(c => c.id)) + 1 : 1).padStart(4, '0'))
+        uniqueId: uniqueInput || (id ? customers.find(c => c.id == id)?.uniqueId : 'CUST' + String(customers.length > 0 ? Math.max(...customers.map(c => c.id)) + 1 : 1).padStart(4, '0')),
+        mainId: parseInt(document.getElementById('customerProvinceSelect').value) || null,
+        subId: parseInt(document.getElementById('customerDistrictSelect').value) || null
     };
     if (id) customerData.id = parseInt(id);
+    
+    if (!customerData.mainId || !customerData.subId) {
+        alert('Please select both Province and District.');
+        return;
+    }
 
     try {
         const response = await fetch('api/sync.php?action=save_customer', {
@@ -680,60 +691,146 @@ async function saveCustomer() {
 function refreshCustomersList() {
     let container = document.getElementById('customersList');
     let html = '';
-    if (customers.length === 0) {
-        html = '<div style="text-align:center; padding:2rem; color:var(--gray-500);">No customers yet</div>';
-    } else {
-        customers.forEach(c => {
-            html += `
-                        <div style="background:var(--orange-100); padding:1rem; border-radius:0.8rem;">
-                            <span style="background:var(--orange-500); color:white; padding:0.2rem 0.8rem; border-radius:50px; font-size:0.8rem;">${c.uniqueId}</span>
-                            <h4 style="margin:0.5rem 0;">${c.name}</h4>
-                            <div style="color:var(--gray-500); font-size:0.9rem;">📍 ${c.address || 'No address'}</div>
-                            <div style="color:var(--gray-500); font-size:0.9rem;">📞 ${c.mobile || 'No mobile'}</div>
-                            <div style="display:flex; gap:0.5rem; margin-top:1rem;">
-                                <button class="btn btn-primary btn-sm" onclick="editCustomer(${c.id})">Edit</button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteCustomer(${c.id})">Delete</button>
+    
+    if (customerProvinces.length === 0) {
+        html = '<div style="text-align:center; padding:2rem; color:var(--gray-500);">No provinces added yet. Click "Add Province" to start.</div>';
+        container.innerHTML = html;
+        return;
+    }
+
+    sortProvinces(customerProvinces).forEach(prov => {
+        let provDistricts = customerDistricts.filter(d => d.mainId == prov.id);
+        let provCustomers = customers.filter(c => c.mainId == prov.id);
+        
+        let districtHtml = '';
+        sortDistricts(provDistricts).forEach(dist => {
+            let distCustomers = customers.filter(c => c.mainId == prov.id && c.subId == dist.id);
+            
+            let customerRows = '';
+            distCustomers.forEach(c => {
+                customerRows += `
+                    <div class="item-row" style="background:white; margin-bottom:0.5rem; border-radius:0.5rem; padding:0.8rem;">
+                        <div class="item-info">
+                            <span class="item-name-badge" style="background:var(--orange-500);">${c.uniqueId}</span>
+                            <span style="font-weight:600; font-size:1.1rem; margin-left:0.5rem;">${c.name}</span>
+                            <div style="font-size:0.85rem; color:var(--gray-500); margin-top:0.3rem;">
+                                📍 ${c.address || 'No address'} | 📞 ${c.mobile || 'No mobile'}
                             </div>
                         </div>
-                    `;
+                        <div class="item-actions">
+                            <button class="btn-icon btn-icon-sm" onclick="editCustomer(${c.id})" title="Edit">✏️</button>
+                            <button class="btn-icon btn-icon-sm" onclick="deleteCustomer(${c.id})" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            districtHtml += `
+                <div class="sub-category" id="custDist_${dist.id}">
+                    <div class="sub-header" onclick="toggleSubCategory(this)">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="sub-name">🏘️ ${dist.name}</span>
+                            <span class="sub-stats">${distCustomers.length} Customers</span>
+                        </div>
+                        <div class="sub-actions">
+                            <button class="btn-icon btn-icon-sm" onclick="editCustDistrict(${dist.id}); event.stopPropagation();" title="Edit District">✏️</button>
+                            <button class="btn-icon btn-icon-sm" onclick="deleteCustDistrict(${dist.id}); event.stopPropagation();" title="Delete District">🗑️</button>
+                            <button class="add-btn add-btn-sm" onclick="showAddCustomerFor(${prov.id}, ${dist.id}); event.stopPropagation();">+ Add Customer</button>
+                        </div>
+                    </div>
+                    <div class="items-container">
+                        ${customerRows || '<div style="color: var(--gray-500); text-align: center; padding: 1rem;">No customers in this district</div>'}
+                    </div>
+                </div>
+            `;
         });
-    }
+
+        html += `
+            <div class="main-category" id="custProv_${prov.id}">
+                <div class="category-header" onclick="toggleMainCategory(this)">
+                    <div class="category-title">
+                        <span class="color-dot" style="background: var(--orange-500);"></span>
+                        <span class="category-name">🗺️ ${prov.name}</span>
+                        <span class="category-stats">${provCustomers.length} Total Customers</span>
+                    </div>
+                    <div class="category-actions">
+                        <button class="btn-icon" onclick="editCustProvince(${prov.id}); event.stopPropagation();" title="Edit Province">✏️</button>
+                        <button class="btn-icon" onclick="deleteCustProvince(${prov.id}); event.stopPropagation();" title="Delete Province">🗑️</button>
+                        <button class="add-btn" onclick="showAddCustDistrictModalFor(${prov.id}); event.stopPropagation();">+ Add District</button>
+                    </div>
+                </div>
+                <div class="sub-category-container">
+                    ${districtHtml || '<div style="color: var(--gray-500); text-align: center; padding: 2rem;">No districts added yet.</div>'}
+                </div>
+            </div>
+        `;
+    });
     container.innerHTML = html;
 }
+
+// Helpers for sorting
+function sortProvinces(arr) { return [...arr].sort((a,b) => a.name.localeCompare(b.name)); }
+function sortDistricts(arr) { return [...arr].sort((a,b) => a.name.localeCompare(b.name)); }
 
 function filterCustomers() {
     let search = document.getElementById('customerSearch').value.toLowerCase();
+    // In grouped view, we might need a different search approach or just highlight.
+    // Simplifying: If searching, show flat list. If empty, show grouped.
     let container = document.getElementById('customersList');
+    if (!search) {
+        refreshCustomersList();
+        return;
+    }
+    
     let filtered = customers.filter(c =>
         c.name.toLowerCase().includes(search) ||
+        (c.uniqueId && c.uniqueId.toLowerCase().includes(search)) ||
         (c.address && c.address.toLowerCase().includes(search)) ||
-        (c.mobile && c.mobile.toLowerCase().includes(search)) ||
-        (c.uniqueId && c.uniqueId.toLowerCase().includes(search))
+        (c.mobile && c.mobile.toLowerCase().includes(search))
     );
-    let html = '';
-    if (filtered.length === 0) {
-        html = '<div style="text-align:center; padding:2rem; color:var(--gray-500);">No matching customers</div>';
-    } else {
-        filtered.forEach(c => {
-            html += `
-                        <div style="background:var(--orange-100); padding:1rem; border-radius:0.8rem;">
-                            <span style="background:var(--orange-500); color:white; padding:0.2rem 0.8rem; border-radius:50px;">${c.uniqueId}</span>
-                            <h4 style="margin:0.5rem 0;">${c.name}</h4>
-                            <div style="color:var(--gray-500);">📍 ${c.address || 'No address'}</div>
-                            <div style="color:var(--gray-500);">📞 ${c.mobile || 'No mobile'}</div>
-                            <div style="display:flex; gap:0.5rem; margin-top:1rem;">
-                                <button class="btn btn-primary btn-sm" onclick="editCustomer(${c.id})">Edit</button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteCustomer(${c.id})">Delete</button>
-                            </div>
-                        </div>
-                    `;
-        });
-    }
-    container.innerHTML = html;
+    
+    let html = '<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:1rem;">';
+    filtered.forEach(c => {
+        html += `
+            <div style="background:var(--orange-100); padding:1rem; border-radius:1rem; border:1px solid var(--orange-200);">
+                <span class="item-name-badge" style="background:var(--orange-500);">${c.uniqueId}</span>
+                <h4 style="margin:0.5rem 0;">${c.name}</h4>
+                <div style="font-size:0.85rem; color:var(--gray-500);">📞 ${c.mobile || 'No mobile'}</div>
+                <div style="font-size:0.85rem; color:var(--gray-500);">📍 ${c.address || 'No address'}</div>
+                <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+                    <button class="btn btn-primary btn-sm" onclick="editCustomer(${c.id})">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteCustomer(${c.id})">Delete</button>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = filtered.length ? html : '<div style="text-align:center; padding:2rem; color:var(--gray-500);">No matching customers</div>';
+}
+
+function showAddCustomerModal() {
+    document.getElementById('customerModalTitle').textContent = '➕ Add Customer';
+    document.getElementById('editCustomerId').value = '';
+    document.getElementById('customerName').value = '';
+    document.getElementById('customerAddress').value = '';
+    document.getElementById('customerMobile').value = '';
+    document.getElementById('customerUniqueId').value = '';
+    
+    populateProvinceSelect('customerProvinceSelect');
+    updateCustomerDistrictSelect();
+    
+    document.getElementById('customerModal').style.display = 'block';
+}
+
+function showAddCustomerFor(provId, distId) {
+    showAddCustomerModal();
+    document.getElementById('customerProvinceSelect').value = provId;
+    updateCustomerDistrictSelect();
+    document.getElementById('customerDistrictSelect').value = distId;
 }
 
 function editCustomer(id) {
-    let customer = customers.find(c => c.id === id);
+    let customer = customers.find(c => c.id == id);
     if (customer) {
         document.getElementById('customerModalTitle').textContent = '✏️ Edit Customer';
         document.getElementById('editCustomerId').value = customer.id;
@@ -741,9 +838,43 @@ function editCustomer(id) {
         document.getElementById('customerAddress').value = customer.address || '';
         document.getElementById('customerMobile').value = customer.mobile || '';
         document.getElementById('customerUniqueId').value = customer.uniqueId || '';
+        
+        populateProvinceSelect('customerProvinceSelect');
+        document.getElementById('customerProvinceSelect').value = customer.mainId || '';
+        updateCustomerDistrictSelect();
+        document.getElementById('customerDistrictSelect').value = customer.subId || '';
+        
         document.getElementById('customerModal').style.display = 'block';
     }
 }
+
+function populateProvinceSelect(id) {
+    let select = document.getElementById(id);
+    select.innerHTML = '<option value="">-- Select Province --</option>';
+    sortProvinces(customerProvinces).forEach(p => {
+        let opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        select.appendChild(opt);
+    });
+}
+
+function updateCustomerDistrictSelect() {
+    let provId = document.getElementById('customerProvinceSelect').value;
+    let distSelect = document.getElementById('customerDistrictSelect');
+    distSelect.innerHTML = '<option value="">-- Select District --</option>';
+    
+    if (provId) {
+        let filtered = customerDistricts.filter(d => d.mainId == provId);
+        sortDistricts(filtered).forEach(d => {
+            let opt = document.createElement('option');
+            opt.value = d.id;
+            opt.textContent = d.name;
+            distSelect.appendChild(opt);
+        });
+    }
+}
+
 
 async function deleteCustomer(id) {
     if (confirm('Are you sure?')) {
@@ -4133,6 +4264,147 @@ function resetTransactionFilters() {
     document.getElementById('transDateFrom').value = '';
     document.getElementById('transDateTo').value = '';
     refreshTransactions();
+}
+
+// Customer Category Management
+function showAddCustProvinceModal() {
+    document.getElementById('custProvinceModalTitle').textContent = '➕ Add Province';
+    document.getElementById('editCustProvinceId').value = '';
+    document.getElementById('custProvinceName').value = '';
+    document.getElementById('addCustProvinceModal').style.display = 'block';
+}
+
+function closeAddCustProvinceModal() {
+    document.getElementById('addCustProvinceModal').style.display = 'none';
+}
+
+function editCustProvince(id) {
+    let p = customerProvinces.find(x => x.id == id);
+    if (p) {
+        document.getElementById('custProvinceModalTitle').textContent = '✏️ Edit Province';
+        document.getElementById('editCustProvinceId').value = p.id;
+        document.getElementById('custProvinceName').value = p.name;
+        document.getElementById('addCustProvinceModal').style.display = 'block';
+    }
+}
+
+async function saveCustProvince() {
+    let id = document.getElementById('editCustProvinceId').value;
+    let name = document.getElementById('custProvinceName').value;
+    if (!name) { alert('Enter province name'); return; }
+
+    try {
+        const response = await fetch('api/sync.php?action=save_cust_category', {
+            method: 'POST',
+            body: JSON.stringify({ type: 'main', category: { id, name } })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            if (id) {
+                let p = customerProvinces.find(x => x.id == id);
+                if (p) p.name = name;
+            } else {
+                customerProvinces.push({ id: result.id, name });
+            }
+            saveData();
+            refreshCustomersList();
+            closeAddCustProvinceModal();
+            alert('Province saved!');
+        } else { alert('Error: ' + result.message); }
+    } catch (e) { alert('Sync failed.'); }
+}
+
+async function deleteCustProvince(id) {
+    if (confirm('Delete this province?')) {
+        try {
+            const response = await fetch('api/sync.php?action=delete_cust_category', {
+                method: 'POST',
+                body: JSON.stringify({ id, type: 'main' })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                customerProvinces = customerProvinces.filter(p => p.id != id);
+                saveData();
+                refreshCustomersList();
+                alert('Province deleted!');
+            } else { alert(result.message); }
+        } catch (e) { alert('Sync failed.'); }
+    }
+}
+
+function showAddCustDistrictModalFor(provId) {
+    showAddCustDistrictModal();
+    document.getElementById('custDistrictProvinceSelect').value = provId;
+}
+
+function showAddCustDistrictModal() {
+    if (customerProvinces.length === 0) { alert('Add a province first!'); return; }
+    populateProvinceSelect('custDistrictProvinceSelect');
+    document.getElementById('custDistrictModalTitle').textContent = '➕ Add District';
+    document.getElementById('editCustDistrictId').value = '';
+    document.getElementById('custDistrictName').value = '';
+    document.getElementById('addCustDistrictModal').style.display = 'block';
+}
+
+function closeAddCustDistrictModal() {
+    document.getElementById('addCustDistrictModal').style.display = 'none';
+}
+
+function editCustDistrict(id) {
+    let d = customerDistricts.find(x => x.id == id);
+    if (d) {
+        populateProvinceSelect('custDistrictProvinceSelect');
+        document.getElementById('custDistrictModalTitle').textContent = '✏️ Edit District';
+        document.getElementById('editCustDistrictId').value = d.id;
+        document.getElementById('custDistrictName').value = d.name;
+        document.getElementById('custDistrictProvinceSelect').value = d.mainId;
+        document.getElementById('addCustDistrictModal').style.display = 'block';
+    }
+}
+
+async function saveCustDistrict() {
+    let id = document.getElementById('editCustDistrictId').value;
+    let mainId = document.getElementById('custDistrictProvinceSelect').value;
+    let name = document.getElementById('custDistrictName').value;
+    if (!name || !mainId) { alert('Fill all fields'); return; }
+
+    try {
+        const response = await fetch('api/sync.php?action=save_cust_category', {
+            method: 'POST',
+            body: JSON.stringify({ type: 'sub', category: { id, mainId, name } })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            if (id) {
+                let d = customerDistricts.find(x => x.id == id);
+                if (d) { d.name = name; d.mainId = mainId; }
+            } else {
+                customerDistricts.push({ id: result.id, mainId, name });
+            }
+            saveData();
+            refreshCustomersList();
+            closeAddCustDistrictModal();
+            alert('District saved!');
+        } else { alert('Error: ' + result.message); }
+    } catch (e) { alert('Sync failed.'); }
+}
+
+async function deleteCustDistrict(id) {
+    if (confirm('Delete this district?')) {
+        try {
+            const response = await fetch('api/sync.php?action=delete_cust_category', {
+                method: 'POST',
+                body: JSON.stringify({ id, type: 'sub' })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                customerDistricts = customerDistricts.filter(d => d.id != id);
+                saveData();
+                refreshCustomersList();
+                alert('District deleted!');
+            } else { alert(result.message); }
+        } catch (e) { alert('Sync failed.'); }
+    }
 }
 
 // Initialize

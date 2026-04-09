@@ -114,6 +114,14 @@
             </div>
             <input type="hidden" id="editCustomerId">
             <div class="form-group">
+                <label>Province</label>
+                <select id="customerProvinceSelect" class="form-control" onchange="updateCustomerDistrictSelect()"></select>
+            </div>
+            <div class="form-group">
+                <label>District</label>
+                <select id="customerDistrictSelect" class="form-control"></select>
+            </div>
+            <div class="form-group">
                 <label>Full Name</label>
                 <input type="text" id="customerName" class="form-control">
             </div>
@@ -276,5 +284,39 @@
                 <textarea id="editTransNotes" class="form-control" rows="2"></textarea>
             </div>
             <button class="btn btn-primary" onclick="saveTransactionEdit()" style="width:100%;">Update Transaction</button>
+        </div>
+    </div>
+
+    <div id="addCustProvinceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="custProvinceModalTitle">➕ Add Province</h3>
+                <span class="close-modal" onclick="closeAddCustProvinceModal()">&times;</span>
+            </div>
+            <input type="hidden" id="editCustProvinceId">
+            <div class="form-group">
+                <label>Province Name</label>
+                <input type="text" id="custProvinceName" class="form-control" placeholder="e.g., KPK">
+            </div>
+            <button class="btn btn-success" onclick="saveCustProvince()" style="width:100%;">Save Province</button>
+        </div>
+    </div>
+
+    <div id="addCustDistrictModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="custDistrictModalTitle">➕ Add District</h3>
+                <span class="close-modal" onclick="closeAddCustDistrictModal()">&times;</span>
+            </div>
+            <input type="hidden" id="editCustDistrictId">
+            <div class="form-group">
+                <label>Province</label>
+                <select id="custDistrictProvinceSelect" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label>District Name</label>
+                <input type="text" id="custDistrictName" class="form-control" placeholder="e.g., Mardan">
+            </div>
+            <button class="btn btn-success" onclick="saveCustDistrict()" style="width:100%;">Save District</button>
         </div>
     </div>
