@@ -4003,12 +4003,36 @@ async function deleteTransaction(id) {
     if (!confirm('Are you sure you want to delete this record from history? Note: This will NOT revert the stock change, it only cleans up the list.')) return;
 
     try {
-        const response = await fetch(`api/sync.php?action=delete_transaction&id=${id}`);
+        const response = await fetch('api/sync.php?action=delete_transaction', {
+            method: 'POST',
+            body: JSON.stringify({ id: id })
+        });
         const result = await response.json();
         if (result.status === 'success') {
             transactions = transactions.filter(t => t.id != id);
             refreshTransactions();
             alert('Record deleted from history');
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (e) {
+        alert('Server connection failed');
+    }
+}
+
+async function clearAllTransactions() {
+    if (!confirm('⚠️ WARNING: You are about to DELETE ALL transaction history records.')) return;
+    if (!confirm('Are you absolutely sure? This cannot be undone. (Wait status: Stock will NOT be affected)')) return;
+
+    try {
+        const response = await fetch('api/sync.php?action=clear_all_transactions', {
+            method: 'POST'
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            transactions = [];
+            refreshTransactions();
+            alert('All transaction history cleared.');
         } else {
             alert('Error: ' + result.message);
         }
@@ -4079,8 +4103,7 @@ function refreshTransactions() {
                         <td style="padding:0.5rem; border-bottom:1px solid #eee;">${t.customer || '-'}</td>
                         <td style="padding:0.5rem; border-bottom:1px solid #eee;">
                             <div style="display:flex; gap:0.3rem;">
-                                <button class="btn btn-primary btn-sm" onclick="editTransaction(${t.id})" title="Edit"><i class="fas fa-edit"></i> Edit</button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteTransaction(${t.id})" title="Hide from history"><i class="fas fa-trash"></i> Delete</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteTransaction(${t.id})" title="Delete from history"><i class="fas fa-trash"></i> Delete</button>
                             </div>
                         </td>
                     </tr>`;

@@ -311,6 +311,11 @@ try {
             } else { echo json_encode(['status' => 'error', 'message' => 'No ID provided']); }
         }
 
+        elseif ($action === 'clear_all_transactions') {
+            $conn->exec("DELETE FROM transactions");
+            echo json_encode(['status' => 'success']);
+        }
+
         elseif ($action === 'update_transaction') {
             $t = $input['transaction'];
             $conn->beginTransaction();

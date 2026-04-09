@@ -62,8 +62,8 @@
                             <span style="color: var(--gray-500);">to</span>
                             <input type="date" id="transDateTo" onchange="refreshTransactions()" style="padding: 0.6rem; border: 1px solid var(--gray-300); border-radius: 8px; flex: 1;">
                         </div>
-                        <button class="btn btn-warning" onclick="clearTransactionView()" style="white-space: nowrap;">🧹 Clear Screen</button>
                         <button class="btn btn-info" onclick="resetTransactionFilters()" style="white-space: nowrap;">🔄 Reset</button>
+                        <button class="btn btn-danger" onclick="clearAllTransactions()" style="white-space: nowrap;">🗑️ Delete All</button>
                     </div>
                     <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--gray-200); border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: white;">
                         <table class="data-table" id="transTable" style="margin-bottom: 0;">
