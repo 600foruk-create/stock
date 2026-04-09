@@ -18,9 +18,6 @@ try {
                 $cols = $conn->query("SHOW COLUMNS FROM customers")->fetchAll(PDO::FETCH_COLUMN);
                 if (!in_array('main_id', $cols)) $conn->exec("ALTER TABLE customers ADD COLUMN main_id INT DEFAULT NULL");
                 if (!in_array('sub_id', $cols)) $conn->exec("ALTER TABLE customers ADD COLUMN sub_id INT DEFAULT NULL");
-
-                $conn->exec("CREATE TABLE IF NOT EXISTS audit_saved_reports (id INT AUTO_INCREMENT PRIMARY KEY, audit_date DATE, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, total_items INT DEFAULT 0, notes TEXT)");
-                $conn->exec("CREATE TABLE IF NOT EXISTS audit_saved_report_items (id INT AUTO_INCREMENT PRIMARY KEY, report_id INT, item_id INT, system_qty INT, godown_qty INT, weight DECIMAL(10,2), length DECIMAL(10,2), main_id INT, sub_id INT)");
             } catch (Exception $e) {}
 
             $data = [
@@ -37,20 +34,7 @@ try {
                 'rawMaterials' => $conn->query("SELECT id, name, category, unit, stock, threshold FROM raw_materials")->fetchAll(PDO::FETCH_ASSOC),
                 'storeItems' => $conn->query("SELECT id, name, description, stock FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
                 'latestAudit' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id)")->fetchAll(PDO::FETCH_ASSOC),
-                'auditReports' => $conn->query("SELECT * FROM audit_saved_reports ORDER BY audit_date DESC")->fetchAll(PDO::FETCH_ASSOC),
             ];
-
-            // Add report items to reports
-            foreach ($data['auditReports'] as &$report) {
-                $stmt = $conn->prepare("SELECT ari.*, i.name AS itemName, mc.name AS mainName, sc.name AS subName 
-                                       FROM audit_saved_report_items ari 
-                                       LEFT JOIN items i ON ari.item_id = i.id 
-                                       LEFT JOIN main_categories mc ON ari.main_id = mc.id 
-                                       LEFT JOIN sub_categories sc ON ari.sub_id = sc.id 
-                                       WHERE ari.report_id = ?");
-                $stmt->execute([$report['id']]);
-                $report['items'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            }
             
             // Add order items to orders
             foreach ($data['orders'] as &$order) {
@@ -388,37 +372,6 @@ try {
                 $stmt = $conn->prepare("DELETE FROM transactions WHERE id = ?");
                 $stmt->execute([$id]);
                 echo json_encode(['status' => 'success']);
-            } catch (Exception $e) { $conn->rollBack(); echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); }
-        }
-
-        elseif ($action === 'save_audit_report') {
-            $report = $input['report'];
-            $items = $input['items'];
-            $conn->beginTransaction();
-            try {
-                $stmt = $conn->prepare("INSERT INTO audit_saved_reports (audit_date, total_items, notes) VALUES (?, ?, ?)");
-                $stmt->execute([$report['date'], count($items), $report['notes'] ?? '']);
-                $reportId = $conn->lastInsertId();
-                
-                $stmtItem = $conn->prepare("INSERT INTO audit_saved_report_items (report_id, item_id, system_qty, godown_qty, weight, length, main_id, sub_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                foreach ($items as $item) {
-                    $stmtItem->execute([$reportId, $item['itemId'], $item['systemQty'], $item['godownQty'], $item['weight'], $item['length'], $item['mainId'], $item['subId']]);
-                }
-                $conn->commit();
-                echo json_encode(['status' => 'success', 'id' => $reportId]);
-            } catch (Exception $e) { $conn->rollBack(); echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); }
-        }
-
-        elseif ($action === 'delete_audit_report') {
-            $id = $input['id'] ?? $_GET['id'] ?? null;
-            if ($id) {
-                $conn->beginTransaction();
-                try {
-                    $conn->prepare("DELETE FROM audit_saved_reports WHERE id = ?")->execute([$id]);
-                    $conn->prepare("DELETE FROM audit_saved_report_items WHERE report_id = ?")->execute([$id]);
-                    $conn->commit();
-                    echo json_encode(['status' => 'success']);
-                } catch (Exception $e) { $conn->rollBack(); echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); }
             } else { echo json_encode(['status' => 'error', 'message' => 'No ID provided']); }
         }
 

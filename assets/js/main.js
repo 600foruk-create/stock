@@ -1370,64 +1370,44 @@ function refreshDashboard() {
     // Render Charts
     renderAdvancedCharts(brandData);
 
-    // Render Alerts (Grouped by Brand)
-    let groupedLowStock = {};
-    globalLowStockItems.forEach(alert => {
-        let brandName = alert.main ? alert.main.name : 'Unknown';
-        if (!groupedLowStock[brandName]) groupedLowStock[brandName] = [];
-        groupedLowStock[brandName].push(alert);
-    });
-
+    // Render Alerts
     let alertsHtml = '';
     if (globalLowStockItems.length === 0) {
         alertsHtml = '<div style="grid-column: 1/-1; text-align: center; color: var(--gray-500); padding: 1rem;">No critical low stock alerts</div>';
     } else {
-        Object.keys(groupedLowStock).sort().forEach(brand => {
-            alertsHtml += `<div class="brand-group-header" style="grid-column: 1/-1;">${brand}</div>`;
-            groupedLowStock[brand].forEach(({ item, main, min }) => {
-                let sub = subCategories.find(s => s.id == item.subId);
-                let size = sub ? sub.name : '?';
-                alertsHtml += `
-                    <div class="alert-card warning">
-                        <div class="alert-info">
-                            <h4>${size}</h4>
-                            <p>${item.length}ft / ${item.weight}KG (Limit: ${min})</p>
-                        </div>
-                        <div class="alert-qty">${item.stock}</div>
+        globalLowStockItems.slice(0, 8).forEach(({ item, main, min }) => {
+            let sub = subCategories.find(s => s.id == item.subId);
+            let size = sub ? sub.name : '?';
+            alertsHtml += `
+                <div class="alert-card">
+                    <div class="alert-info">
+                        <h4>${main ? main.name : 'Unknown'} ${size}</h4>
+                        <p>${item.length}ft / ${item.weight}KG (Limit: ${min})</p>
                     </div>
-                `;
-            });
+                    <div class="alert-qty">${item.stock}</div>
+                </div>
+            `;
         });
     }
     document.getElementById('lowStockAlertsContainer').innerHTML = alertsHtml;
 
-    // Render Shortage Alerts (Grouped by Brand)
-    let groupedShortage = {};
-    shortfallItems.forEach(alert => {
-        let brandName = alert.main ? alert.main.name : 'Unknown';
-        if (!groupedShortage[brandName]) groupedShortage[brandName] = [];
-        groupedShortage[brandName].push(alert);
-    });
-
+    // Render Shortage Alerts
     let shortageHtml = '';
     if (shortfallItems.length === 0) {
         shortageHtml = '<div style="grid-column: 1/-1; text-align: center; color: var(--gray-500); padding: 1rem;">All order requirements are met! No shortages.</div>';
     } else {
-        Object.keys(groupedShortage).sort().forEach(brand => {
-            shortageHtml += `<div class="brand-group-header" style="grid-column: 1/-1; border-left-color: #ef4444;">${brand}</div>`;
-            groupedShortage[brand].forEach(({ item, main, sub, shortfall, required }) => {
-                let size = sub ? sub.name : '?';
-                shortageHtml += `
-                    <div class="alert-card critical">
-                        <div class="alert-info">
-                            <h4>${size}</h4>
-                            <p>${item.length}ft / ${item.weight}KG</p>
-                            <p style="font-size: 0.8rem; opacity: 0.8;">In Stock: ${item.stock} | Required: ${required}</p>
-                        </div>
-                        <div class="alert-qty">${shortfall}</div>
+        shortfallItems.forEach(({ item, main, sub, shortfall, required }) => {
+            let size = sub ? sub.name : '?';
+            shortageHtml += `
+                <div class="alert-card" style="border-left: 4px solid #ef4444; background: #fff5f5;">
+                    <div class="alert-info">
+                        <h4 style="color: #b91c1c;">${main ? main.name : 'Unknown'} ${size}</h4>
+                        <p>${item.length}ft / ${item.weight}KG</p>
+                        <p style="font-size: 0.8rem; color: #7f1d1d;">In Stock: ${item.stock} | Required: ${required}</p>
                     </div>
-                `;
-            });
+                    <div class="alert-qty" style="background: #ef4444; color: white;">${shortfall}</div>
+                </div>
+            `;
         });
     }
     document.getElementById('negativeStockContainer').innerHTML = shortageHtml;
@@ -1532,7 +1512,6 @@ function refreshStockList() {
         itemsHtml += '<thead><tr>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100);">Size</th>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100);">Description</th>';
-        itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">Length</th>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">Available</th>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">In Order</th>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">Result</th>';
@@ -1568,7 +1547,6 @@ function refreshStockList() {
                         <tr style="background: white;">
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200);"><strong>${sizeName}"</strong></td>
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); color: var(--gray-700);">${desc}</td>
-                            <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center;">${item.length || '13'} ft</td>
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:600; color:var(--orange-500);">${available}</td>
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:600; color:${ioColor};">${inOrder}</td>
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:700; color:${resColor};">${result}</td>
@@ -1676,7 +1654,6 @@ function refreshAuditList() {
                         ${index === 0 ? `<td rowspan="${group.length}" style="font-weight:700; background: var(--gray-50); font-size: 1.1rem; border-right: 2px solid var(--gray-300);">${sizeName}"</td>` : ''}
                         <td>${weightVal.toFixed(2)} KG</td>
                         <td style="color:${main.color}; font-weight:600;">${main.name}</td>
-                        <td style="font-size:0.85rem;">${item.length || '13'} ft</td>
                         <td id="auditSysPcs_${item.id}" class="sys-pcs-val">${effectivePcs}</td>
                         <td id="auditSysKg_${item.id}" class="sys-kg-val">${systemKg}</td>
                         <td>
@@ -1710,7 +1687,6 @@ function refreshAuditList() {
                                 <th rowspan="2">Size</th>
                                 <th rowspan="2">KG/Pcs</th>
                                 <th rowspan="2">Brand</th>
-                                <th rowspan="2">Length</th>
                                 <th colspan="2" style="background: var(--sky-50);">Result Stock (System)</th>
                                 <th colspan="2" style="background: var(--orange-50);">Godown Stock (Manual)</th>
                                 <th colspan="2" style="background: var(--green-50);">Difference</th>

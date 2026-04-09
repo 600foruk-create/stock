@@ -13,8 +13,7 @@
             <input type="date" id="auditDateTo" class="form-control" onchange="refreshAuditList()">
         </div>
         <div class="btn-group">
-            <button class="btn btn-save" onclick="saveMonthlyAudit()">💾 Update Active Audit</button>
-            <button class="btn btn-save" onclick="savePermanentAuditReport()" style="background: var(--sky-700);">📁 Save to Reports History</button>
+            <button class="btn btn-save" onclick="saveMonthlyAudit()">💾 Save Audit</button>
             <button class="btn btn-print" onclick="window.print()">🖨️ Print</button>
             <button class="btn btn-danger" onclick="resetAuditSession()" title="Clear manual entries only">🔄 Reset Godown</button>
             <button class="btn btn-success" onclick="adjustAllStockToSystem()" title="Automatically adjust all stock items matching differences">⚡ Auto Adjust All</button>
