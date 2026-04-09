@@ -19,16 +19,12 @@
                     <!-- New Alerts Section -->
                     <div id="lowStockAlerts" class="dashboard-section">
                         <h3>⚠️ Critical Low Stock Alerts</h3>
-                        <div class="alerts-grid-scroll">
-                            <div class="alerts-grid" id="lowStockAlertsContainer"></div>
-                        </div>
+                        <div class="alerts-grid" id="lowStockAlertsContainer"></div>
                     </div>
 
                     <!-- New Shortage Section -->
                     <div id="stockShortage" class="dashboard-section" style="margin-top: 2rem;">
                         <h3 style="color: #ef4444;">🚨 Stock Shortage (Needed for Orders)</h3>
-                        <div class="alerts-grid-scroll">
-                            <div class="alerts-grid" id="negativeStockContainer"></div>
-                        </div>
+                        <div class="alerts-grid" id="negativeStockContainer"></div>
                     </div>
                 </div>

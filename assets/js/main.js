@@ -21,6 +21,8 @@ let items = [
     { id: 5, mainId: 2, subId: 4, name: '', length: 13, weight: 2.0, stock: 5, minStock: 10 }
 ];
 let customers = [];
+let customerProvinces = [];
+let customerDistricts = [];
 let transactions = [];
 let orders = [];
 let rawMaterials = [];
@@ -31,7 +33,8 @@ let auditRecords = [];
 // Company Settings
 let companySettings = {
     name: 'StockFlow',
-    logo: '📦'
+    logo: '📦',
+    availableLengths: [10, 13, 20] // Default values
 };
 
 // Initialize App
@@ -69,6 +72,8 @@ async function initApp() {
             subCategories = d.subCategories || [];
             items = d.items || [];
             customers = d.customers || [];
+            customerProvinces = d.customerProvinces || [];
+            customerDistricts = d.customerDistricts || [];
             orders = d.orders || [];
             transactions = d.transactions || [];
             rawMaterials = d.rawMaterials || [];
@@ -88,10 +93,15 @@ async function initApp() {
             if (d.settings) {
                 d.settings.forEach(s => {
                     if (s.category === 'company') {
-                        companySettings[s.key] = s.value;
+                        if (s.key === 'availableLengths') {
+                            try { companySettings.availableLengths = JSON.parse(s.value); } catch(e) { }
+                        } else {
+                            companySettings[s.key] = s.value;
+                        }
                     }
                 });
             }
+            updateLengthDropdowns();
 
             // Post-process transactions to match UI expectations
             transactions.forEach(t => {
@@ -640,9 +650,16 @@ async function saveCustomer() {
         name: name,
         address: address,
         mobile: mobile,
-        uniqueId: uniqueInput || (id ? customers.find(c => c.id == id)?.uniqueId : 'CUST' + String(customers.length > 0 ? Math.max(...customers.map(c => c.id)) + 1 : 1).padStart(4, '0'))
+        uniqueId: uniqueInput || (id ? customers.find(c => c.id == id)?.uniqueId : 'CUST' + String(customers.length > 0 ? Math.max(...customers.map(c => c.id)) + 1 : 1).padStart(4, '0')),
+        mainId: parseInt(document.getElementById('customerProvinceSelect').value) || null,
+        subId: parseInt(document.getElementById('customerDistrictSelect').value) || null
     };
     if (id) customerData.id = parseInt(id);
+    
+    if (!customerData.mainId || !customerData.subId) {
+        alert('Please select both Province and District.');
+        return;
+    }
 
     try {
         const response = await fetch('api/sync.php?action=save_customer', {
@@ -674,60 +691,146 @@ async function saveCustomer() {
 function refreshCustomersList() {
     let container = document.getElementById('customersList');
     let html = '';
-    if (customers.length === 0) {
-        html = '<div style="text-align:center; padding:2rem; color:var(--gray-500);">No customers yet</div>';
-    } else {
-        customers.forEach(c => {
-            html += `
-                        <div style="background:var(--orange-100); padding:1rem; border-radius:0.8rem;">
-                            <span style="background:var(--orange-500); color:white; padding:0.2rem 0.8rem; border-radius:50px; font-size:0.8rem;">${c.uniqueId}</span>
-                            <h4 style="margin:0.5rem 0;">${c.name}</h4>
-                            <div style="color:var(--gray-500); font-size:0.9rem;">📍 ${c.address || 'No address'}</div>
-                            <div style="color:var(--gray-500); font-size:0.9rem;">📞 ${c.mobile || 'No mobile'}</div>
-                            <div style="display:flex; gap:0.5rem; margin-top:1rem;">
-                                <button class="btn btn-primary btn-sm" onclick="editCustomer(${c.id})">Edit</button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteCustomer(${c.id})">Delete</button>
+    
+    if (customerProvinces.length === 0) {
+        html = '<div style="text-align:center; padding:2rem; color:var(--gray-500);">No provinces added yet. Click "Add Province" to start.</div>';
+        container.innerHTML = html;
+        return;
+    }
+
+    sortProvinces(customerProvinces).forEach(prov => {
+        let provDistricts = customerDistricts.filter(d => d.mainId == prov.id);
+        let provCustomers = customers.filter(c => c.mainId == prov.id);
+        
+        let districtHtml = '';
+        sortDistricts(provDistricts).forEach(dist => {
+            let distCustomers = customers.filter(c => c.mainId == prov.id && c.subId == dist.id);
+            
+            let customerRows = '';
+            distCustomers.forEach(c => {
+                customerRows += `
+                    <div class="item-row" style="background:white; margin-bottom:0.5rem; border-radius:0.5rem; padding:0.8rem;">
+                        <div class="item-info">
+                            <span class="item-name-badge" style="background:var(--orange-500);">${c.uniqueId}</span>
+                            <span style="font-weight:600; font-size:1.1rem; margin-left:0.5rem;">${c.name}</span>
+                            <div style="font-size:0.85rem; color:var(--gray-500); margin-top:0.3rem;">
+                                📍 ${c.address || 'No address'} | 📞 ${c.mobile || 'No mobile'}
                             </div>
                         </div>
-                    `;
+                        <div class="item-actions">
+                            <button class="btn-icon btn-icon-sm" onclick="editCustomer(${c.id})" title="Edit">✏️</button>
+                            <button class="btn-icon btn-icon-sm" onclick="deleteCustomer(${c.id})" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            districtHtml += `
+                <div class="sub-category" id="custDist_${dist.id}">
+                    <div class="sub-header" onclick="toggleSubCategory(this)">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="sub-name">🏘️ ${dist.name}</span>
+                            <span class="sub-stats">${distCustomers.length} Customers</span>
+                        </div>
+                        <div class="sub-actions">
+                            <button class="btn-icon btn-icon-sm" onclick="editCustDistrict(${dist.id}); event.stopPropagation();" title="Edit District">✏️</button>
+                            <button class="btn-icon btn-icon-sm" onclick="deleteCustDistrict(${dist.id}); event.stopPropagation();" title="Delete District">🗑️</button>
+                            <button class="add-btn add-btn-sm" onclick="showAddCustomerFor(${prov.id}, ${dist.id}); event.stopPropagation();">+ Add Customer</button>
+                        </div>
+                    </div>
+                    <div class="items-container">
+                        ${customerRows || '<div style="color: var(--gray-500); text-align: center; padding: 1rem;">No customers in this district</div>'}
+                    </div>
+                </div>
+            `;
         });
-    }
+
+        html += `
+            <div class="main-category" id="custProv_${prov.id}">
+                <div class="category-header" onclick="toggleMainCategory(this)">
+                    <div class="category-title">
+                        <span class="color-dot" style="background: var(--orange-500);"></span>
+                        <span class="category-name">🗺️ ${prov.name}</span>
+                        <span class="category-stats">${provCustomers.length} Total Customers</span>
+                    </div>
+                    <div class="category-actions">
+                        <button class="btn-icon" onclick="editCustProvince(${prov.id}); event.stopPropagation();" title="Edit Province">✏️</button>
+                        <button class="btn-icon" onclick="deleteCustProvince(${prov.id}); event.stopPropagation();" title="Delete Province">🗑️</button>
+                        <button class="add-btn" onclick="showAddCustDistrictModalFor(${prov.id}); event.stopPropagation();">+ Add District</button>
+                    </div>
+                </div>
+                <div class="sub-category-container">
+                    ${districtHtml || '<div style="color: var(--gray-500); text-align: center; padding: 2rem;">No districts added yet.</div>'}
+                </div>
+            </div>
+        `;
+    });
     container.innerHTML = html;
 }
+
+// Helpers for sorting
+function sortProvinces(arr) { return [...arr].sort((a,b) => a.name.localeCompare(b.name)); }
+function sortDistricts(arr) { return [...arr].sort((a,b) => a.name.localeCompare(b.name)); }
 
 function filterCustomers() {
     let search = document.getElementById('customerSearch').value.toLowerCase();
+    // In grouped view, we might need a different search approach or just highlight.
+    // Simplifying: If searching, show flat list. If empty, show grouped.
     let container = document.getElementById('customersList');
+    if (!search) {
+        refreshCustomersList();
+        return;
+    }
+    
     let filtered = customers.filter(c =>
         c.name.toLowerCase().includes(search) ||
+        (c.uniqueId && c.uniqueId.toLowerCase().includes(search)) ||
         (c.address && c.address.toLowerCase().includes(search)) ||
-        (c.mobile && c.mobile.toLowerCase().includes(search)) ||
-        (c.uniqueId && c.uniqueId.toLowerCase().includes(search))
+        (c.mobile && c.mobile.toLowerCase().includes(search))
     );
-    let html = '';
-    if (filtered.length === 0) {
-        html = '<div style="text-align:center; padding:2rem; color:var(--gray-500);">No matching customers</div>';
-    } else {
-        filtered.forEach(c => {
-            html += `
-                        <div style="background:var(--orange-100); padding:1rem; border-radius:0.8rem;">
-                            <span style="background:var(--orange-500); color:white; padding:0.2rem 0.8rem; border-radius:50px;">${c.uniqueId}</span>
-                            <h4 style="margin:0.5rem 0;">${c.name}</h4>
-                            <div style="color:var(--gray-500);">📍 ${c.address || 'No address'}</div>
-                            <div style="color:var(--gray-500);">📞 ${c.mobile || 'No mobile'}</div>
-                            <div style="display:flex; gap:0.5rem; margin-top:1rem;">
-                                <button class="btn btn-primary btn-sm" onclick="editCustomer(${c.id})">Edit</button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteCustomer(${c.id})">Delete</button>
-                            </div>
-                        </div>
-                    `;
-        });
-    }
-    container.innerHTML = html;
+    
+    let html = '<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:1rem;">';
+    filtered.forEach(c => {
+        html += `
+            <div style="background:var(--orange-100); padding:1rem; border-radius:1rem; border:1px solid var(--orange-200);">
+                <span class="item-name-badge" style="background:var(--orange-500);">${c.uniqueId}</span>
+                <h4 style="margin:0.5rem 0;">${c.name}</h4>
+                <div style="font-size:0.85rem; color:var(--gray-500);">📞 ${c.mobile || 'No mobile'}</div>
+                <div style="font-size:0.85rem; color:var(--gray-500);">📍 ${c.address || 'No address'}</div>
+                <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+                    <button class="btn btn-primary btn-sm" onclick="editCustomer(${c.id})">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteCustomer(${c.id})">Delete</button>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = filtered.length ? html : '<div style="text-align:center; padding:2rem; color:var(--gray-500);">No matching customers</div>';
+}
+
+function showAddCustomerModal() {
+    document.getElementById('customerModalTitle').textContent = '➕ Add Customer';
+    document.getElementById('editCustomerId').value = '';
+    document.getElementById('customerName').value = '';
+    document.getElementById('customerAddress').value = '';
+    document.getElementById('customerMobile').value = '';
+    document.getElementById('customerUniqueId').value = '';
+    
+    populateProvinceSelect('customerProvinceSelect');
+    updateCustomerDistrictSelect();
+    
+    document.getElementById('customerModal').style.display = 'block';
+}
+
+function showAddCustomerFor(provId, distId) {
+    showAddCustomerModal();
+    document.getElementById('customerProvinceSelect').value = provId;
+    updateCustomerDistrictSelect();
+    document.getElementById('customerDistrictSelect').value = distId;
 }
 
 function editCustomer(id) {
-    let customer = customers.find(c => c.id === id);
+    let customer = customers.find(c => c.id == id);
     if (customer) {
         document.getElementById('customerModalTitle').textContent = '✏️ Edit Customer';
         document.getElementById('editCustomerId').value = customer.id;
@@ -735,9 +838,43 @@ function editCustomer(id) {
         document.getElementById('customerAddress').value = customer.address || '';
         document.getElementById('customerMobile').value = customer.mobile || '';
         document.getElementById('customerUniqueId').value = customer.uniqueId || '';
+        
+        populateProvinceSelect('customerProvinceSelect');
+        document.getElementById('customerProvinceSelect').value = customer.mainId || '';
+        updateCustomerDistrictSelect();
+        document.getElementById('customerDistrictSelect').value = customer.subId || '';
+        
         document.getElementById('customerModal').style.display = 'block';
     }
 }
+
+function populateProvinceSelect(id) {
+    let select = document.getElementById(id);
+    select.innerHTML = '<option value="">-- Select Province --</option>';
+    sortProvinces(customerProvinces).forEach(p => {
+        let opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        select.appendChild(opt);
+    });
+}
+
+function updateCustomerDistrictSelect() {
+    let provId = document.getElementById('customerProvinceSelect').value;
+    let distSelect = document.getElementById('customerDistrictSelect');
+    distSelect.innerHTML = '<option value="">-- Select District --</option>';
+    
+    if (provId) {
+        let filtered = customerDistricts.filter(d => d.mainId == provId);
+        sortDistricts(filtered).forEach(d => {
+            let opt = document.createElement('option');
+            opt.value = d.id;
+            opt.textContent = d.name;
+            distSelect.appendChild(opt);
+        });
+    }
+}
+
 
 async function deleteCustomer(id) {
     if (confirm('Are you sure?')) {
@@ -1180,8 +1317,56 @@ function showQuickAddItem(brandId, sizeId) {
     document.getElementById('quickItemMainId').value = brandId;
     document.getElementById('quickItemSubId').value = sizeId;
     document.getElementById('quickItemWeight').value = '';
+    updateLengthDropdowns('quickItemLength');
     document.getElementById('quickItemLength').value = '13';
     document.getElementById('quickAddItemModal').style.display = 'block';
+}
+
+function updateLengthDropdowns(targetId = null) {
+    const ids = targetId ? [targetId] : ['itemLength', 'quickItemLength'];
+    const lengths = [...new Set(companySettings.availableLengths)].sort((a, b) => a - b);
+    
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const currentVal = el.value;
+        el.innerHTML = lengths.map(l => `<option value="${l}">${l}</option>`).join('');
+        if (currentVal && lengths.includes(parseFloat(currentVal))) {
+            el.value = currentVal;
+        } else if (id === 'itemLength' || id === 'quickItemLength') {
+            el.value = '13'; // Default fallback
+        }
+    });
+}
+
+function promptNewLength(targetId) {
+    const newVal = prompt("Enter new length (ft):");
+    if (newVal === null || newVal.trim() === "") return;
+    
+    const numVal = parseFloat(newVal);
+    if (isNaN(numVal) || numVal <= 0) {
+        alert("Please enter a valid positive number.");
+        return;
+    }
+    
+    if (!companySettings.availableLengths.includes(numVal)) {
+        companySettings.availableLengths.push(numVal);
+        saveLengthSettings();
+    }
+    
+    updateLengthDropdowns();
+    document.getElementById(targetId).value = numVal;
+}
+
+async function saveLengthSettings() {
+    try {
+        await fetch('api/sync.php?action=save_settings', {
+            method: 'POST',
+            body: JSON.stringify({
+                settings: { availableLengths: JSON.stringify(companySettings.availableLengths) }
+            })
+        });
+    } catch (e) { console.error('Failed to save lengths list:', e); }
 }
 
 function closeQuickAddItemModal() {
@@ -1512,6 +1697,7 @@ function refreshStockList() {
         itemsHtml += '<thead><tr>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100);">Size</th>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100);">Description</th>';
+        itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">Length</th>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">Available</th>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">In Order</th>';
         itemsHtml += '<th style="padding: 0.8rem; border-bottom: 2px solid var(--gray-300); background: var(--gray-100); text-align: center;">Result</th>';
@@ -1547,6 +1733,7 @@ function refreshStockList() {
                         <tr style="background: white;">
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200);"><strong>${sizeName}"</strong></td>
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); color: var(--gray-700);">${desc}</td>
+                            <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center;">${item.length} ft</td>
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:600; color:var(--orange-500);">${available}</td>
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:600; color:${ioColor};">${inOrder}</td>
                             <td style="padding: 0.8rem; border-bottom: 1px solid var(--gray-200); text-align:center; font-weight:700; color:${resColor};">${result}</td>
@@ -1592,20 +1779,6 @@ function refreshAuditList() {
     const auditPrintDate = document.getElementById('auditPrintDate');
     if (auditPrintDate) auditPrintDate.textContent = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     
-    // Calculate pending orders within date range
-    let orderedQtys = {};
-    orders.filter(o => {
-        const s = (o.status || '').toLowerCase();
-        const isPending = s === 'pending' || s === 'processing';
-        const inDateRange = (!fromDate || new Date(o.date) >= new Date(fromDate)) &&
-                           (!toDate || new Date(o.date) <= new Date(toDate));
-        return isPending && inDateRange;
-    }).forEach(order => {
-        (order.items || []).forEach(item => {
-            orderedQtys[item.itemId] = (orderedQtys[item.itemId] || 0) + (parseInt(item.quantity) || 0);
-        });
-    });
-
     let html = '';
     sortMainCategories(mainCategories).forEach(main => {
         let brandItems = items.filter(i => i.mainId == main.id);
@@ -1634,8 +1807,7 @@ function refreshAuditList() {
             group.forEach((item, index) => {
                 let weightVal = parseFloat(item.weight) || 0;
                 let systemPcs = parseInt(item.stock) || 0;
-                let ordered = orderedQtys[item.id] || 0;
-                let effectivePcs = systemPcs - ordered; // The stock that should be there
+                let effectivePcs = systemPcs; // Use live system stock as Available Stock
                 let systemKg = (effectivePcs * weightVal).toFixed(2);
                 
                 // Load from persistence
@@ -1653,6 +1825,7 @@ function refreshAuditList() {
                     <tr id="auditRow_${item.id}" data-unit-weight="${weightVal}" data-brand-id="${main.id}">
                         ${index === 0 ? `<td rowspan="${group.length}" style="font-weight:700; background: var(--gray-50); font-size: 1.1rem; border-right: 2px solid var(--gray-300);">${sizeName}"</td>` : ''}
                         <td>${weightVal.toFixed(2)} KG</td>
+                        <td style="text-align:center;">${item.length} ft</td>
                         <td style="color:${main.color}; font-weight:600;">${main.name}</td>
                         <td id="auditSysPcs_${item.id}" class="sys-pcs-val">${effectivePcs}</td>
                         <td id="auditSysKg_${item.id}" class="sys-kg-val">${systemKg}</td>
@@ -1686,6 +1859,7 @@ function refreshAuditList() {
                             <tr>
                                 <th rowspan="2">Size</th>
                                 <th rowspan="2">KG/Pcs</th>
+                                <th rowspan="2">Length</th>
                                 <th rowspan="2">Brand</th>
                                 <th colspan="2" style="background: var(--sky-50);">Result Stock (System)</th>
                                 <th colspan="2" style="background: var(--orange-50);">Godown Stock (Manual)</th>
@@ -1869,7 +2043,23 @@ async function saveMonthlyAudit() {
     }
 }
 
+function verifyAdminAction() {
+    const code = prompt("Please enter Admin Code to proceed:");
+    // Check against admin user's password or a preferred hardcoded code
+    const adminUser = users.find(u => u.username === 'admin');
+    const validCode = (adminUser ? adminUser.password : 'admin123');
+    
+    if (code === validCode) {
+        return true;
+    } else {
+        alert("❌ Invalid Admin Code. Action cancelled.");
+        return false;
+    }
+}
+
 async function adjustStockToSystem(itemId) {
+    if (!verifyAdminAction()) return;
+    
     const sysPcsEl = document.getElementById(`auditSysPcs_${itemId}`);
     const diffPcsEl = document.getElementById(`auditDiffPcs_${itemId}`);
     if (!sysPcsEl || !diffPcsEl) return;
@@ -1905,6 +2095,8 @@ async function adjustStockToSystem(itemId) {
 }
 
 async function adjustAllStockToSystem() {
+    if (!verifyAdminAction()) return;
+    
     const rows = document.querySelectorAll('tbody tr[id^="auditRow_"]');
     let adjustments = [];
 
@@ -2055,10 +2247,10 @@ function addProductionRow() {
     const sizeWrapper = createSearchableInput('Size...', [], null, true, null);
     const itemWrapper = createSearchableInput('...', [], null, true, null);
 
-    const lengthInput = document.createElement('input');
-    lengthInput.type = 'number';
+    const lengthInput = document.createElement('select');
     lengthInput.className = 'searchable-input';
-    lengthInput.placeholder = 'Length';
+    const lengths = [...new Set(companySettings.availableLengths)].sort((a, b) => a - b);
+    lengthInput.innerHTML = lengths.map(l => `<option value="${l}">${l}</option>`).join('');
     lengthInput.value = '13';
 
     const qtyInput = document.createElement('input');
@@ -2093,10 +2285,10 @@ function addSaleRow() {
     const sizeWrapper = createSearchableInput('Size...', [], null, true, null);
     const itemWrapper = createSearchableInput('...', [], null, true, null);
 
-    const lengthInput = document.createElement('input');
-    lengthInput.type = 'number';
+    const lengthInput = document.createElement('select');
     lengthInput.className = 'searchable-input';
-    lengthInput.placeholder = 'Length';
+    const lengths = [...new Set(companySettings.availableLengths)].sort((a, b) => a - b);
+    lengthInput.innerHTML = lengths.map(l => `<option value="${l}">${l}</option>`).join('');
     lengthInput.value = '13';
 
     const qtyInput = document.createElement('input');
@@ -2131,10 +2323,10 @@ function addAdjustmentRow() {
     const sizeWrapper = createSearchableInput('Size...', [], null, true, null);
     const itemWrapper = createSearchableInput('...', [], null, true, null);
 
-    const lengthInput = document.createElement('input');
-    lengthInput.type = 'number';
+    const lengthInput = document.createElement('select');
     lengthInput.className = 'searchable-input';
-    lengthInput.placeholder = 'Length';
+    const lengths = [...new Set(companySettings.availableLengths)].sort((a, b) => a - b);
+    lengthInput.innerHTML = lengths.map(l => `<option value="${l}">${l}</option>`).join('');
     lengthInput.value = '13';
 
     const typeSelect = document.createElement('select');
@@ -2177,10 +2369,10 @@ function addNewOrderRow() {
     const sizeWrapper = createSearchableInput('Size...', [], null, true, null);
     const itemWrapper = createSearchableInput('...', [], null, true, null);
 
-    const lengthInput = document.createElement('input');
-    lengthInput.type = 'number';
+    const lengthInput = document.createElement('select');
     lengthInput.className = 'searchable-input';
-    lengthInput.placeholder = 'Length';
+    const lengths = [...new Set(companySettings.availableLengths)].sort((a, b) => a - b);
+    lengthInput.innerHTML = lengths.map(l => `<option value="${l}">${l}</option>`).join('');
     lengthInput.value = '13';
 
     const qtyInput = document.createElement('input');
@@ -2242,7 +2434,14 @@ function updateItemDropdown(row, brandId, sizeId, type) {
         row.dataset.itemName = opt.item.name;
         row.dataset.itemWeight = opt.item.weight;
         row.dataset.itemLength = opt.item.length;
-        lengthInput.value = opt.item.length;
+        
+        let len = parseFloat(opt.item.length);
+        if (!companySettings.availableLengths.includes(len)) {
+            companySettings.availableLengths.push(len);
+            saveLengthSettings();
+            updateLengthDropdowns();
+        }
+        lengthInput.value = len;
     }, false, 'item', { brandId, sizeId });
     row.replaceChild(newItemWrapper, itemWrapper);
 }
@@ -2673,21 +2872,26 @@ function refreshOrdersList(filter = null) {
             });
 
             html += `
-                        <div class="order-card" style="border-left-color: ${statusColor};">
-                            <div class="order-header">
-                                <span class="customer-name">${order.customerName}</span>
+                        <div class="order-card collapsed" style="border-left-color: ${statusColor};" id="order-card-${order.id}">
+                            <div class="order-header" onclick="toggleOrderDetails(this)">
+                                <div style="display:flex; align-items:center;">
+                                    <span class="customer-name">${order.customerName}</span>
+                                    <span class="expand-icon">▼</span>
+                                </div>
                                 <span class="order-date">${formatDate(order.date)}</span>
                             </div>
-                            <div class="order-items">
-                                ${itemsHtml}
-                            </div>
-                            <div class="order-footer">
-                                <span class="order-total">Total: ${order.totalQty} PCS | ${parseFloat(order.totalKg || 0).toFixed(2)} KG</span>
-                                <div class="order-actions">
-                                    <button class="btn btn-warning btn-sm" onclick="editOrder(${order.id})">Edit</button>
-                                    ${currentStatus !== 'completed' ? `<button class="btn btn-primary btn-sm" onclick="completeOrder(${order.id})">Complete</button>` : ''}
-                                    <button class="btn btn-info btn-sm" onclick="showInvoice(${order.id})">Invoice</button>
-                                    <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${order.id})">Delete</button>
+                            <div class="order-details">
+                                <div class="order-items">
+                                    ${itemsHtml}
+                                </div>
+                                <div class="order-footer">
+                                    <span class="order-total">Total: ${order.totalQty} PCS | ${parseFloat(order.totalKg || 0).toFixed(2)} KG</span>
+                                    <div class="order-actions">
+                                        <button class="btn btn-warning btn-sm" onclick="editOrder(${order.id})">Edit</button>
+                                        ${currentStatus !== 'completed' ? `<button class="btn btn-primary btn-sm" onclick="completeOrder(${order.id})">Complete</button>` : ''}
+                                        <button class="btn btn-info btn-sm" onclick="showInvoice(${order.id})">Order Details</button>
+                                        <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${order.id})">Delete</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2709,6 +2913,11 @@ function refreshOrdersList(filter = null) {
             }
         });
     }
+}
+
+function toggleOrderDetails(headerElement) {
+    const card = headerElement.closest('.order-card');
+    card.classList.toggle('collapsed');
 }
 
 function clearOrdersView() {
@@ -2953,7 +3162,7 @@ function showInvoice(orderId) {
                     <div class="invoice" style="background: white; padding: 20px; color: #333; font-family: 'Segoe UI', sans-serif;">
                         <div class="invoice-header" style="text-align: center; border-bottom: 2px solid var(--sky-500); padding-bottom: 10px; margin-bottom: 20px;">
                             <h1 style="margin: 0; color: var(--sky-600);">${companySettings.name || 'StockFlow'}</h1>
-                            <p style="margin: 5px 0; color: var(--gray-500);">Order Invoice #${order.id}</p>
+                            <p style="margin: 5px 0; color: var(--gray-500);">Order Details #${order.id}</p>
                         </div>
                         <div class="invoice-details">
                             <p><strong>Date:</strong> ${formatDate(order.date)}</p>
@@ -2984,8 +3193,8 @@ function showInvoice(orderId) {
         document.getElementById('invoiceContent').innerHTML = invoiceHtml;
         document.getElementById('invoiceModal').style.display = 'block';
     } catch (err) {
-        console.error('Invoice generation failed:', err);
-        alert('Invoice Error: One required piece of data is missing or corrupted. \n\nDetails: ' + err.message);
+        console.error('Order Details generation failed:', err);
+        alert('Order Details Error: One required piece of data is missing or corrupted. \n\nDetails: ' + err.message);
     }
 }
 
@@ -2995,7 +3204,7 @@ function closeInvoiceModal() {
 
 function printInvoice() {
     let printWindow = window.open('', '_blank');
-    printWindow.document.write('<html><head><title>Invoice</title>');
+    printWindow.document.write('<html><head><title>Order Details</title>');
     printWindow.document.write('<style>body { font-family: Arial; padding: 20px; } .invoice { max-width: 800px; margin: 0 auto; } .invoice-header { text-align: center; margin-bottom: 30px; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } th { background-color: #f2f2f2; } .invoice-total { text-align: right; font-size: 18px; font-weight: bold; margin-top: 20px; }</style>');
     printWindow.document.write('</head><body>');
     printWindow.document.write(document.querySelector('.invoice').outerHTML);
@@ -3625,6 +3834,7 @@ function showAddItemModal() {
     if (subCategories.length === 0) { alert('Add a size first!'); return; }
     document.getElementById('itemModalTitle').textContent = '➕ Add Item';
     document.getElementById('editItemId').value = '';
+    updateLengthDropdowns('itemLength');
     document.getElementById('itemLength').value = '13';
     document.getElementById('itemWeight').value = '';
     document.getElementById('itemStock').value = '0';
@@ -3642,7 +3852,15 @@ function editItem(id) {
         document.getElementById('editItemId').value = item.id;
         document.getElementById('itemMainId').value = item.mainId;
         document.getElementById('itemSubId').value = item.subId;
-        document.getElementById('itemLength').value = item.length || 13;
+        
+        // Ensure length exists in dropdown before selecting
+        let len = parseFloat(item.length) || 13;
+        if (!companySettings.availableLengths.includes(len)) {
+            companySettings.availableLengths.push(len);
+            updateLengthDropdowns();
+        }
+        document.getElementById('itemLength').value = len;
+
         document.getElementById('itemWeight').value = item.weight || '';
         document.getElementById('itemStock').value = item.stock || 0;
         document.getElementById('addItemModal').style.display = 'block';
@@ -3930,12 +4148,36 @@ async function deleteTransaction(id) {
     if (!confirm('Are you sure you want to delete this record from history? Note: This will NOT revert the stock change, it only cleans up the list.')) return;
 
     try {
-        const response = await fetch(`api/sync.php?action=delete_transaction&id=${id}`);
+        const response = await fetch('api/sync.php?action=delete_transaction', {
+            method: 'POST',
+            body: JSON.stringify({ id: id })
+        });
         const result = await response.json();
         if (result.status === 'success') {
             transactions = transactions.filter(t => t.id != id);
             refreshTransactions();
             alert('Record deleted from history');
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (e) {
+        alert('Server connection failed');
+    }
+}
+
+async function clearAllTransactions() {
+    if (!confirm('⚠️ WARNING: You are about to DELETE ALL transaction history records.')) return;
+    if (!confirm('Are you absolutely sure? This cannot be undone. (Wait status: Stock will NOT be affected)')) return;
+
+    try {
+        const response = await fetch('api/sync.php?action=clear_all_transactions', {
+            method: 'POST'
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            transactions = [];
+            refreshTransactions();
+            alert('All transaction history cleared.');
         } else {
             alert('Error: ' + result.message);
         }
@@ -4006,8 +4248,7 @@ function refreshTransactions() {
                         <td style="padding:0.5rem; border-bottom:1px solid #eee;">${t.customer || '-'}</td>
                         <td style="padding:0.5rem; border-bottom:1px solid #eee;">
                             <div style="display:flex; gap:0.3rem;">
-                                <button class="btn btn-primary btn-sm" onclick="editTransaction(${t.id})" title="Edit"><i class="fas fa-edit"></i> Edit</button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteTransaction(${t.id})" title="Hide from history"><i class="fas fa-trash"></i> Delete</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteTransaction(${t.id})" title="Delete from history"><i class="fas fa-trash"></i> Delete</button>
                             </div>
                         </td>
                     </tr>`;
@@ -4027,6 +4268,147 @@ function resetTransactionFilters() {
     document.getElementById('transDateFrom').value = '';
     document.getElementById('transDateTo').value = '';
     refreshTransactions();
+}
+
+// Customer Category Management
+function showAddCustProvinceModal() {
+    document.getElementById('custProvinceModalTitle').textContent = '➕ Add Province';
+    document.getElementById('editCustProvinceId').value = '';
+    document.getElementById('custProvinceName').value = '';
+    document.getElementById('addCustProvinceModal').style.display = 'block';
+}
+
+function closeAddCustProvinceModal() {
+    document.getElementById('addCustProvinceModal').style.display = 'none';
+}
+
+function editCustProvince(id) {
+    let p = customerProvinces.find(x => x.id == id);
+    if (p) {
+        document.getElementById('custProvinceModalTitle').textContent = '✏️ Edit Province';
+        document.getElementById('editCustProvinceId').value = p.id;
+        document.getElementById('custProvinceName').value = p.name;
+        document.getElementById('addCustProvinceModal').style.display = 'block';
+    }
+}
+
+async function saveCustProvince() {
+    let id = document.getElementById('editCustProvinceId').value;
+    let name = document.getElementById('custProvinceName').value;
+    if (!name) { alert('Enter province name'); return; }
+
+    try {
+        const response = await fetch('api/sync.php?action=save_cust_category', {
+            method: 'POST',
+            body: JSON.stringify({ type: 'main', category: { id, name } })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            if (id) {
+                let p = customerProvinces.find(x => x.id == id);
+                if (p) p.name = name;
+            } else {
+                customerProvinces.push({ id: result.id, name });
+            }
+            saveData();
+            refreshCustomersList();
+            closeAddCustProvinceModal();
+            alert('Province saved!');
+        } else { alert('Error: ' + result.message); }
+    } catch (e) { alert('Sync failed.'); }
+}
+
+async function deleteCustProvince(id) {
+    if (confirm('Delete this province?')) {
+        try {
+            const response = await fetch('api/sync.php?action=delete_cust_category', {
+                method: 'POST',
+                body: JSON.stringify({ id, type: 'main' })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                customerProvinces = customerProvinces.filter(p => p.id != id);
+                saveData();
+                refreshCustomersList();
+                alert('Province deleted!');
+            } else { alert(result.message); }
+        } catch (e) { alert('Sync failed.'); }
+    }
+}
+
+function showAddCustDistrictModalFor(provId) {
+    showAddCustDistrictModal();
+    document.getElementById('custDistrictProvinceSelect').value = provId;
+}
+
+function showAddCustDistrictModal() {
+    if (customerProvinces.length === 0) { alert('Add a province first!'); return; }
+    populateProvinceSelect('custDistrictProvinceSelect');
+    document.getElementById('custDistrictModalTitle').textContent = '➕ Add District';
+    document.getElementById('editCustDistrictId').value = '';
+    document.getElementById('custDistrictName').value = '';
+    document.getElementById('addCustDistrictModal').style.display = 'block';
+}
+
+function closeAddCustDistrictModal() {
+    document.getElementById('addCustDistrictModal').style.display = 'none';
+}
+
+function editCustDistrict(id) {
+    let d = customerDistricts.find(x => x.id == id);
+    if (d) {
+        populateProvinceSelect('custDistrictProvinceSelect');
+        document.getElementById('custDistrictModalTitle').textContent = '✏️ Edit District';
+        document.getElementById('editCustDistrictId').value = d.id;
+        document.getElementById('custDistrictName').value = d.name;
+        document.getElementById('custDistrictProvinceSelect').value = d.mainId;
+        document.getElementById('addCustDistrictModal').style.display = 'block';
+    }
+}
+
+async function saveCustDistrict() {
+    let id = document.getElementById('editCustDistrictId').value;
+    let mainId = document.getElementById('custDistrictProvinceSelect').value;
+    let name = document.getElementById('custDistrictName').value;
+    if (!name || !mainId) { alert('Fill all fields'); return; }
+
+    try {
+        const response = await fetch('api/sync.php?action=save_cust_category', {
+            method: 'POST',
+            body: JSON.stringify({ type: 'sub', category: { id, mainId, name } })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            if (id) {
+                let d = customerDistricts.find(x => x.id == id);
+                if (d) { d.name = name; d.mainId = mainId; }
+            } else {
+                customerDistricts.push({ id: result.id, mainId, name });
+            }
+            saveData();
+            refreshCustomersList();
+            closeAddCustDistrictModal();
+            alert('District saved!');
+        } else { alert('Error: ' + result.message); }
+    } catch (e) { alert('Sync failed.'); }
+}
+
+async function deleteCustDistrict(id) {
+    if (confirm('Delete this district?')) {
+        try {
+            const response = await fetch('api/sync.php?action=delete_cust_category', {
+                method: 'POST',
+                body: JSON.stringify({ id, type: 'sub' })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                customerDistricts = customerDistricts.filter(d => d.id != id);
+                saveData();
+                refreshCustomersList();
+                alert('District deleted!');
+            } else { alert(result.message); }
+        } catch (e) { alert('Sync failed.'); }
+    }
 }
 
 // Initialize
