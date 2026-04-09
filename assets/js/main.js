@@ -1555,46 +1555,52 @@ function refreshDashboard() {
     // Render Charts
     renderAdvancedCharts(brandData);
 
-    // Render Alerts
+    // Render Alerts Grouped by Brand
     let alertsHtml = '';
-    if (globalLowStockItems.length === 0) {
-        alertsHtml = '<div style="grid-column: 1/-1; text-align: center; color: var(--gray-500); padding: 1rem;">No critical low stock alerts</div>';
-    } else {
-        globalLowStockItems.slice(0, 8).forEach(({ item, main, min }) => {
-            let sub = subCategories.find(s => s.id == item.subId);
-            let size = sub ? sub.name : '?';
-            alertsHtml += `
-                <div class="alert-card">
-                    <div class="alert-info">
-                        <h4>${main ? main.name : 'Unknown'} ${size}</h4>
-                        <p>${item.length}ft / ${item.weight}KG (Limit: ${min})</p>
+    sortMainCategories(mainCategories).forEach(main => {
+        let brandLowStock = globalLowStockItems.filter(ls => ls.main?.id === main.id);
+        if (brandLowStock.length > 0) {
+            alertsHtml += `<div class="alert-group-header" style="color: ${main.color};">🏷️ ${main.name}</div>`;
+            brandLowStock.forEach(({ item, min }) => {
+                let sub = subCategories.find(s => s.id == item.subId);
+                let size = sub ? sub.name : '?';
+                alertsHtml += `
+                    <div class="alert-card warning">
+                        <div class="alert-info">
+                            <h4>${main.name} ${size}</h4>
+                            <p>${item.length}ft / ${item.weight}KG (Limit: ${min})</p>
+                        </div>
+                        <div class="alert-qty">${item.stock}</div>
                     </div>
-                    <div class="alert-qty">${item.stock}</div>
-                </div>
-            `;
-        });
-    }
+                `;
+            });
+        }
+    });
+    if (!alertsHtml) alertsHtml = '<div style="grid-column: 1/-1; text-align: center; color: var(--gray-500); padding: 1rem;">No critical low stock alerts</div>';
     document.getElementById('lowStockAlertsContainer').innerHTML = alertsHtml;
 
-    // Render Shortage Alerts
+    // Render Shortage Alerts Grouped by Brand
     let shortageHtml = '';
-    if (shortfallItems.length === 0) {
-        shortageHtml = '<div style="grid-column: 1/-1; text-align: center; color: var(--gray-500); padding: 1rem;">All order requirements are met! No shortages.</div>';
-    } else {
-        shortfallItems.forEach(({ item, main, sub, shortfall, required }) => {
-            let size = sub ? sub.name : '?';
-            shortageHtml += `
-                <div class="alert-card" style="border-left: 4px solid #ef4444; background: #fff5f5;">
-                    <div class="alert-info">
-                        <h4 style="color: #b91c1c;">${main ? main.name : 'Unknown'} ${size}</h4>
-                        <p>${item.length}ft / ${item.weight}KG</p>
-                        <p style="font-size: 0.8rem; color: #7f1d1d;">In Stock: ${item.stock} | Required: ${required}</p>
+    sortMainCategories(mainCategories).forEach(main => {
+        let brandShortages = shortfallItems.filter(sf => sf.main?.id === main.id);
+        if (brandShortages.length > 0) {
+            shortageHtml += `<div class="alert-group-header" style="color: ${main.color};">🏷️ ${main.name}</div>`;
+            brandShortages.forEach(({ item, sub, shortfall, required }) => {
+                let size = sub ? sub.name : '?';
+                shortageHtml += `
+                    <div class="alert-card" style="border-left: 4px solid #ef4444; background: #fff5f5;">
+                        <div class="alert-info">
+                            <h4 style="color: #b91c1c;">${main.name} ${size}</h4>
+                            <p>${item.length}ft / ${item.weight}KG</p>
+                            <p style="font-size: 0.8rem; color: #7f1d1d;">In Stock: ${item.stock} | Required: ${required}</p>
+                        </div>
+                        <div class="alert-qty" style="background: #ef4444; color: white;">${shortfall}</div>
                     </div>
-                    <div class="alert-qty" style="background: #ef4444; color: white;">${shortfall}</div>
-                </div>
-            `;
-        });
-    }
+                `;
+            });
+        }
+    });
+    if (!shortageHtml) shortageHtml = '<div style="grid-column: 1/-1; text-align: center; color: var(--gray-500); padding: 1rem;">All order requirements are met! No shortages.</div>';
     document.getElementById('negativeStockContainer').innerHTML = shortageHtml;
 }
 
