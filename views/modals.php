@@ -1,12 +1,12 @@
 <div id="invoiceModal" class="modal">
         <div class="modal-content" style="max-width: 800px;">
             <div class="modal-header">
-                <h3>🧾 Invoice</h3>
+                <h3>📜 Order Details</h3>
                 <span class="close-modal" onclick="closeInvoiceModal()">&times;</span>
             </div>
-            <div id="invoiceContent"></div>
-            <div class="action-buttons" style="justify-content: center; margin-top: 1rem;">
-                <button class="btn btn-primary" onclick="printInvoice()">🖨️ Print Invoice</button>
+            <div class="modal-body" id="invoiceContent" style="padding:0;"></div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="printInvoice()">🖨️ Print Order Details</button>
                 <button class="btn btn-danger" onclick="closeInvoiceModal()">Close</button>
             </div>
         </div>

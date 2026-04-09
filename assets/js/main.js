@@ -2754,7 +2754,7 @@ function refreshOrdersList(filter = null) {
                                     <div class="order-actions">
                                         <button class="btn btn-warning btn-sm" onclick="editOrder(${order.id})">Edit</button>
                                         ${currentStatus !== 'completed' ? `<button class="btn btn-primary btn-sm" onclick="completeOrder(${order.id})">Complete</button>` : ''}
-                                        <button class="btn btn-info btn-sm" onclick="showInvoice(${order.id})">Invoice</button>
+                                        <button class="btn btn-info btn-sm" onclick="showInvoice(${order.id})">Order Details</button>
                                         <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${order.id})">Delete</button>
                                     </div>
                                 </div>
@@ -3027,7 +3027,7 @@ function showInvoice(orderId) {
                     <div class="invoice" style="background: white; padding: 20px; color: #333; font-family: 'Segoe UI', sans-serif;">
                         <div class="invoice-header" style="text-align: center; border-bottom: 2px solid var(--sky-500); padding-bottom: 10px; margin-bottom: 20px;">
                             <h1 style="margin: 0; color: var(--sky-600);">${companySettings.name || 'StockFlow'}</h1>
-                            <p style="margin: 5px 0; color: var(--gray-500);">Order Invoice #${order.id}</p>
+                            <p style="margin: 5px 0; color: var(--gray-500);">Order Details #${order.id}</p>
                         </div>
                         <div class="invoice-details">
                             <p><strong>Date:</strong> ${formatDate(order.date)}</p>
@@ -3058,8 +3058,8 @@ function showInvoice(orderId) {
         document.getElementById('invoiceContent').innerHTML = invoiceHtml;
         document.getElementById('invoiceModal').style.display = 'block';
     } catch (err) {
-        console.error('Invoice generation failed:', err);
-        alert('Invoice Error: One required piece of data is missing or corrupted. \n\nDetails: ' + err.message);
+        console.error('Order Details generation failed:', err);
+        alert('Order Details Error: One required piece of data is missing or corrupted. \n\nDetails: ' + err.message);
     }
 }
 
@@ -3069,7 +3069,7 @@ function closeInvoiceModal() {
 
 function printInvoice() {
     let printWindow = window.open('', '_blank');
-    printWindow.document.write('<html><head><title>Invoice</title>');
+    printWindow.document.write('<html><head><title>Order Details</title>');
     printWindow.document.write('<style>body { font-family: Arial; padding: 20px; } .invoice { max-width: 800px; margin: 0 auto; } .invoice-header { text-align: center; margin-bottom: 30px; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } th { background-color: #f2f2f2; } .invoice-total { text-align: right; font-size: 18px; font-weight: bold; margin-top: 20px; }</style>');
     printWindow.document.write('</head><body>');
     printWindow.document.write(document.querySelector('.invoice').outerHTML);
