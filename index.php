@@ -19,7 +19,7 @@
     <div id="app" style="display: none;">
         <div class="app-wrapper">
             <!-- Sidebar -->
-            <aside class="sidebar">
+            <aside class="sidebar no-print">
                 <div class="sidebar-header">
                     <div class="company-logo" id="sidebarLogo" onclick="showCompanySettings()">📦</div>
                     <div class="company-name" id="sidebarCompany" onclick="showCompanySettings()">StockFlow</div>
@@ -38,7 +38,7 @@
             <!-- Main Content -->
             <main class="main-content">
                 <!-- Navigation Tabs -->
-                <div class="nav-tabs" id="finishGoodTabs">
+                <div class="nav-tabs no-print" id="finishGoodTabs">
                     <button class="nav-tab active" onclick="showTab('dashboard')">Dashboard</button>
                     <button class="nav-tab" onclick="showTab('dataEntry')">Data Entry</button>
                     <button class="nav-tab" onclick="showTab('orders')">Orders</button>

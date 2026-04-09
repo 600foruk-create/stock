@@ -1553,8 +1553,49 @@
         }
 
         @media print {
-            .search-filter-bar {
+            .no-print, .search-filter-bar, .nav-tabs, .sidebar {
                 display: none !important;
+            }
+
+            html, body {
+                height: auto !important;
+                overflow: visible !important;
+                background: white !important;
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            #app {
+                display: block !important;
+                height: auto !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .app-wrapper {
+                display: block !important;
+                height: auto !important;
+                gap: 0 !important;
+            }
+
+            .main-content {
+                display: block !important;
+                height: auto !important;
+                overflow: visible !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+            }
+
+            .tab-content {
+                display: none;
+            }
+
+            .tab-content.active {
+                display: block !important;
             }
             
             /* Print Logo Refinement */
