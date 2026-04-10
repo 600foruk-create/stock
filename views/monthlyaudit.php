@@ -23,11 +23,11 @@
     
     <div id="printableAudit">
         <div class="print-header">
-            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
-                <div id="auditPrintLogo" style="font-size: 2.5rem;">📦</div>
-                <h1 id="auditPrintCompanyName" style="margin:0;">StockFlow</h1>
+            <div class="print-header-top">
+                <div id="auditPrintLogo" class="printLogo">📦</div>
+                <h1 id="auditPrintCompanyName">StockFlow</h1>
             </div>
-            <p style="color:var(--gray-500); margin:0;">Monthly Stock Audit Report - <span id="auditPrintDate"></span></p>
+            <p>Monthly Stock Audit Report - <span id="auditPrintDate"></span></p>
         </div>
 
         <div id="auditListContainer"></div>

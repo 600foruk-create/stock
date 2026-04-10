@@ -1124,32 +1124,7 @@
             border-top: 2px solid #333;
         }
 
-        /* Print styles */
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            #printableStock, #printableStock *,
-            #printableLowStock, #printableLowStock *,
-            .invoice, .invoice * {
-                visibility: visible;
-            }
-            #printableStock, #printableLowStock, .invoice {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                background: white;
-                padding: 1.5rem;
-            }
-            .no-print, .sidebar, .top-bar, .nav-tabs, .action-buttons {
-                display: none !important;
-            }
-            .brand-body {
-                max-height: none !important;
-                overflow: visible !important;
-            }
-        }
+
 
         /* Responsive */
         @media (max-width: 1000px) {
