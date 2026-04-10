@@ -44,9 +44,9 @@
                 <!-- Navigation Tabs -->
                 <div class="nav-tabs no-print" id="finishGoodTabs">
                     <button class="nav-tab active" onclick="showTab('dashboard')">Dashboard</button>
-                    <button class="nav-tab" onclick="showTab('dataEntry')">Data Entry</button>
+                    <button class="nav-tab" onclick="showTab('dataEntry')">Production IN</button>
                     <button class="nav-tab" onclick="showTab('orders')">Orders</button>
-                    <button class="nav-tab" onclick="showTab('categories')">Categories</button>
+                    <button class="nav-tab" onclick="showTab('categories')">Inventory</button>
                     <button class="nav-tab" onclick="showTab('customers')">Customers</button>
                     <button class="nav-tab" onclick="showTab('stockList')">Stock List</button>
                     <button class="nav-tab" onclick="showTab('audit')">Monthly Audit</button>
