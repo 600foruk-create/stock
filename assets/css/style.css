@@ -1399,7 +1399,8 @@
         }
 
         @media print {
-            .no-print, .search-filter-bar, .nav-tabs, .sidebar, .top-bar, .action-buttons, .btn-group {
+            .no-print, .search-filter-bar, .nav-tabs, .sidebar, .top-bar, .action-buttons, .btn-group,
+            #loginPage, .login-container {
                 display: none !important;
             }
 
@@ -1410,9 +1411,10 @@
                 display: block !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                position: static !important;
             }
 
-            #app, .app-wrapper, .main-content {
+            #app, .app-wrapper, .main-content, .content-area, .tab-content {
                 display: block !important;
                 height: auto !important;
                 max-width: none !important;
@@ -1421,6 +1423,7 @@
                 overflow: visible !important;
                 box-shadow: none !important;
                 border-radius: 0 !important;
+                position: static !important;
             }
 
             .tab-content {
@@ -1695,7 +1698,55 @@
     100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
 }
 
-/* Monthly Audit Enhancements */
+/* Monthly Audit Styles */
+.audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 2rem;
+    background: white;
+    font-size: 0.9rem;
+}
+.audit-table th {
+    background: var(--gray-100);
+    color: var(--gray-700);
+    padding: 10px;
+    border: 1px solid var(--gray-300);
+    text-align: center;
+    font-weight: 600;
+}
+.audit-table td {
+    padding: 8px;
+    border: 1px solid var(--gray-200);
+    text-align: center;
+}
+.audit-brand-header {
+    background: var(--sky-600);
+    color: white;
+    padding: 12px 20px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.godown-input {
+    width: 80px;
+    padding: 5px;
+    border: 2px solid var(--sky-200);
+    border-radius: 4px;
+    text-align: center;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+.godown-input:focus {
+    border-color: var(--sky-500);
+    outline: none;
+    box-shadow: 0 0 5px rgba(14, 165, 233, 0.2);
+}
+.diff-plus { color: var(--green-600); font-weight: bold; }
+.diff-minus { color: #ef4444; font-weight: bold; }
+
 .group-row-end, .group-row-end td {
     border-bottom: 3px solid #64748b !important; /* Bolder, darker slate color */
 }
