@@ -62,6 +62,8 @@
                             <span style="color: var(--gray-500);">to</span>
                             <input type="date" id="transDateTo" onchange="refreshTransactions()" style="padding: 0.6rem; border: 1px solid var(--gray-300); border-radius: 8px; flex: 1;">
                         </div>
+                        <button class="btn" onclick="exportTransactions('excel')" style="white-space: nowrap; background: #16a34a; color: white;">📥 Export Excel</button>
+                        <button class="btn" onclick="exportTransactions('pdf')" style="white-space: nowrap; background: #ea580c; color: white;">📄 Export PDF</button>
                         <button class="btn btn-info" onclick="resetTransactionFilters()" style="white-space: nowrap;">🔄 Reset</button>
                         <button class="btn btn-danger" onclick="clearAllTransactions()" style="white-space: nowrap;">🗑️ Delete All</button>
                     </div>

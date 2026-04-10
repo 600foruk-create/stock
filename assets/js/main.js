@@ -4300,6 +4300,96 @@ function resetTransactionFilters() {
     refreshTransactions();
 }
 
+function exportTransactions(format) {
+    const search = (document.getElementById('transSearch')?.value || '').toLowerCase();
+    const fromDate = document.getElementById('transDateFrom')?.value;
+    const toDate = document.getElementById('transDateTo')?.value;
+
+    let filtered = transactions.filter(t => {
+        const searchMatch = !search || 
+            (t.mainName || '').toLowerCase().includes(search) || 
+            (t.itemName || '').toLowerCase().includes(search) ||
+            (t.customer || '').toLowerCase().includes(search);
+        
+        const tDate = new Date(t.date).setHours(0,0,0,0);
+        const from = fromDate ? new Date(fromDate).setHours(0,0,0,0) : null;
+        const to = toDate ? new Date(toDate).setHours(0,0,0,0) : null;
+        const dateMatch = (!from || tDate >= from) && (!to || tDate <= to);
+
+        return searchMatch && dateMatch;
+    });
+
+    if (filtered.length === 0) {
+        alert("No data found to export!");
+        return;
+    }
+
+    const exportData = filtered.map(t => ({
+        "Date": formatDate(t.date),
+        "Type": t.type,
+        "Brand": t.mainName || 'N/A',
+        "Product": t.itemName || t.subName || 'N/A',
+        "Qty": t.quantity,
+        "Customer": t.customer || '-'
+    }));
+
+    const fileName = `Transactions_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}`;
+
+    if (format === 'excel') {
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+        
+        // Auto-size columns
+        const maxWidths = {};
+        exportData.forEach(row => {
+            Object.keys(row).forEach(key => {
+                const val = String(row[key]);
+                maxWidths[key] = Math.max(maxWidths[key] || 10, val.length + 2);
+            });
+        });
+        worksheet['!cols'] = Object.keys(maxWidths).map(key => ({ wch: maxWidths[key] }));
+
+        XLSX.writeFile(workbook, `${fileName}.xlsx`);
+    } else if (format === 'pdf') {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Add Title
+        doc.setFontSize(18);
+        doc.setTextColor(2, 132, 199); // --sky-600
+        doc.text("Transactions History Report", 14, 22);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+        if (fromDate || toDate) {
+            doc.text(`Period: ${fromDate || 'Start'} to ${toDate || 'Today'}`, 14, 35);
+        }
+
+        const tableColumn = ["Date", "Type", "Brand", "Product", "Qty", "Customer"];
+        const tableRows = exportData.map(row => [
+            row.Date,
+            row.Type,
+            row.Brand,
+            row.Product,
+            row.Qty,
+            row.Customer
+        ]);
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 40,
+            theme: 'grid',
+            headStyles: { fillColor: [2, 132, 199], textColor: 255 }, // --sky-600
+            alternateRowStyles: { fillColor: [241, 245, 249] } // --gray-100
+        });
+
+        doc.save(`${fileName}.pdf`);
+    }
+}
+
 // Customer Category Management
 function showAddCustProvinceModal() {
     document.getElementById('custProvinceModalTitle').textContent = '➕ Add Province';
