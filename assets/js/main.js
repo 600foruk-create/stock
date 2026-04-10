@@ -2171,11 +2171,24 @@ async function adjustAllStockToSystem() {
     }
 }
 
-function resetAuditSession() {
+async function resetAuditSession() {
     if (confirm('Clear ALL Godown Stock manual entries? This cannot be undone.')) {
-        auditSession = {};
-        localStorage.removeItem('stock_auditSession');
-        refreshAuditList();
+        try {
+            const response = await fetch('api/sync.php?action=clear_audit', {
+                method: 'POST'
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                auditSession = {};
+                localStorage.removeItem('stock_auditSession');
+                refreshAuditList();
+            } else {
+                alert('Failed to clear data on server: ' + (result.message || 'Unknown error'));
+            }
+        } catch (e) {
+            console.error('Reset Audit Error:', e);
+            alert('Connection failed. Could not clear server data.');
+        }
     }
 }
 

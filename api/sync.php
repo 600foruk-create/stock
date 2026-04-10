@@ -103,6 +103,11 @@ try {
             echo json_encode(['status' => 'success']);
         }
 
+        elseif ($action === 'clear_audit') {
+            $conn->exec("DELETE FROM audit_records");
+            echo json_encode(['status' => 'success']);
+        }
+
         elseif ($action === 'save_category') {
             $cat = $input['category'];
             $type = $input['type']; // 'main' or 'sub'
