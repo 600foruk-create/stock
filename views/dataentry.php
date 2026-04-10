@@ -56,16 +56,16 @@
                     
                     <h3 style="margin:1rem 0; color:var(--sky-600);">Recent Transactions</h3>
                     <div class="filter-bar" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; background: var(--gray-50); padding: 1rem; border-radius: 10px; border: 1px solid var(--gray-200);">
-                        <input type="text" id="transSearch" placeholder="Search Brand/Product..." onkeyup="refreshTransactions()" style="flex: 2; min-width: 200px; padding: 0.6rem; border: 1px solid var(--gray-300); border-radius: 8px;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 300px;">
-                            <input type="date" id="transDateFrom" onchange="refreshTransactions()" style="padding: 0.6rem; border: 1px solid var(--gray-300); border-radius: 8px; flex: 1;">
-                            <span style="color: var(--gray-500);">to</span>
-                            <input type="date" id="transDateTo" onchange="refreshTransactions()" style="padding: 0.6rem; border: 1px solid var(--gray-300); border-radius: 8px; flex: 1;">
+                        <input type="text" id="transSearch" placeholder="Search Brand/Product..." onkeyup="refreshTransactions()" style="flex: 1.5; min-width: 150px; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: 8px; font-size: 0.9rem;">
+                        <div style="display: flex; align-items: center; gap: 0.3rem; flex: 1; min-width: 250px;">
+                            <input type="date" id="transDateFrom" onchange="refreshTransactions()" style="padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: 8px; flex: 1; font-size: 0.85rem;">
+                            <span style="color: var(--gray-500); font-size: 0.8rem;">to</span>
+                            <input type="date" id="transDateTo" onchange="refreshTransactions()" style="padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: 8px; flex: 1; font-size: 0.85rem;">
                         </div>
-                        <button class="btn" onclick="exportTransactions('excel')" style="white-space: nowrap; background: #16a34a; color: white;">📥 Export Excel</button>
-                        <button class="btn" onclick="exportTransactions('pdf')" style="white-space: nowrap; background: #ea580c; color: white;">📄 Export PDF</button>
-                        <button class="btn btn-info" onclick="resetTransactionFilters()" style="white-space: nowrap;">🔄 Reset</button>
-                        <button class="btn btn-danger" onclick="clearAllTransactions()" style="white-space: nowrap;">🗑️ Delete All</button>
+                        <button class="btn" onclick="exportTransactions('excel')" style="white-space: nowrap; background: #16a34a; color: white; padding: 0.5rem 0.8rem; font-size: 0.85rem;">📥 Excel</button>
+                        <button class="btn" onclick="exportTransactions('pdf')" style="white-space: nowrap; background: #ea580c; color: white; padding: 0.5rem 0.8rem; font-size: 0.85rem;">📄 PDF</button>
+                        <button class="btn btn-info" onclick="resetTransactionFilters()" style="white-space: nowrap; padding: 0.5rem 0.8rem; font-size: 0.85rem;">🔄 Reset</button>
+                        <button class="btn btn-danger" onclick="clearAllTransactions()" style="white-space: nowrap; padding: 0.5rem 0.8rem; font-size: 0.85rem;">🗑️ Delete All</button>
                     </div>
                     <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--gray-200); border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: white;">
                         <table class="data-table" id="transTable" style="margin-bottom: 0;">
