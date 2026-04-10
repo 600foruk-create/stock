@@ -93,29 +93,29 @@
 <div id="prodReportModal" class="modal" style="display: none;">
     <div class="modal-content" style="max-width: 1000px; width: 95%;">
         <div class="modal-header">
-            <h2 id="prodReportTitle">🏭 Production Report</h2>
+            <h2 id="prodReportTitle">Production Report</h2>
             <span class="close" onclick="closeProdReportModal()">&times;</span>
         </div>
         <div class="modal-body">
-            <div class="filter-bar no-print" style="margin-bottom: 1.5rem; background: var(--gray-50); padding: 1.5rem; border-radius: 12px; display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; border: 1px solid var(--gray-200);">
-                <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
-                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.85rem; color: var(--gray-500);">From Date</label>
-                    <input type="date" id="prodReportFrom" class="form-control">
+            <div class="filter-bar no-print" style="margin-bottom: 1.5rem; background: var(--gray-50); padding: 1rem; border-radius: 12px; display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: flex-end; border: 1px solid var(--gray-200);">
+                <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 120px;">
+                    <label style="display: block; margin-bottom: 0.2rem; font-size: 0.8rem; color: var(--gray-600);">From Date</label>
+                    <input type="date" id="prodReportFrom" class="form-control" style="padding: 0.4rem; font-size: 0.85rem;">
                 </div>
-                <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
-                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.85rem; color: var(--gray-500);">To Date</label>
-                    <input type="date" id="prodReportTo" class="form-control">
+                <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 120px;">
+                    <label style="display: block; margin-bottom: 0.2rem; font-size: 0.8rem; color: var(--gray-600);">To Date</label>
+                    <input type="date" id="prodReportTo" class="form-control" style="padding: 0.4rem; font-size: 0.85rem;">
                 </div>
-                <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
-                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.85rem; color: var(--gray-500);">Select Brand</label>
-                    <select id="prodReportBrandSelect" class="form-control">
+                <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 180px;">
+                    <label style="display: block; margin-bottom: 0.2rem; font-size: 0.8rem; color: var(--gray-600);">Select Brand</label>
+                    <select id="prodReportBrandSelect" class="form-control" style="padding: 0.4rem; font-size: 0.85rem;">
                         <option value="all">-- All Brands --</option>
                     </select>
                 </div>
-                <button class="btn btn-primary" onclick="generateProductionReport()" style="padding: 0.6rem 1.5rem;">🔍 Search</button>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button class="btn" onclick="window.print()" style="background: #64748b; color: white; display: flex; align-items: center; gap: 0.3rem;">🖨️ Print</button>
-                    <button class="btn btn-success" onclick="exportProductionReport('excel')" style="display: flex; align-items: center; gap: 0.3rem;">📥 Excel</button>
+                <button class="btn btn-primary" onclick="generateProductionReport()" style="padding: 0.4rem 1.2rem; font-size: 0.85rem;">🔍 Search</button>
+                <div style="display: flex; gap: 0.4rem;">
+                    <button class="btn" onclick="window.print()" style="background: #64748b; color: white; display: flex; align-items: center; gap: 0.3rem; padding: 0.4rem 1rem; font-size: 0.85rem;">🖨️ Print</button>
+                    <button class="btn btn-success" onclick="exportProductionReport('excel')" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.4rem 1rem; font-size: 0.85rem;">📥 Excel</button>
                 </div>
             </div>
 

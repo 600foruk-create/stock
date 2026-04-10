@@ -4973,7 +4973,7 @@ function generateProductionReport() {
     
     let html = `
         <div style="margin-bottom: 2rem; text-align: center; border-bottom: 3px solid var(--sky-600); padding-bottom: 1rem;">
-             <h2 style="margin: 0; color: var(--sky-600);">🏭 Production Summary Report</h2>
+             <h2 style="margin: 0; color: var(--sky-600);">Production Summary Report</h2>
              <p style="margin: 5px 0 0 0; color: var(--gray-500); font-weight: 500;">Report Period: ${fromDate} to ${toDate}</p>
         </div>
     `;
@@ -5036,19 +5036,19 @@ function generateProductionReport() {
     
     // Grand Summary
     html += `
-        <div style="margin-top: 3rem; background: var(--gray-800); color: white; padding: 2rem; border-radius: 12px; border: 4px solid var(--sky-500); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 1rem; margin-bottom: 1.5rem;">
-                <h3 style="margin: 0; letter-spacing: 1px;">🏭 OVERALL PRODUCTION SUMMARY</h3>
-                <span style="font-size: 0.85rem; opacity: 0.7; background: rgba(255,255,255,0.1); padding: 0.3rem 0.6rem; border-radius: 4px;">Report Generated: ${new Date().toLocaleString()}</span>
+        <div style="margin-top: 2rem; background: white; color: var(--gray-800); padding: 1.2rem; border-radius: 10px; border: 2px solid var(--sky-500); box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gray-200); padding-bottom: 0.6rem; margin-bottom: 1rem;">
+                <h3 style="margin: 0; letter-spacing: 0.5px; font-size: 1.1rem; color: var(--gray-700);">OVERALL PRODUCTION SUMMARY</h3>
+                <span style="font-size: 0.75rem; color: var(--gray-400);">Generated: ${new Date().toLocaleString()}</span>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; text-align: center;">
-                <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
-                    <label style="display: block; font-size: 1rem; margin-bottom: 0.8rem; color: var(--sky-300); text-transform: uppercase; letter-spacing: 1px;">Total Production Pieces</label>
-                    <strong style="font-size: 2.8rem; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">${grandPcs} <span style="font-size: 1.2rem; opacity: 0.7;">Pcs</span></strong>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; text-align: center;">
+                <div style="background: var(--gray-50); padding: 1rem; border-radius: 8px; border: 1px solid var(--gray-100);">
+                    <label style="display: block; font-size: 0.85rem; margin-bottom: 0.4rem; color: var(--gray-500); text-transform: uppercase;">Total Production Pieces</label>
+                    <strong style="font-size: 2rem; display: block; color: var(--gray-900);">${grandPcs} <span style="font-size: 1rem; font-weight: 500; opacity: 0.6;">Pcs</span></strong>
                 </div>
-                <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
-                    <label style="display: block; font-size: 1rem; margin-bottom: 0.8rem; color: var(--sky-300); text-transform: uppercase; letter-spacing: 1px;">Total Production Weight</label>
-                    <strong style="font-size: 2.8rem; display: block; color: var(--sky-400); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">${grandKg.toFixed(2)} <span style="font-size: 1.2rem; opacity: 0.7;">KG</span></strong>
+                <div style="background: var(--gray-50); padding: 1rem; border-radius: 8px; border: 1px solid var(--gray-100);">
+                    <label style="display: block; font-size: 0.85rem; margin-bottom: 0.4rem; color: var(--gray-500); text-transform: uppercase;">Total Production Weight</label>
+                    <strong style="font-size: 2rem; display: block; color: var(--sky-700);">${grandKg.toFixed(2)} <span style="font-size: 1rem; font-weight: 500; opacity: 0.6;">KG</span></strong>
                 </div>
             </div>
         </div>
