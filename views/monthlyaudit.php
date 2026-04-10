@@ -83,25 +83,5 @@
     .diff-plus { color: var(--green-600); font-weight: bold; }
     .diff-minus { color: #ef4444; font-weight: bold; }
     
-    @media print {
-        .audit-brand-header {
-            background: #f0f0f0 !important;
-            color: black !important;
-            border: 1px solid #000 !important;
-            border-radius: 0 !important;
-            -webkit-print-color-adjust: exact;
-        }
-        .audit-table th {
-            background: #e0e0e0 !important;
-            color: black !important;
-            border: 1px solid #000 !important;
-        }
-        .audit-table td {
-            border: 1px solid #000 !important;
-        }
-        .godown-input {
-            border: none !important;
-            background: transparent !important;
-        }
-    }
+
 </style>

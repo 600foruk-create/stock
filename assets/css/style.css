@@ -1302,161 +1302,7 @@
             border-top: 2px solid #333;
         }
 
-        /* Print styles */
-        @media print {
-            body { 
-                background: white !important;
-                padding: 0 !important;
-                height: auto !important;
-                overflow: visible !important;
-            }
-            body * {
-                visibility: hidden;
-            }
-            #printableStock, #printableStock *,
-            #printableLowStock, #printableLowStock *,
-            #printableAudit, #printableAudit *,
-            .invoice, .invoice * {
-                visibility: visible;
-            }
-            #printableStock, #printableLowStock, #printableAudit, .invoice {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                background: white;
-                padding: 0;
-            }
-            .no-print, .sidebar, .top-bar, .nav-tabs, .action-buttons, .menu-item, .search-filter-bar {
-                display: none !important;
-            }
-            .brand-card, .audit-group {
-                box-shadow: none !important;
-                border: 1px solid #000 !important;
-                margin-bottom: 1rem !important;
-                break-inside: avoid;
-                page-break-after: always;
-                break-after: page;
-            }
-            .brand-header {
-                background: #f0f0f0 !important;
-                color: #000 !important;
-                border-bottom: 1.5px solid #000 !important;
-                padding: 0.5rem !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-            .brand-header h4 {
-                font-size: 1.1rem !important;
-                margin: 0 !important;
-            }
-            .brand-total {
-                background: transparent !important;
-                color: #000 !important;
-                font-weight: bold;
-                font-size: 0.8rem !important;
-            }
-            .brand-body {
-                max-height: none !important;
-                overflow: visible !important;
-                padding: 0 !important;
-            }
-            .data-table {
-                width: 100% !important;
-                border-collapse: collapse !important;
-            }
-            .data-table th, .data-table td {
-                padding: 0.35rem !important;
-                font-size: 0.8rem !important;
-                border: 1px solid #ccc !important;
-                color: #000 !important;
-            }
-            .print-header {
-                display: flex !important;
-                align-items: center !important;
-                gap: 1.2rem !important;
-                justify-content: flex-start !important;
-                margin-bottom: 1rem !important;
-                border-bottom: 2px solid #000 !important;
-                padding-bottom: 0.4rem !important;
-                text-align: left !important;
-                visibility: visible !important;
-            }
-            .print-header * {
-                visibility: visible !important;
-            }
-            #printLogo {
-                display: block !important;
-                width: 45px !important;
-                height: 45px !important;
-            }
-            #printLogo img {
-                width: 45px !important;
-                height: 45px !important;
-                object-fit: contain !important;
-                border-radius: 0 !important;
-            }
-            /* Invoice Styles */
-        .invoice-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1.5rem 0;
-            background: white;
-        }
-        .invoice-table th, .invoice-table td {
-            border: 1px solid var(--gray-300);
-            padding: 10px;
-            text-align: left;
-        }
-        .invoice-table th {
-            background-color: var(--sky-50);
-            color: var(--sky-700);
-            font-weight: 700;
-        }
-        .invoice-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            background: var(--gray-50);
-            padding: 1rem;
-            border-radius: 8px;
-        }
-        .invoice-total {
-            text-align: right;
-            margin-top: 1.5rem;
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: var(--sky-700);
-            border-top: 2px solid var(--gray-200);
-            padding-top: 10px;
-        }
 
-        @media print {
-            .btn, sidebar, aside, .nav-tabs, .action-buttons {
-                display: none !important;
-            }
-            .main-content {
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-            .invoice {
-                box-shadow: none !important;
-                border: none !important;
-                padding: 0 !important;
-            }
-        }
-            #printCompanyName {
-                font-size: 16pt !important;
-                margin: 0 !important;
-            }
-            .print-header p {
-                margin: 0 !important;
-                font-size: 9pt !important;
-                color: #555;
-                margin-left: auto !important;
-            }
-        }
 
         .print-header {
             display: none;
@@ -1653,6 +1499,23 @@
             .data-table th, .data-table td {
                 border: 1px solid #000 !important;
                 padding: 4px !important;
+            }
+
+            /* Extra Print Helpers */
+            .brand-card, .audit-group {
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+                margin-bottom: 1rem !important;
+            }
+
+            .invoice-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 1rem 0;
+            }
+            .invoice-table th, .invoice-table td {
+                border: 1px solid #000;
+                padding: 8px;
             }
         }
 

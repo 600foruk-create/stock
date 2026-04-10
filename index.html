@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -83,7 +84,9 @@
             color: var(--gray-700);
         }
 
-        .form-group input, .form-group select, .form-group textarea {
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
             width: 100%;
             padding: 0.8rem 1.2rem;
             border: 2px solid var(--gray-300);
@@ -92,7 +95,8 @@
             transition: all 0.2s;
         }
 
-        .form-group input:focus, .form-group select:focus {
+        .form-group input:focus,
+        .form-group select:focus {
             border-color: var(--sky-500);
             outline: none;
             box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
@@ -165,7 +169,7 @@
         .sidebar-header {
             text-align: center;
             padding-bottom: 1.5rem;
-            border-bottom: 2px solid rgba(255,255,255,0.2);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
             margin-bottom: 1.5rem;
         }
 
@@ -190,7 +194,7 @@
             cursor: pointer;
             padding: 0.3rem;
             border-radius: 50px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .sidebar-menu {
@@ -217,7 +221,7 @@
         }
 
         .menu-item:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             transform: translateX(5px);
         }
 
@@ -240,7 +244,7 @@
         }
 
         .logout-btn {
-            background: rgba(0,0,0,0.2);
+            background: rgba(0, 0, 0, 0.2);
             color: white;
             border: none;
             border-radius: 50px;
@@ -255,7 +259,7 @@
         }
 
         .logout-btn:hover {
-            background: rgba(0,0,0,0.3);
+            background: rgba(0, 0, 0, 0.3);
         }
 
         /* Main Content */
@@ -264,7 +268,7 @@
             background: white;
             border-radius: 1.5rem;
             padding: 1.5rem;
-            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
         }
 
         .top-bar {
@@ -324,7 +328,7 @@
         }
 
         .nav-tab:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .nav-tab.active {
@@ -360,7 +364,7 @@
 
         .stat-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
         }
 
         .stat-card h3 {
@@ -405,7 +409,7 @@
             background: white;
             border-radius: 0.8rem;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             border: 1px solid var(--gray-200);
         }
 
@@ -424,7 +428,7 @@
         }
 
         .brand-total {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             padding: 0.2rem 0.6rem;
             border-radius: 50px;
             font-size: 0.8rem;
@@ -603,7 +607,7 @@
             border-radius: 1rem;
             padding: 1.2rem;
             margin-bottom: 1rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             border-left: 6px solid;
         }
 
@@ -746,7 +750,7 @@
             height: 20px;
             border-radius: 50%;
             border: 2px solid white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .category-name {
@@ -1023,7 +1027,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 2000;
             overflow-y: auto;
         }
@@ -1125,10 +1129,12 @@
         }
 
 
-
         /* Responsive */
         @media (max-width: 1000px) {
-            .brands-container, .lowstock-container, .stats-grid {
+
+            .brands-container,
+            .lowstock-container,
+            .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
@@ -1137,18 +1143,24 @@
             .app-wrapper {
                 flex-direction: column;
             }
+
             .sidebar {
                 width: 100%;
             }
-            .brands-container, .lowstock-container, .stats-grid {
+
+            .brands-container,
+            .lowstock-container,
+            .stats-grid {
                 grid-template-columns: 1fr;
             }
+
             .settings-grid {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
+
 <body>
     <!-- Login Page -->
     <div id="loginPage">
@@ -1245,8 +1257,9 @@
                         <button class="btn btn-primary" onclick="showSaleEntry()">🛒 Sale (OUT)</button>
                         <button class="btn" onclick="showAdjustmentEntry()">⚖️ Adjustment (+/-)</button>
                     </div>
-                    
-                    <div id="productionForm" style="display: none; background: var(--gray-100); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem;">
+
+                    <div id="productionForm"
+                        style="display: none; background: var(--gray-100); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem;">
                         <h3 style="color: var(--sky-600); margin-bottom:1rem;">🏭 Production Entry</h3>
                         <div class="form-group">
                             <label>Date</label>
@@ -1258,8 +1271,9 @@
                         <button class="btn btn-primary" onclick="saveProduction()">Save Production</button>
                         <button class="btn btn-danger" onclick="hideAllForms()">Cancel</button>
                     </div>
-                    
-                    <div id="saleForm" style="display: none; background: var(--gray-100); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem;">
+
+                    <div id="saleForm"
+                        style="display: none; background: var(--gray-100); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem;">
                         <h3 style="color: var(--sky-600); margin-bottom:1rem;">🛒 Sale Entry</h3>
                         <div class="form-group">
                             <label>Date</label>
@@ -1281,8 +1295,9 @@
                         <button class="btn btn-primary" onclick="saveSale()">Complete Sale</button>
                         <button class="btn btn-danger" onclick="hideAllForms()">Cancel</button>
                     </div>
-                    
-                    <div id="adjustmentForm" style="display: none; background: var(--gray-100); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem;">
+
+                    <div id="adjustmentForm"
+                        style="display: none; background: var(--gray-100); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem;">
                         <h3 style="color: var(--sky-600); margin-bottom:1rem;">⚖️ Adjustment</h3>
                         <div class="form-group">
                             <label>Date</label>
@@ -1294,10 +1309,12 @@
                         <button class="btn" onclick="saveAdjustment()">Save Adjustment</button>
                         <button class="btn btn-danger" onclick="hideAllForms()">Cancel</button>
                     </div>
-                    
+
                     <h3 style="margin:1rem 0; color:var(--sky-600);">Recent Transactions</h3>
                     <div class="search-box">
-                        <input type="text" id="transSearch" placeholder="Search..." onkeyup="filterTable('transTable', this.value)" style="width:100%; padding:0.5rem; border:1px solid var(--gray-300); border-radius:50px;">
+                        <input type="text" id="transSearch" placeholder="Search..."
+                            onkeyup="filterTable('transTable', this.value)"
+                            style="width:100%; padding:0.5rem; border:1px solid var(--gray-300); border-radius:50px;">
                     </div>
                     <table class="data-table" id="transTable">
                         <thead>
@@ -1325,8 +1342,9 @@
                         <button class="btn" onclick="filterOrders('processing')">Processing</button>
                         <button class="btn" onclick="filterOrders('completed')">Completed</button>
                     </div>
-                    
-                    <div id="newOrderForm" style="display: none; background: var(--gray-100); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem;">
+
+                    <div id="newOrderForm"
+                        style="display: none; background: var(--gray-100); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem;">
                         <h3 style="color: var(--sky-600);">Create New Order</h3>
                         <div class="form-group">
                             <label>Date</label>
@@ -1342,7 +1360,7 @@
                         <button class="btn btn-primary" onclick="saveNewOrder()">Save Order</button>
                         <button class="btn btn-danger" onclick="hideNewOrderForm()">Cancel</button>
                     </div>
-                    
+
                     <div id="customerOrdersList"></div>
                 </div>
 
@@ -1359,8 +1377,11 @@
                     <div class="action-buttons">
                         <button class="btn btn-primary" onclick="showAddCustomerModal()">➕ Add Customer</button>
                     </div>
-                    <input type="text" id="customerSearch" placeholder="Search customers..." onkeyup="filterCustomers()" style="width:100%; padding:0.5rem; border:1px solid var(--gray-300); border-radius:50px; margin:1rem 0;">
-                    <div id="customersList" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:1rem;"></div>
+                    <input type="text" id="customerSearch" placeholder="Search customers..." onkeyup="filterCustomers()"
+                        style="width:100%; padding:0.5rem; border:1px solid var(--gray-300); border-radius:50px; margin:1rem 0;">
+                    <div id="customersList"
+                        style="display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:1rem;">
+                    </div>
                 </div>
 
                 <!-- Stock List Tab -->
@@ -1398,13 +1419,17 @@
                                     </div>
                                     <div class="form-group">
                                         <label>Database Name</label>
-                                        <input type="text" id="databaseNameInput" class="form-control" value="stockflow_db">
+                                        <input type="text" id="databaseNameInput" class="form-control"
+                                            value="stockflow_db">
                                     </div>
-                                    <button class="btn btn-primary" onclick="saveCompanySettings()">Save Settings</button>
+                                    <button class="btn btn-primary" onclick="saveCompanySettings()">Save
+                                        Settings</button>
                                 </div>
                                 <div class="logo-upload">
-                                    <div class="logo-preview" id="logoPreview" onclick="document.getElementById('logoFile').click()">📦</div>
-                                    <input type="file" id="logoFile" accept="image/*" style="display:none;" onchange="handleLogoUpload(event)">
+                                    <div class="logo-preview" id="logoPreview"
+                                        onclick="document.getElementById('logoFile').click()">📦</div>
+                                    <input type="file" id="logoFile" accept="image/*" style="display:none;"
+                                        onchange="handleLogoUpload(event)">
                                     <p style="color:var(--gray-500); font-size:0.8rem;">Click to upload logo</p>
                                 </div>
                             </div>
@@ -1496,7 +1521,8 @@
             <div class="form-group">
                 <label>Size</label>
                 <div class="input-group" style="display: flex; gap: 0.5rem;">
-                    <input type="number" id="subCategoryName" class="form-control" step="0.1" min="0" placeholder="e.g., 4" style="flex: 2;">
+                    <input type="number" id="subCategoryName" class="form-control" step="0.1" min="0"
+                        placeholder="e.g., 4" style="flex: 2;">
                     <select id="subCategoryUnit" class="form-control" style="flex: 1;">
                         <option value="inch">Inch (" )</option>
                         <option value="mm">mm</option>
@@ -1662,34 +1688,34 @@
         let users = [
             { id: 1, name: 'Admin User', username: 'admin', password: 'admin123', role: 'admin', permissions: ['all'] }
         ];
-        
+
         let currentUser = null;
         let currentModule = 'finishGood';
         let usedCompletedOrders = new Set();
-        
+
         // Company Settings
         let companySettings = {
             name: 'StockFlow',
             logo: '📦',
             databaseName: 'stockflow_db'
         };
-        
+
         // Load saved settings
-        (function() {
+        (function () {
             let savedUser = localStorage.getItem('stock_currentUser');
             if (savedUser) {
                 try {
                     currentUser = JSON.parse(savedUser);
-                } catch (e) {}
+                } catch (e) { }
             }
             let savedCompany = localStorage.getItem('stock_company');
             if (savedCompany) {
                 try {
                     companySettings = JSON.parse(savedCompany);
-                } catch (e) {}
+                } catch (e) { }
             }
         })();
-        
+
         function updateCompanyDisplay() {
             document.getElementById('sidebarCompany').textContent = companySettings.name;
             document.getElementById('sidebarLogo').innerHTML = companySettings.logo || '📦';
@@ -1698,14 +1724,14 @@
             document.getElementById('databaseNameInput').value = companySettings.databaseName;
             document.getElementById('logoPreview').innerHTML = companySettings.logo || '📦';
         }
-        
+
         function showCompanySettings() {
             switchModule('settings');
             setTimeout(() => {
                 document.getElementById('companyNameInput').scrollIntoView({ behavior: 'smooth' });
             }, 100);
         }
-        
+
         function saveCompanySettings() {
             companySettings.name = document.getElementById('companyNameInput').value || 'StockFlow';
             companySettings.databaseName = document.getElementById('databaseNameInput').value || 'stockflow_db';
@@ -1713,12 +1739,12 @@
             updateCompanyDisplay();
             alert('Company settings saved!');
         }
-        
+
         function handleLogoUpload(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     companySettings.logo = `<img src="${e.target.result}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
                     localStorage.setItem('stock_company', JSON.stringify(companySettings));
                     updateCompanyDisplay();
@@ -1726,19 +1752,19 @@
                 reader.readAsDataURL(file);
             }
         }
-        
+
         let mainCategories = [
             { id: 1, name: 'Master Flex', color: '#2196f3', lowStockLimit: 10 },
             { id: 2, name: 'Eco Flex', color: '#4caf50', lowStockLimit: 10 }
         ];
-        
+
         let subCategories = [
             { id: 1, mainId: 1, name: '2"' },
             { id: 2, mainId: 1, name: '3"' },
             { id: 3, mainId: 2, name: '2"' },
             { id: 4, mainId: 2, name: '3"' }
         ];
-        
+
         let items = [
             { id: 1, mainId: 1, subId: 1, name: '', length: 13, weight: 2.0, stock: 25, minStock: 10 },
             { id: 2, mainId: 1, subId: 1, name: '', length: 13, weight: 2.5, stock: 15, minStock: 10 },
@@ -1746,13 +1772,13 @@
             { id: 4, mainId: 2, subId: 3, name: '', length: 13, weight: 1.5, stock: 30, minStock: 15 },
             { id: 5, mainId: 2, subId: 4, name: '', length: 13, weight: 2.0, stock: 5, minStock: 10 }
         ];
-        
+
         let customers = [];
         let transactions = [];
         let orders = [];
         let transactionId = 1;
         let orderId = 1;
-        
+
         function loadData() {
             try {
                 let savedOrders = localStorage.getItem('stock_orders');
@@ -1771,7 +1797,7 @@
                 if (savedUsedOrders) {
                     try {
                         usedCompletedOrders = new Set(JSON.parse(savedUsedOrders));
-                    } catch(e) {}
+                    } catch (e) { }
                 }
                 if (transactions.length > 0) {
                     transactionId = Math.max(...transactions.map(t => t.id)) + 1;
@@ -1779,9 +1805,9 @@
                 if (orders.length > 0) {
                     orderId = Math.max(...orders.map(o => o.id)) + 1;
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
-        
+
         function saveAll() {
             localStorage.setItem('stock_orders', JSON.stringify(orders));
             localStorage.setItem('stock_customers', JSON.stringify(customers));
@@ -1791,13 +1817,13 @@
             localStorage.setItem('stock_subCat', JSON.stringify(subCategories));
             localStorage.setItem('stock_usedOrders', JSON.stringify(Array.from(usedCompletedOrders)));
         }
-        
+
         function getProductCode(item, main, sub) {
             if (!item || !main || !sub) return 'N/A';
             let size = sub.name.replace(/[^0-9.]/g, '') || '0';
             return `${size}"×${item.length}' ${item.weight}KG ${main.name}`;
         }
-        
+
         function sortMainCategories(cats) {
             return [...cats].sort((a, b) => {
                 let codeA = a.code || String(a.id).padStart(2, '0');
@@ -1805,7 +1831,7 @@
                 return codeA.localeCompare(codeB);
             });
         }
-        
+
         function sortSubCategories(subs) {
             return [...subs].sort((a, b) => {
                 let numA = parseFloat(a.name.replace(/[^0-9.]/g, '')) || 0;
@@ -1813,18 +1839,18 @@
                 return numA - numB;
             });
         }
-        
+
         function sortItems(itemsList) {
             return [...itemsList].sort((a, b) => {
                 if (a.length !== b.length) return a.length - b.length;
                 return (a.weight || 0) - (b.weight || 0);
             });
         }
-        
+
         function switchModule(module) {
             currentModule = module;
             document.querySelectorAll('.menu-item').forEach(btn => btn.classList.remove('active'));
-            
+
             if (module === 'finishGood') {
                 document.querySelectorAll('.menu-item')[0].classList.add('active');
                 document.getElementById('finishGoodTabs').style.display = 'flex';
@@ -1845,17 +1871,17 @@
                 refreshBrandLowStockSettings();
             }
         }
-        
+
         function togglePassword(fieldId) {
             let password = document.getElementById(fieldId);
             password.type = password.type === 'password' ? 'text' : 'password';
         }
-        
+
         function login() {
             let username = document.getElementById('username').value;
             let password = document.getElementById('password').value;
             let user = users.find(u => u.username === username && u.password === password);
-            
+
             if (user) {
                 currentUser = user;
                 localStorage.setItem('stock_currentUser', JSON.stringify(user));
@@ -1877,14 +1903,14 @@
                 alert('Invalid username or password!');
             }
         }
-        
-        document.addEventListener('keypress', function(e) {
+
+        document.addEventListener('keypress', function (e) {
             if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') {
                 login();
             }
         });
-        
-        (function() {
+
+        (function () {
             if (currentUser) {
                 loadData();
                 document.getElementById('loginPage').style.display = 'none';
@@ -1902,20 +1928,20 @@
                 switchModule('finishGood');
             }
         })();
-        
+
         function logout() {
             currentUser = null;
             localStorage.removeItem('stock_currentUser');
             document.getElementById('app').style.display = 'none';
             document.getElementById('loginPage').style.display = 'block';
         }
-        
+
         function formatDate(dateString) {
             if (!dateString) return '';
             let date = new Date(dateString);
-            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString().slice(0,5);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString().slice(0, 5);
         }
-        
+
         function filterTable(tableId, searchText) {
             let table = document.getElementById(tableId);
             if (!table) return;
@@ -1928,7 +1954,7 @@
                 row.style.display = text.includes(searchText) ? '' : 'none';
             }
         }
-        
+
         function showTab(tabName) {
             if (currentModule !== 'finishGood') return;
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -1936,16 +1962,16 @@
             document.getElementById(tabName).classList.add('active');
             if (tabName === 'dashboard') refreshDashboard();
             if (tabName === 'orders') refreshOrdersList();
-            if (tabName === 'dataEntry') { 
-                refreshTransactions(); 
-                refreshCompletedOrderDropdown(); 
+            if (tabName === 'dataEntry') {
+                refreshTransactions();
+                refreshCompletedOrderDropdown();
             }
             if (tabName === 'categories') refreshCategoriesView();
             if (tabName === 'customers') refreshCustomersList();
             if (tabName === 'stockList') refreshStockList();
             if (tabName === 'lowStockReport') refreshLowStockReport();
         }
-        
+
         // Customer Functions
         function showAddCustomerModal() {
             document.getElementById('customerModalTitle').textContent = '➕ Add Customer';
@@ -1956,23 +1982,23 @@
             document.getElementById('customerUniqueId').value = '';
             document.getElementById('customerModal').style.display = 'block';
         }
-        
+
         function closeCustomerModal() {
             document.getElementById('customerModal').style.display = 'none';
         }
-        
+
         function saveCustomer() {
             let id = document.getElementById('editCustomerId').value;
             let name = document.getElementById('customerName').value.trim();
             let address = document.getElementById('customerAddress').value.trim();
             let mobile = document.getElementById('customerMobile').value.trim();
             let uniqueInput = document.getElementById('customerUniqueId').value.trim();
-            
+
             if (!name) {
                 alert('Please enter customer name');
                 return;
             }
-            
+
             if (id) {
                 let customer = customers.find(c => c.id == id);
                 if (customer) {
@@ -1998,7 +2024,7 @@
             refreshCustomersList();
             closeCustomerModal();
         }
-        
+
         function refreshCustomersList() {
             let container = document.getElementById('customersList');
             let html = '';
@@ -2022,13 +2048,13 @@
             }
             container.innerHTML = html;
         }
-        
+
         function filterCustomers() {
             let search = document.getElementById('customerSearch').value.toLowerCase();
             let container = document.getElementById('customersList');
-            let filtered = customers.filter(c => 
-                c.name.toLowerCase().includes(search) || 
-                (c.address && c.address.toLowerCase().includes(search)) || 
+            let filtered = customers.filter(c =>
+                c.name.toLowerCase().includes(search) ||
+                (c.address && c.address.toLowerCase().includes(search)) ||
                 (c.mobile && c.mobile.toLowerCase().includes(search)) ||
                 (c.uniqueId && c.uniqueId.toLowerCase().includes(search))
             );
@@ -2053,7 +2079,7 @@
             }
             container.innerHTML = html;
         }
-        
+
         function editCustomer(id) {
             let customer = customers.find(c => c.id === id);
             if (customer) {
@@ -2066,7 +2092,7 @@
                 document.getElementById('customerModal').style.display = 'block';
             }
         }
-        
+
         function deleteCustomer(id) {
             if (confirm('Are you sure?')) {
                 customers = customers.filter(c => c.id !== id);
@@ -2074,7 +2100,7 @@
                 refreshCustomersList();
             }
         }
-        
+
         // Brand Low Stock Settings
         function refreshBrandLowStockSettings() {
             let container = document.getElementById('brandLowStockSettings');
@@ -2095,7 +2121,7 @@
             });
             container.innerHTML = html;
         }
-        
+
         function updateBrandLowStock(brandId) {
             let input = document.getElementById(`brandLow_${brandId}`);
             let newLimit = parseInt(input.value);
@@ -2118,7 +2144,7 @@
                 alert('Enter valid number');
             }
         }
-        
+
         // Searchable Customer Dropdown
         function createCustomerSearchable(placeholder, onSelect, initialValue = '') {
             const wrapper = document.createElement('div');
@@ -2134,22 +2160,22 @@
             wrapper.appendChild(dropdown);
             let filteredCustomers = [];
             let selectedIndex = -1;
-            
+
             function filterOptions(searchText) {
                 searchText = searchText.toLowerCase();
                 if (!searchText) {
                     filteredCustomers = customers.slice(0, 10);
                 } else {
-                    filteredCustomers = customers.filter(c => 
-                        c.name.toLowerCase().includes(searchText) || 
-                        (c.address && c.address.toLowerCase().includes(searchText)) || 
+                    filteredCustomers = customers.filter(c =>
+                        c.name.toLowerCase().includes(searchText) ||
+                        (c.address && c.address.toLowerCase().includes(searchText)) ||
                         (c.mobile && c.mobile.toLowerCase().includes(searchText)) ||
                         (c.uniqueId && c.uniqueId.toLowerCase().includes(searchText))
                     ).slice(0, 10);
                 }
                 renderDropdown();
             }
-            
+
             function renderDropdown() {
                 if (filteredCustomers.length === 0) {
                     dropdown.innerHTML = '<div class="searchable-item">No customers found</div>';
@@ -2160,7 +2186,7 @@
                             <small>${c.address || 'No address'} | ${c.mobile || 'No mobile'}</small>
                         </div>
                     `).join('');
-                    
+
                     dropdown.querySelectorAll('.searchable-item').forEach(item => {
                         item.addEventListener('click', (e) => {
                             e.stopPropagation();
@@ -2174,7 +2200,7 @@
                     });
                 }
             }
-            
+
             input.addEventListener('input', () => {
                 filterOptions(input.value);
                 dropdown.classList.add('show');
@@ -2186,7 +2212,7 @@
             });
             input.addEventListener('keydown', (e) => {
                 if (!dropdown.classList.contains('show')) return;
-                switch(e.key) {
+                switch (e.key) {
                     case 'ArrowDown':
                         e.preventDefault();
                         selectedIndex = Math.min(selectedIndex + 1, filteredCustomers.length - 1);
@@ -2218,7 +2244,7 @@
             });
             return wrapper;
         }
-        
+
         // Searchable Input with Quick Add
         function createSearchableInput(placeholder, options, onSelect, disabled = false, quickAddType = null, quickAddData = null) {
             const wrapper = document.createElement('div');
@@ -2234,20 +2260,20 @@
             wrapper.appendChild(dropdown);
             let filteredOptions = [];
             let selectedIndex = -1;
-            
+
             function filterOptions(searchText) {
                 searchText = searchText.toLowerCase();
                 if (!searchText) {
                     filteredOptions = options.slice(0, 10);
                 } else {
-                    filteredOptions = options.filter(opt => 
+                    filteredOptions = options.filter(opt =>
                         opt.text.toLowerCase().includes(searchText) ||
                         (opt.searchText && opt.searchText.toLowerCase().includes(searchText))
                     ).slice(0, 10);
                 }
                 renderDropdown();
             }
-            
+
             function renderDropdown() {
                 let html = '';
                 if (filteredOptions.length === 0) {
@@ -2260,15 +2286,15 @@
                         </div>
                     `).join('');
                 }
-                
+
                 if (quickAddType) {
                     html += `<div class="searchable-item quick-add-option" onclick="${quickAddType === 'brand' ? 'showQuickAddBrand()' : quickAddType === 'size' ? 'showQuickAddSize(' + quickAddData + ')' : ''}">
                         <span class="quick-add-icon">⚡</span> Quick Add New ${quickAddType === 'brand' ? 'Brand' : 'Size'}
                     </div>`;
                 }
-                
+
                 dropdown.innerHTML = html;
-                
+
                 dropdown.querySelectorAll('.searchable-item:not(.quick-add-option)').forEach(item => {
                     item.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -2282,7 +2308,7 @@
                     });
                 });
             }
-            
+
             input.addEventListener('input', () => {
                 filterOptions(input.value);
                 dropdown.classList.add('show');
@@ -2294,7 +2320,7 @@
             });
             input.addEventListener('keydown', (e) => {
                 if (!dropdown.classList.contains('show')) return;
-                switch(e.key) {
+                switch (e.key) {
                     case 'ArrowDown':
                         e.preventDefault();
                         selectedIndex = Math.min(selectedIndex + 1, filteredOptions.length - 1);
@@ -2326,7 +2352,7 @@
             });
             return wrapper;
         }
-        
+
         // Quick Add Functions
         function showQuickAddBrand() {
             document.getElementById('quickBrandName').value = '';
@@ -2334,24 +2360,24 @@
             document.getElementById('quickBrandLowStock').value = '10';
             document.getElementById('quickAddBrandModal').style.display = 'block';
         }
-        
+
         function closeQuickAddBrandModal() {
             document.getElementById('quickAddBrandModal').style.display = 'none';
         }
-        
+
         function saveQuickBrand() {
             let name = document.getElementById('quickBrandName').value;
             let color = document.getElementById('quickBrandColor').value;
             let lowStock = parseInt(document.getElementById('quickBrandLowStock').value) || 10;
-            
+
             if (!name) {
                 alert('Please enter brand name');
                 return;
             }
-            
+
             let newId = mainCategories.length > 0 ? Math.max(...mainCategories.map(m => m.id)) + 1 : 1;
             mainCategories.push({ id: newId, name, color, lowStockLimit: lowStock });
-            
+
             saveAll();
             closeQuickAddBrandModal();
             refreshDashboard();
@@ -2360,72 +2386,72 @@
             refreshLowStockReport();
             alert(`Brand "${name}" added!`);
         }
-        
+
         function showQuickAddSize(brandId) {
             let brand = mainCategories.find(m => m.id == brandId);
             if (!brand) return;
-            
+
             document.getElementById('quickSizeBrandId').value = brandId;
             document.getElementById('quickSizeBrandName').value = brand.name;
             document.getElementById('quickSizeName').value = '';
             document.getElementById('quickSizeUnit').value = 'inch';
             document.getElementById('quickAddSizeModal').style.display = 'block';
         }
-        
+
         function closeQuickAddSizeModal() {
             document.getElementById('quickAddSizeModal').style.display = 'none';
         }
-        
+
         function saveQuickSize() {
             let brandId = parseInt(document.getElementById('quickSizeBrandId').value);
             let sizeValue = document.getElementById('quickSizeName').value;
             let unit = document.getElementById('quickSizeUnit').value;
-            
+
             if (!sizeValue) {
                 alert('Please enter size');
                 return;
             }
-            
+
             let fullName = sizeValue + (unit === 'inch' ? '"' : 'mm');
             let newId = subCategories.length > 0 ? Math.max(...subCategories.map(s => s.id)) + 1 : 1;
             subCategories.push({ id: newId, mainId: brandId, name: fullName });
-            
+
             saveAll();
             closeQuickAddSizeModal();
             refreshCategoriesView();
             alert(`Size "${fullName}" added!`);
         }
-        
+
         // Collapse Functions
         function toggleStatCard(card) {
             card.classList.toggle('expanded');
         }
-        
+
         function toggleBrandCard(card) {
             card.classList.toggle('expanded');
         }
-        
+
         function toggleLowBrandCard(card) {
             card.classList.toggle('expanded');
         }
-        
+
         function toggleMainCategory(header) {
             const mainCategory = header.closest('.main-category');
             mainCategory.classList.toggle('expanded');
         }
-        
+
         function toggleSubCategory(header) {
             const subCategory = header.closest('.sub-category');
             subCategory.classList.toggle('expanded');
         }
-        
+
         // Dashboard Functions
         function refreshDashboard() {
             let moduleItems = items;
             let totalItems = moduleItems.length;
             let totalStock = moduleItems.reduce((sum, i) => sum + (i.stock || 0), 0);
             let totalKg = moduleItems.reduce((sum, i) => sum + ((i.stock || 0) * (i.weight || 0)), 0);
-            
+
             // Low stock items by brand
             let lowStockByBrand = {};
             moduleItems.forEach(item => {
@@ -2438,12 +2464,12 @@
                     lowStockByBrand[main.id].count++;
                 }
             });
-            
+
             let lowStockHtml = '';
             for (let brandId in lowStockByBrand) {
                 lowStockHtml += `<div class="stat-expand-item"><span>${lowStockByBrand[brandId].name}</span><span>${lowStockByBrand[brandId].count} items</span></div>`;
             }
-            
+
             document.getElementById('dashboardStats').innerHTML = `
                 <div class="stat-card" onclick="toggleStatCard(this)">
                     <h3>Total Items</h3>
@@ -2469,14 +2495,14 @@
                     </div>
                 </div>
             `;
-            
+
             // Brand Cards with Collapse
             let brandCardsHtml = '';
             sortMainCategories(mainCategories).forEach(main => {
                 let brandItems = items.filter(i => i.mainId === main.id);
                 let totalBrandStock = brandItems.reduce((sum, i) => sum + (i.stock || 0), 0);
                 let totalBrandKg = brandItems.reduce((sum, i) => sum + ((i.stock || 0) * (i.weight || 0)), 0);
-                
+
                 let itemsHtml = '';
                 sortItems(brandItems).forEach(item => {
                     let sub = subCategories.find(s => s.id === item.subId);
@@ -2491,7 +2517,7 @@
                         </div>
                     `;
                 });
-                
+
                 brandCardsHtml += `
                     <div class="brand-card" id="brandCard_${main.id}">
                         <div class="brand-header" style="background: ${main.color};" onclick="toggleBrandCard(document.getElementById('brandCard_${main.id}'))">
@@ -2505,7 +2531,7 @@
                 `;
             });
             document.getElementById('brandStockCards').innerHTML = brandCardsHtml;
-            
+
             // Pending orders quantities
             let orderedQtys = {};
             orders.filter(o => o.status === 'pending' || o.status === 'processing').forEach(order => {
@@ -2515,18 +2541,18 @@
                     }
                 });
             });
-            
+
             // Stock Comparison Table
             let comparisonRows = '';
             moduleItems.forEach(item => {
                 let main = mainCategories.find(m => m.id === item.mainId);
                 let sub = subCategories.find(s => s.id === item.subId);
                 if (!main || !sub) return;
-                
+
                 let ordered = orderedQtys[item.id] || 0;
                 let remaining = (item.stock || 0) - ordered;
                 let size = sub.name.replace(/[^0-9.]/g, '');
-                
+
                 comparisonRows += `<tr>
                     <td><span style="color:${main.color};">${main.name}</span></td>
                     <td>${size}"</td>
@@ -2538,14 +2564,14 @@
             });
             document.getElementById('stockComparisonBody').innerHTML = comparisonRows;
         }
-        
+
         function refreshStockList() {
             let brandCardsHtml = '';
             sortMainCategories(mainCategories).forEach(main => {
                 let brandItems = items.filter(i => i.mainId === main.id);
                 let totalBrandStock = brandItems.reduce((sum, i) => sum + (i.stock || 0), 0);
                 let totalKg = brandItems.reduce((sum, i) => sum + ((i.stock || 0) * (i.weight || 0)), 0);
-                
+
                 let itemsHtml = '';
                 sortItems(brandItems).forEach(item => {
                     let sub = subCategories.find(s => s.id === item.subId);
@@ -2560,7 +2586,7 @@
                         </div>
                     `;
                 });
-                
+
                 brandCardsHtml += `
                     <div class="brand-card" id="stockCard_${main.id}">
                         <div class="brand-header" style="background: ${main.color};" onclick="toggleBrandCard(document.getElementById('stockCard_${main.id}'))">
@@ -2575,7 +2601,7 @@
             });
             document.getElementById('stockListCards').innerHTML = brandCardsHtml;
         }
-        
+
         function refreshLowStockReport() {
             // Group low stock items by brand
             let lowByBrand = {};
@@ -2593,7 +2619,7 @@
                     lowByBrand[main.id].items.push(item);
                 }
             });
-            
+
             let lowCardsHtml = '';
             if (Object.keys(lowByBrand).length === 0) {
                 lowCardsHtml = '<p style="text-align:center; color:var(--green-600);">✅ All items have sufficient stock</p>';
@@ -2607,7 +2633,7 @@
                         let stockPercent = (item.stock / min) * 100;
                         let status = stockPercent <= 30 ? 'critical' : 'warning';
                         let size = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
-                        
+
                         itemsHtml += `
                             <div class="low-item ${status}">
                                 <span>${size}" / ${item.length}ft / ${item.weight}KG</span>
@@ -2615,7 +2641,7 @@
                             </div>
                         `;
                     });
-                    
+
                     lowCardsHtml += `
                         <div class="low-brand-card" id="lowCard_${brandId}">
                             <div class="low-brand-header" onclick="toggleLowBrandCard(document.getElementById('lowCard_${brandId}'))">
@@ -2631,16 +2657,16 @@
             }
             document.getElementById('lowStockCards').innerHTML = lowCardsHtml;
         }
-        
+
         // Print Functions
         function printStockList() {
             window.print();
         }
-        
+
         function printLowStock() {
             window.print();
         }
-        
+
         // Row Creation Functions
         function addProductionRow() {
             const row = document.createElement('div');
@@ -2652,34 +2678,34 @@
             }, false, 'brand');
             const sizeWrapper = createSearchableInput('Size...', [], null, true, null);
             const itemWrapper = createSearchableInput('Item...', [], null, true, null);
-            
+
             const lengthInput = document.createElement('input');
             lengthInput.type = 'number';
             lengthInput.className = 'searchable-input';
             lengthInput.placeholder = 'Length';
             lengthInput.value = '13';
-            
+
             const qtyInput = document.createElement('input');
             qtyInput.type = 'number';
             qtyInput.className = 'searchable-input';
             qtyInput.placeholder = 'Qty';
             qtyInput.min = '1';
-            
+
             const removeBtn = document.createElement('button');
             removeBtn.className = 'btn btn-danger btn-sm';
             removeBtn.textContent = '✖';
             removeBtn.onclick = () => row.remove();
-            
+
             row.appendChild(brandWrapper);
             row.appendChild(sizeWrapper);
             row.appendChild(itemWrapper);
             row.appendChild(lengthInput);
             row.appendChild(qtyInput);
             row.appendChild(removeBtn);
-            
+
             document.getElementById('productionRows').appendChild(row);
         }
-        
+
         function addSaleRow() {
             const row = document.createElement('div');
             row.className = 'entry-row';
@@ -2690,34 +2716,34 @@
             }, false, 'brand');
             const sizeWrapper = createSearchableInput('Size...', [], null, true, null);
             const itemWrapper = createSearchableInput('Item...', [], null, true, null);
-            
+
             const lengthInput = document.createElement('input');
             lengthInput.type = 'number';
             lengthInput.className = 'searchable-input';
             lengthInput.placeholder = 'Length';
             lengthInput.value = '13';
-            
+
             const qtyInput = document.createElement('input');
             qtyInput.type = 'number';
             qtyInput.className = 'searchable-input';
             qtyInput.placeholder = 'Qty';
             qtyInput.min = '1';
-            
+
             const removeBtn = document.createElement('button');
             removeBtn.className = 'btn btn-danger btn-sm';
             removeBtn.textContent = '✖';
             removeBtn.onclick = () => row.remove();
-            
+
             row.appendChild(brandWrapper);
             row.appendChild(sizeWrapper);
             row.appendChild(itemWrapper);
             row.appendChild(lengthInput);
             row.appendChild(qtyInput);
             row.appendChild(removeBtn);
-            
+
             document.getElementById('saleRows').appendChild(row);
         }
-        
+
         function addAdjustmentRow() {
             const row = document.createElement('div');
             row.className = 'entry-row';
@@ -2728,31 +2754,31 @@
             }, false, 'brand');
             const sizeWrapper = createSearchableInput('Size...', [], null, true, null);
             const itemWrapper = createSearchableInput('Item...', [], null, true, null);
-            
+
             const lengthInput = document.createElement('input');
             lengthInput.type = 'number';
             lengthInput.className = 'searchable-input';
             lengthInput.placeholder = 'Length';
             lengthInput.value = '13';
-            
+
             const typeSelect = document.createElement('select');
             typeSelect.className = 'searchable-input';
             typeSelect.innerHTML = `
                 <option value="add">➕ Add</option>
                 <option value="remove">➖ Remove</option>
             `;
-            
+
             const qtyInput = document.createElement('input');
             qtyInput.type = 'number';
             qtyInput.className = 'searchable-input';
             qtyInput.placeholder = 'Qty';
             qtyInput.min = '1';
-            
+
             const removeBtn = document.createElement('button');
             removeBtn.className = 'btn btn-danger btn-sm';
             removeBtn.textContent = '✖';
             removeBtn.onclick = () => row.remove();
-            
+
             row.appendChild(brandWrapper);
             row.appendChild(sizeWrapper);
             row.appendChild(itemWrapper);
@@ -2760,10 +2786,10 @@
             row.appendChild(typeSelect);
             row.appendChild(qtyInput);
             row.appendChild(removeBtn);
-            
+
             document.getElementById('adjustmentRows').appendChild(row);
         }
-        
+
         function addNewOrderRow() {
             const row = document.createElement('div');
             row.className = 'entry-row';
@@ -2774,59 +2800,59 @@
             }, false, 'brand');
             const sizeWrapper = createSearchableInput('Size...', [], null, true, null);
             const itemWrapper = createSearchableInput('Item...', [], null, true, null);
-            
+
             const lengthInput = document.createElement('input');
             lengthInput.type = 'number';
             lengthInput.className = 'searchable-input';
             lengthInput.placeholder = 'Length';
             lengthInput.value = '13';
-            
+
             const qtyInput = document.createElement('input');
             qtyInput.type = 'number';
             qtyInput.className = 'searchable-input';
             qtyInput.placeholder = 'Qty';
             qtyInput.min = '1';
-            
+
             const removeBtn = document.createElement('button');
             removeBtn.className = 'btn btn-danger btn-sm';
             removeBtn.textContent = '✖';
             removeBtn.onclick = () => row.remove();
-            
+
             row.appendChild(brandWrapper);
             row.appendChild(sizeWrapper);
             row.appendChild(itemWrapper);
             row.appendChild(lengthInput);
             row.appendChild(qtyInput);
             row.appendChild(removeBtn);
-            
+
             document.getElementById('newOrderRows').appendChild(row);
         }
-        
+
         function updateSizeDropdown(row, brandId, type) {
             const sizeWrapper = row.children[1];
             const itemWrapper = row.children[2];
             const sizeOptions = subCategories
                 .filter(s => s.mainId == brandId)
                 .map(s => ({ value: s.id, text: s.name }));
-            
+
             const newSizeWrapper = createSearchableInput('Size...', sizeOptions, (opt) => {
                 row.dataset.sizeId = opt.value;
                 updateItemDropdown(row, brandId, opt.value, type);
             }, false, 'size', brandId);
-            
+
             row.replaceChild(newSizeWrapper, sizeWrapper);
             const newItemWrapper = createSearchableInput('Item...', [], null, true, null);
             row.replaceChild(newItemWrapper, itemWrapper);
         }
-        
+
         function updateItemDropdown(row, brandId, sizeId, type) {
             const itemWrapper = row.children[2];
             const lengthInput = row.children[3];
-            
+
             const itemOptions = items
                 .filter(i => i.mainId == brandId && i.subId == sizeId)
-                .map(i => ({ 
-                    value: i.id, 
+                .map(i => ({
+                    value: i.id,
                     text: `${i.name || 'Item'} (${i.length}ft ${i.weight}KG)`,
                     stock: i.stock || 0,
                     minStock: i.minStock || mainCategories.find(m => m.id === brandId)?.lowStockLimit || 10,
@@ -2834,7 +2860,7 @@
                     weight: i.weight,
                     item: i
                 }));
-            
+
             const newItemWrapper = createSearchableInput('Item...', itemOptions, (opt) => {
                 row.dataset.itemId = opt.value;
                 row.dataset.itemName = opt.item.name;
@@ -2844,17 +2870,17 @@
             }, false, null);
             row.replaceChild(newItemWrapper, itemWrapper);
         }
-        
+
         // Save Functions
         function showProductionEntry() {
             hideAllForms();
             document.getElementById('productionForm').style.display = 'block';
             let now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('prodDate').value = now.toISOString().slice(0,16);
+            document.getElementById('prodDate').value = now.toISOString().slice(0, 16);
             document.getElementById('productionRows').innerHTML = '';
             addProductionRow();
         }
-        
+
         function showSaleEntry() {
             hideAllForms();
             let wrapper = document.getElementById('saleCustomerWrapper');
@@ -2863,29 +2889,29 @@
             customerIdInput.type = 'hidden';
             customerIdInput.id = 'saleCustomerId';
             wrapper.appendChild(customerIdInput);
-            
+
             let customerSearch = createCustomerSearchable('Search customer...', (cust) => {
                 document.getElementById('saleCustomerId').value = cust.id;
             });
             wrapper.appendChild(customerSearch);
-            
+
             document.getElementById('saleForm').style.display = 'block';
             let now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('saleDate').value = now.toISOString().slice(0,16);
+            document.getElementById('saleDate').value = now.toISOString().slice(0, 16);
             document.getElementById('saleRows').innerHTML = '';
             refreshCompletedOrderDropdown();
             addSaleRow();
         }
-        
+
         function showAdjustmentEntry() {
             hideAllForms();
             document.getElementById('adjustmentForm').style.display = 'block';
             let now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('adjDate').value = now.toISOString().slice(0,16);
+            document.getElementById('adjDate').value = now.toISOString().slice(0, 16);
             document.getElementById('adjustmentRows').innerHTML = '';
             addAdjustmentRow();
         }
-        
+
         function showNewOrderForm() {
             let wrapper = document.getElementById('newCustomerWrapper');
             wrapper.innerHTML = '';
@@ -2893,29 +2919,29 @@
             customerIdInput.type = 'hidden';
             customerIdInput.id = 'newCustomerId';
             wrapper.appendChild(customerIdInput);
-            
+
             let customerSearch = createCustomerSearchable('Search customer...', (cust) => {
                 document.getElementById('newCustomerId').value = cust.id;
             });
             wrapper.appendChild(customerSearch);
-            
+
             document.getElementById('newOrderForm').style.display = 'block';
             let now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('orderDate').value = now.toISOString().slice(0,16);
+            document.getElementById('orderDate').value = now.toISOString().slice(0, 16);
             document.getElementById('newOrderRows').innerHTML = '';
             addNewOrderRow();
         }
-        
+
         function hideNewOrderForm() {
             document.getElementById('newOrderForm').style.display = 'none';
         }
-        
+
         function hideAllForms() {
             document.getElementById('productionForm').style.display = 'none';
             document.getElementById('saleForm').style.display = 'none';
             document.getElementById('adjustmentForm').style.display = 'none';
         }
-        
+
         function saveProduction() {
             let rows = document.getElementById('productionRows').children;
             if (rows.length === 0) { alert('Add at least one item'); return; }
@@ -2926,20 +2952,20 @@
                 const qtyInput = row.children[4];
                 const qty = parseInt(qtyInput ? qtyInput.value : 0);
                 const length = parseInt(lengthInput ? lengthInput.value : 13);
-                
+
                 if (!itemId) { errors.push('Select item'); continue; }
                 if (!qty || qty <= 0) { errors.push('Enter quantity'); continue; }
                 let item = items.find(i => i.id == itemId);
                 if (!item) { errors.push('Item not found'); continue; }
-                
+
                 if (length && length > 0) {
                     item.length = length;
                 }
-                
+
                 let main = mainCategories.find(m => m.id === item.mainId);
                 let sub = subCategories.find(s => s.id === item.subId);
                 item.stock = (item.stock || 0) + qty;
-                
+
                 transactions.unshift({
                     id: transactionId++,
                     type: 'PRODUCTION',
@@ -2963,7 +2989,7 @@
             saveAll(); refreshTransactions(); refreshDashboard(); refreshStockList(); refreshLowStockReport(); hideAllForms();
             alert('Production saved!');
         }
-        
+
         function saveSale() {
             let customerId = document.getElementById('saleCustomerId').value;
             let customerName = '';
@@ -2977,25 +3003,25 @@
             let rows = document.getElementById('saleRows').children;
             if (rows.length === 0) { alert('Add at least one item'); return; }
             let saved = false; let errors = [];
-            
+
             let selectedOrderId = document.getElementById('saleOrderSelect').value;
-            
+
             for (let row of rows) {
                 const itemId = row.dataset.itemId;
                 const lengthInput = row.children[3];
                 const qtyInput = row.children[4];
                 const qty = parseInt(qtyInput ? qtyInput.value : 0);
                 const length = parseInt(lengthInput ? lengthInput.value : 13);
-                
+
                 if (!itemId) { errors.push('Select item'); continue; }
                 if (!qty || qty <= 0) { errors.push('Enter quantity'); continue; }
                 let item = items.find(i => i.id == itemId);
                 if (!item) { errors.push('Item not found'); continue; }
-                
+
                 if (length && length > 0) {
                     item.length = length;
                 }
-                
+
                 if (qty > (item.stock || 0)) {
                     errors.push(`Insufficient stock for ${item.name || 'Item'}. Available: ${item.stock || 0}`);
                     continue;
@@ -3021,24 +3047,24 @@
                 });
                 saved = true;
             }
-            
+
             if (errors.length > 0) { alert('Errors:\n' + errors.join('\n')); return; }
             if (!saved) { alert('No valid items'); return; }
-            
+
             if (selectedOrderId) {
                 usedCompletedOrders.add(parseInt(selectedOrderId));
             }
-            
-            saveAll(); 
-            refreshTransactions(); 
-            refreshDashboard(); 
+
+            saveAll();
+            refreshTransactions();
+            refreshDashboard();
             refreshStockList();
             refreshLowStockReport();
             hideAllForms();
             refreshCompletedOrderDropdown();
             alert('Sale completed!');
         }
-        
+
         function saveAdjustment() {
             let rows = document.getElementById('adjustmentRows').children;
             if (rows.length === 0) { alert('Add at least one item'); return; }
@@ -3051,16 +3077,16 @@
                 const qtyInput = row.children[5];
                 const qty = parseInt(qtyInput ? qtyInput.value : 0);
                 const length = parseInt(lengthInput ? lengthInput.value : 13);
-                
+
                 if (!itemId) { errors.push('Select item'); continue; }
                 if (!qty || qty <= 0) { errors.push('Enter quantity'); continue; }
                 let item = items.find(i => i.id == itemId);
                 if (!item) { errors.push('Item not found'); continue; }
-                
+
                 if (length && length > 0) {
                     item.length = length;
                 }
-                
+
                 if (type === 'remove' && qty > (item.stock || 0)) {
                     errors.push(`Cannot remove ${qty} PCS. Available: ${item.stock || 0}`);
                     continue;
@@ -3095,7 +3121,7 @@
             saveAll(); refreshTransactions(); refreshDashboard(); refreshStockList(); refreshLowStockReport(); hideAllForms();
             alert('Adjustment saved!');
         }
-        
+
         function saveNewOrder() {
             let customerId = document.getElementById('newCustomerId').value;
             let customerName = '';
@@ -3115,15 +3141,15 @@
                 const qtyInput = row.children[4];
                 const qty = parseInt(qtyInput ? qtyInput.value : 0);
                 const length = parseInt(lengthInput ? lengthInput.value : 13);
-                
+
                 if (!itemId || !qty || qty <= 0) continue;
                 let item = items.find(i => i.id == itemId);
                 if (!item) continue;
-                
+
                 if (length && length > 0) {
                     item.length = length;
                 }
-                
+
                 let main = mainCategories.find(m => m.id === item.mainId);
                 let sub = subCategories.find(s => s.id === item.subId);
                 orderItems.push({
@@ -3155,7 +3181,7 @@
             saveAll(); refreshOrdersList(); hideNewOrderForm(); refreshDashboard(); refreshStockList();
             alert('Order created!');
         }
-        
+
         // Orders Functions
         function refreshOrdersList(filter = 'all') {
             let html = '';
@@ -3174,7 +3200,7 @@
                             </div>
                         `;
                     });
-                    
+
                     html += `
                         <div class="order-card" style="border-left-color: ${statusColor};">
                             <div class="order-header">
@@ -3199,11 +3225,11 @@
             }
             document.getElementById('customerOrdersList').innerHTML = html;
         }
-        
+
         function filterOrders(status) {
             refreshOrdersList(status);
         }
-        
+
         function refreshCompletedOrderDropdown() {
             let select = document.getElementById('saleOrderSelect');
             if (!select) return;
@@ -3216,23 +3242,23 @@
                 select.appendChild(option);
             });
         }
-        
+
         function loadCompletedOrderForSale() {
             let orderId = document.getElementById('saleOrderSelect').value;
             if (!orderId) return;
-            
+
             let order = orders.find(o => o.id == orderId);
             if (!order) return;
-            
+
             document.getElementById('saleRows').innerHTML = '';
-            
+
             let wrapper = document.getElementById('saleCustomerWrapper');
             wrapper.innerHTML = '';
             let customerIdInput = document.createElement('input');
             customerIdInput.type = 'hidden';
             customerIdInput.id = 'saleCustomerId';
             wrapper.appendChild(customerIdInput);
-            
+
             let customer = customers.find(c => c.id === order.customerId);
             if (customer) {
                 let customerSearch = createCustomerSearchable('Customer', (cust) => {
@@ -3247,55 +3273,55 @@
                 wrapper.appendChild(customerSearch);
                 document.getElementById('saleCustomerId').value = '';
             }
-            
+
             (order.items || []).forEach(item => {
                 let row = document.createElement('div');
                 row.className = 'entry-row';
-                
+
                 let brand = mainCategories.find(m => m.id === item.mainId);
                 let brandOptions = mainCategories.map(m => ({ value: m.id, text: m.name }));
-                
+
                 let brandWrapper = createSearchableInput('Brand...', brandOptions, (opt) => {
                     row.dataset.brandId = opt.value;
                     updateSizeDropdown(row, opt.value, 'sale');
                 }, true, 'brand');
                 brandWrapper.querySelector('input').value = brand ? brand.name : '';
                 row.dataset.brandId = item.mainId;
-                
+
                 let sizeWrapper = createSearchableInput('Size...', [], null, true, null);
                 let itemWrapper = createSearchableInput('Item...', [], null, true, null);
                 itemWrapper.querySelector('input').value = (item.itemName || 'Item') + ' (' + item.length + 'ft ' + item.weight + 'KG)';
                 row.dataset.itemId = item.itemId;
-                
+
                 let qtyInput = document.createElement('input');
                 qtyInput.type = 'number';
                 qtyInput.className = 'searchable-input';
                 qtyInput.placeholder = 'Qty';
                 qtyInput.min = '1';
                 qtyInput.value = item.quantity;
-                
+
                 let lengthInput = document.createElement('input');
                 lengthInput.type = 'number';
                 lengthInput.className = 'searchable-input';
                 lengthInput.value = item.length || 13;
                 lengthInput.disabled = true;
-                
+
                 let removeBtn = document.createElement('button');
                 removeBtn.className = 'btn btn-danger btn-sm';
                 removeBtn.textContent = '✖';
                 removeBtn.onclick = () => row.remove();
-                
+
                 row.appendChild(brandWrapper);
                 row.appendChild(sizeWrapper);
                 row.appendChild(itemWrapper);
                 row.appendChild(lengthInput);
                 row.appendChild(qtyInput);
                 row.appendChild(removeBtn);
-                
+
                 document.getElementById('saleRows').appendChild(row);
             });
         }
-        
+
         function completeOrder(orderId) {
             let order = orders.find(o => o.id === orderId);
             let canComplete = true;
@@ -3323,7 +3349,7 @@
                     transactions.unshift({
                         id: transactionId++,
                         type: 'SALE',
-                        date: new Date().toISOString().slice(0,16),
+                        date: new Date().toISOString().slice(0, 16),
                         mainId: invItem.mainId,
                         mainName: mainCategories.find(m => m.id === invItem.mainId)?.name || '',
                         subId: invItem.subId,
@@ -3347,13 +3373,13 @@
             refreshTransactions();
             alert(`Order #${orderId} completed!`);
         }
-        
+
         function showInvoice(orderId) {
             let order = orders.find(o => o.id === orderId);
             if (!order) return;
-            
+
             let customer = customers.find(c => c.id === order.customerId);
-            
+
             let itemsHtml = '';
             (order.items || []).forEach(item => {
                 itemsHtml += `<tr>
@@ -3364,7 +3390,7 @@
                     <td>${(item.weight * item.quantity).toFixed(2)} KG</td>
                 </tr>`;
             });
-            
+
             let invoiceHtml = `
                 <div class="invoice">
                     <div class="invoice-header">
@@ -3396,15 +3422,15 @@
                     </div>
                 </div>
             `;
-            
+
             document.getElementById('invoiceContent').innerHTML = invoiceHtml;
             document.getElementById('invoiceModal').style.display = 'block';
         }
-        
+
         function closeInvoiceModal() {
             document.getElementById('invoiceModal').style.display = 'none';
         }
-        
+
         function printInvoice() {
             let printWindow = window.open('', '_blank');
             printWindow.document.write('<html><head><title>Invoice</title>');
@@ -3415,11 +3441,11 @@
             printWindow.document.close();
             printWindow.print();
         }
-        
+
         function editOrder(orderId) {
             let order = orders.find(o => o.id === orderId);
             if (!order) return;
-            
+
             let formHtml = `
                 <div class="form-group">
                     <label>Date</label>
@@ -3432,55 +3458,55 @@
                 <button class="btn btn-primary" onclick="updateOrder(${order.id})">Update Order</button>
                 <button class="btn btn-danger" onclick="closeEditModal()">Cancel</button>
             `;
-            
+
             document.getElementById('editOrderForm').innerHTML = formHtml;
             document.getElementById('editOrderId').textContent = order.id;
-            
+
             let container = document.getElementById('editOrderItems');
             (order.items || []).forEach(item => {
                 let row = document.createElement('div');
                 row.className = 'entry-row';
-                
+
                 let brand = mainCategories.find(m => m.id === item.mainId);
                 let brandOptions = mainCategories.map(m => ({ value: m.id, text: m.name }));
-                
+
                 let brandWrapper = createSearchableInput('Brand...', brandOptions, (opt) => {
                     row.dataset.brandId = opt.value;
                     updateSizeDropdown(row, opt.value, 'edit');
                 }, false, 'brand');
                 brandWrapper.querySelector('input').value = brand ? brand.name : '';
                 row.dataset.brandId = item.mainId;
-                
+
                 let sizeWrapper = createSearchableInput('Size...', [], null, true, null);
                 let itemWrapper = createSearchableInput('Item...', [], null, true, null);
-                
+
                 let lengthInput = document.createElement('input');
                 lengthInput.type = 'number';
                 lengthInput.className = 'searchable-input';
                 lengthInput.value = item.length || 13;
                 lengthInput.min = '1';
-                
+
                 let qtyInput = document.createElement('input');
                 qtyInput.type = 'number';
                 qtyInput.className = 'searchable-input';
                 qtyInput.placeholder = 'Qty';
                 qtyInput.min = '1';
                 qtyInput.value = item.quantity;
-                
+
                 let removeBtn = document.createElement('button');
                 removeBtn.className = 'btn btn-danger btn-sm';
                 removeBtn.textContent = '✖';
                 removeBtn.onclick = () => row.remove();
-                
+
                 row.appendChild(brandWrapper);
                 row.appendChild(sizeWrapper);
                 row.appendChild(itemWrapper);
                 row.appendChild(lengthInput);
                 row.appendChild(qtyInput);
                 row.appendChild(removeBtn);
-                
+
                 container.appendChild(row);
-                
+
                 setTimeout(() => {
                     let sizeOptions = subCategories.filter(s => s.mainId == item.mainId).map(s => ({ value: s.id, text: s.name }));
                     let newSizeWrapper = createSearchableInput('Size...', sizeOptions, (opt) => {
@@ -3489,10 +3515,10 @@
                     }, false, 'size', item.mainId);
                     newSizeWrapper.querySelector('input').value = item.subName || '';
                     row.replaceChild(newSizeWrapper, sizeWrapper);
-                    
+
                     setTimeout(() => {
-                        let itemOptions = items.filter(i => i.mainId == item.mainId && i.subId == item.subId).map(i => ({ 
-                            value: i.id, 
+                        let itemOptions = items.filter(i => i.mainId == item.mainId && i.subId == item.subId).map(i => ({
+                            value: i.id,
                             text: `${i.name || 'Item'} (${i.length}ft ${i.weight}KG)`,
                             stock: i.stock || 0,
                             length: i.length,
@@ -3512,10 +3538,10 @@
                     }, 50);
                 }, 50);
             });
-            
+
             document.getElementById('editOrderModal').style.display = 'block';
         }
-        
+
         function addEditOrderRow() {
             let container = document.getElementById('editOrderItems');
             const row = document.createElement('div');
@@ -3527,63 +3553,63 @@
             }, false, 'brand');
             const sizeWrapper = createSearchableInput('Size...', [], null, true, null);
             const itemWrapper = createSearchableInput('Item...', [], null, true, null);
-            
+
             const lengthInput = document.createElement('input');
             lengthInput.type = 'number';
             lengthInput.className = 'searchable-input';
             lengthInput.placeholder = 'Length';
             lengthInput.value = '13';
-            
+
             const qtyInput = document.createElement('input');
             qtyInput.type = 'number';
             qtyInput.className = 'searchable-input';
             qtyInput.placeholder = 'Qty';
             qtyInput.min = '1';
-            
+
             const removeBtn = document.createElement('button');
             removeBtn.className = 'btn btn-danger btn-sm';
             removeBtn.textContent = '✖';
             removeBtn.onclick = () => row.remove();
-            
+
             row.appendChild(brandWrapper);
             row.appendChild(sizeWrapper);
             row.appendChild(itemWrapper);
             row.appendChild(lengthInput);
             row.appendChild(qtyInput);
             row.appendChild(removeBtn);
-            
+
             container.appendChild(row);
         }
-        
+
         function updateOrder(orderId) {
             let order = orders.find(o => o.id === orderId);
             if (!order) return;
-            
+
             let rows = document.getElementById('editOrderItems').children;
             let orderItems = [];
             let totalQty = 0; let totalKg = 0;
-            
+
             for (let row of rows) {
                 const itemId = row.dataset.itemId;
                 const lengthInput = row.children[3];
                 const qtyInput = row.children[4];
                 const qty = parseInt(qtyInput ? qtyInput.value : 0);
                 const length = parseInt(lengthInput ? lengthInput.value : 13);
-                
+
                 if (!itemId || !qty || qty <= 0) continue;
                 let item = items.find(i => i.id == itemId);
                 if (!item) continue;
-                
+
                 if (length && length > 0) {
                     item.length = length;
                 }
-                
+
                 let main = mainCategories.find(m => m.id === item.mainId);
                 let sub = subCategories.find(s => s.id === item.subId);
-                
+
                 let existingItem = order.items.find(i => i.itemId == itemId);
                 let fulfilled = existingItem ? existingItem.fulfilled || 0 : 0;
-                
+
                 orderItems.push({
                     itemId: itemId,
                     mainId: item.mainId,
@@ -3599,43 +3625,43 @@
                 });
                 totalQty += qty; totalKg += qty * (item.weight || 0);
             }
-            
+
             if (orderItems.length === 0) {
                 alert('Please add at least one item');
                 return;
             }
-            
+
             order.date = document.getElementById('editOrderDate').value;
             order.items = orderItems;
             order.totalQty = totalQty;
             order.totalKg = totalKg;
-            
+
             saveAll();
             refreshOrdersList();
             closeEditModal();
             alert('Order updated successfully!');
         }
-        
+
         function closeEditModal() {
             document.getElementById('editOrderModal').style.display = 'none';
         }
-        
+
         function openDeleteModal(orderId) {
             document.getElementById('deleteOrderId').textContent = orderId;
             document.getElementById('deleteOrderModal').style.display = 'block';
         }
-        
+
         function closeDeleteModal() {
             document.getElementById('deleteOrderModal').style.display = 'none';
         }
-        
+
         function confirmDeleteOrder() {
             let orderId = parseInt(document.getElementById('deleteOrderId').textContent);
             orders = orders.filter(o => o.id !== orderId);
             saveAll(); closeDeleteModal(); refreshOrdersList(); refreshDashboard(); refreshStockList(); refreshLowStockReport();
             alert('Order deleted successfully!');
         }
-        
+
         // Categories Functions (Clean Design with Collapse)
         function refreshCategoriesView() {
             let html = '';
@@ -3643,12 +3669,12 @@
                 let mainSubs = subCategories.filter(s => s.mainId === main.id);
                 let mainItems = items.filter(i => i.mainId === main.id);
                 let totalStock = mainItems.reduce((sum, i) => sum + (i.stock || 0), 0);
-                
+
                 let subHtml = '';
                 sortSubCategories(mainSubs).forEach(sub => {
                     let subItems = items.filter(i => i.mainId === main.id && i.subId === sub.id);
                     let subTotalStock = subItems.reduce((sum, i) => sum + (i.stock || 0), 0);
-                    
+
                     let itemsHtml = '';
                     sortItems(subItems).forEach(item => {
                         itemsHtml += `
@@ -3670,7 +3696,7 @@
                             </div>
                         `;
                     });
-                    
+
                     subHtml += `
                         <div class="sub-category" id="subCat_${sub.id}">
                             <div class="sub-header" onclick="toggleSubCategory(this)">
@@ -3690,7 +3716,7 @@
                         </div>
                     `;
                 });
-                
+
                 html += `
                     <div class="main-category" id="mainCat_${main.id}">
                         <div class="category-header" onclick="toggleMainCategory(this)">
@@ -3713,7 +3739,7 @@
             });
             document.getElementById('categoriesContainer').innerHTML = html;
         }
-        
+
         function showAddSubCategoryModalFor(mainId) {
             let select = document.getElementById('subCategoryMainSelect');
             select.innerHTML = '';
@@ -3731,7 +3757,7 @@
             document.getElementById('subCategoryUnit').value = 'inch';
             document.getElementById('addSubCategoryModal').style.display = 'block';
         }
-        
+
         function showAddItemModalFor(mainId, subId) {
             document.getElementById('itemMainId').value = mainId;
             document.getElementById('itemSubId').value = subId;
@@ -3742,7 +3768,7 @@
             document.getElementById('itemStock').value = '0';
             document.getElementById('addItemModal').style.display = 'block';
         }
-        
+
         // Main Category CRUD
         function showAddMainCategoryModal() {
             document.getElementById('mainCategoryModalTitle').textContent = '➕ Add Brand';
@@ -3752,11 +3778,11 @@
             document.getElementById('mainCategoryLowStock').value = '10';
             document.getElementById('addMainCategoryModal').style.display = 'block';
         }
-        
+
         function closeAddMainCategoryModal() {
             document.getElementById('addMainCategoryModal').style.display = 'none';
         }
-        
+
         function editMainCategory(id) {
             let main = mainCategories.find(m => m.id === id);
             if (main) {
@@ -3768,7 +3794,7 @@
                 document.getElementById('addMainCategoryModal').style.display = 'block';
             }
         }
-        
+
         function deleteMainCategory(id) {
             let subCount = subCategories.filter(s => s.mainId === id).length;
             if (subCount > 0) {
@@ -3785,7 +3811,7 @@
                 refreshLowStockReport();
             }
         }
-        
+
         function saveMainCategory() {
             let id = document.getElementById('editMainCategoryId').value;
             let name = document.getElementById('mainCategoryName').value;
@@ -3810,7 +3836,7 @@
             refreshLowStockReport();
             closeAddMainCategoryModal();
         }
-        
+
         // Sub Category CRUD
         function showAddSubCategoryModal() {
             if (mainCategories.length === 0) { alert('Add a brand first!'); return; }
@@ -3829,11 +3855,11 @@
             document.getElementById('subCategoryUnit').value = 'inch';
             document.getElementById('addSubCategoryModal').style.display = 'block';
         }
-        
+
         function closeAddSubCategoryModal() {
             document.getElementById('addSubCategoryModal').style.display = 'none';
         }
-        
+
         function editSubCategory(id) {
             let sub = subCategories.find(s => s.id === id);
             if (sub) {
@@ -3856,7 +3882,7 @@
                 document.getElementById('addSubCategoryModal').style.display = 'block';
             }
         }
-        
+
         function deleteSubCategory(id) {
             let itemCount = items.filter(i => i.subId === id).length;
             if (itemCount > 0) {
@@ -3872,7 +3898,7 @@
                 refreshLowStockReport();
             }
         }
-        
+
         function saveSubCategory() {
             let id = document.getElementById('editSubCategoryId').value;
             let mainId = parseInt(document.getElementById('subCategoryMainSelect').value);
@@ -3896,7 +3922,7 @@
             refreshLowStockReport();
             closeAddSubCategoryModal();
         }
-        
+
         // Item CRUD (Simplified)
         function showAddItemModal() {
             if (mainCategories.length === 0) { alert('Add a brand first!'); return; }
@@ -3908,11 +3934,11 @@
             document.getElementById('itemStock').value = '0';
             document.getElementById('addItemModal').style.display = 'block';
         }
-        
+
         function closeAddItemModal() {
             document.getElementById('addItemModal').style.display = 'none';
         }
-        
+
         function editItem(id) {
             let item = items.find(i => i.id === id);
             if (item) {
@@ -3926,7 +3952,7 @@
                 document.getElementById('addItemModal').style.display = 'block';
             }
         }
-        
+
         function deleteItem(id) {
             if (confirm('Are you sure you want to delete this item?')) {
                 items = items.filter(i => i.id !== id);
@@ -3937,7 +3963,7 @@
                 refreshLowStockReport();
             }
         }
-        
+
         function saveItem() {
             let id = document.getElementById('editItemId').value;
             let mainId = parseInt(document.getElementById('itemMainId').value);
@@ -3945,22 +3971,22 @@
             let length = parseFloat(document.getElementById('itemLength').value) || 13;
             let weight = parseFloat(document.getElementById('itemWeight').value);
             let stock = parseInt(document.getElementById('itemStock').value) || 0;
-            
-            if (!mainId || !subId || !weight) { 
-                alert('Please fill all required fields (Weight is required)'); 
-                return; 
+
+            if (!mainId || !subId || !weight) {
+                alert('Please fill all required fields (Weight is required)');
+                return;
             }
-            
+
             let main = mainCategories.find(m => m.id === mainId);
             let minStock = main ? main.lowStockLimit : 10;
-            
+
             if (id) {
                 let item = items.find(i => i.id == id);
                 if (item) {
-                    item.mainId = mainId; 
-                    item.subId = subId; 
-                    item.length = length; 
-                    item.weight = weight; 
+                    item.mainId = mainId;
+                    item.subId = subId;
+                    item.length = length;
+                    item.weight = weight;
                     item.stock = stock;
                     item.minStock = minStock;
                 }
@@ -3977,16 +4003,16 @@
             refreshLowStockReport();
             closeAddItemModal();
         }
-        
+
         // User Management
         function showAddUserModal() {
             document.getElementById('addUserModal').style.display = 'block';
         }
-        
+
         function closeAddUserModal() {
             document.getElementById('addUserModal').style.display = 'none';
         }
-        
+
         function saveNewUser() {
             let name = document.getElementById('newUserName').value;
             let username = document.getElementById('newUserUsername').value;
@@ -3999,7 +4025,7 @@
             closeAddUserModal();
             alert('User created!');
         }
-        
+
         function refreshUsersList() {
             let html = '';
             users.forEach(user => {
@@ -4007,19 +4033,19 @@
                     <td style="padding:0.5rem;">${user.name}</td>
                     <td style="padding:0.5rem;">${user.username}</td>
                     <td style="padding:0.5rem;">${user.role}</td>
-                    <td style="padding:0.5rem;">${user.id !== 1 ? '<button class="btn btn-danger btn-sm" onclick="deleteUser('+user.id+')">Delete</button>' : ''}</td>
+                    <td style="padding:0.5rem;">${user.id !== 1 ? '<button class="btn btn-danger btn-sm" onclick="deleteUser(' + user.id + ')">Delete</button>' : ''}</td>
                 </tr>`;
             });
             document.getElementById('usersList').innerHTML = html;
         }
-        
+
         function deleteUser(userId) {
             if (confirm('Are you sure?')) {
                 users = users.filter(u => u.id !== userId);
                 refreshUsersList();
             }
         }
-        
+
         function refreshTransactions() {
             let rows = '';
             if (transactions.length === 0) {
@@ -4038,9 +4064,9 @@
             }
             document.getElementById('transactionsBody').innerHTML = rows;
         }
-        
+
         // Initialize
-        /* 
+        /*
         document.addEventListener('DOMContentLoaded', function() {
             if (currentUser) {
                 loadData();
@@ -4062,4 +4088,5 @@
         */
     </script>
 </body>
+
 </html>
