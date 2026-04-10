@@ -4909,3 +4909,187 @@ function updateGrandAuditTotal() {
         elDiffKg.className = gDiffKg === 0 ? '' : (gDiffKg > 0 ? 'diff-plus' : 'diff-minus');
     }
 }
+
+// PRODUCTION REPORT FUNCTIONS
+function showProductionReportModal() {
+    const today = new Date().toISOString().split('T')[0];
+    const elFrom = document.getElementById('prodReportFrom');
+    const elTo = document.getElementById('prodReportTo');
+    const elBrand = document.getElementById('prodReportBrandSelect');
+    
+    if (elFrom) elFrom.value = today;
+    if (elTo) elTo.value = today;
+    
+    if (elBrand) {
+        let options = '<option value="all">-- All Brands --</option>';
+        mainCategories.forEach(m => {
+            options += `<option value="${m.id}">${m.name}</option>`;
+        });
+        elBrand.innerHTML = options;
+    }
+    
+    document.getElementById('prodReportContent').innerHTML = `
+        <div style="text-align: center; color: var(--gray-400); padding: 7rem 0;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">📊</div>
+            <p>Select filters and click Search to generate the production report.</p>
+        </div>
+    `;
+    document.getElementById('prodReportModal').style.display = 'block';
+}
+
+function closeProdReportModal() {
+    document.getElementById('prodReportModal').style.display = 'none';
+}
+
+function generateProductionReport() {
+    const fromDate = document.getElementById('prodReportFrom').value;
+    const toDate = document.getElementById('prodReportTo').value;
+    const brandId = document.getElementById('prodReportBrandSelect').value;
+    
+    if (!fromDate || !toDate) { alert("Please select date range."); return; }
+    
+    const start = new Date(fromDate).setHours(0,0,0,0);
+    const end = new Date(toDate).setHours(23,59,59,999);
+    
+    const filtered = transactions.filter(t => {
+        if (t.type !== 'IN') return false;
+        const tDate = new Date(t.date).getTime();
+        const dateMatch = tDate >= start && tDate <= end;
+        const brandMatch = brandId === 'all' || t.mainId == brandId;
+        return dateMatch && brandMatch;
+    });
+    
+    if (filtered.length === 0) {
+        document.getElementById('prodReportContent').innerHTML = `<p style="text-align:center; padding:5rem; color:var(--gray-400);">No production data found for this selection.</p>`;
+        return;
+    }
+    
+    // Group by brand
+    const grouped = {};
+    filtered.forEach(t => {
+        if (!grouped[t.mainName]) grouped[t.mainName] = [];
+        grouped[t.mainName].push(t);
+    });
+    
+    let html = `
+        <div style="margin-bottom: 2rem; text-align: center; border-bottom: 3px solid var(--sky-600); padding-bottom: 1rem;">
+             <h2 style="margin: 0; color: var(--sky-600);">🏭 Production Summary Report</h2>
+             <p style="margin: 5px 0 0 0; color: var(--gray-500); font-weight: 500;">Report Period: ${fromDate} to ${toDate}</p>
+        </div>
+    `;
+    
+    let grandPcs = 0;
+    let grandKg = 0;
+    
+    Object.keys(grouped).sort().forEach(brandName => {
+        html += `<div class="audit-group" style="margin-bottom: 2.5rem;">
+            <div style="background: var(--gray-800); color: white; padding: 0.8rem 1.2rem; border-radius: 8px 8px 0 0; font-weight: 600; font-size: 1.1rem; display: flex; justify-content: space-between;">
+                <span>Brand: ${brandName}</span>
+                <span>${grouped[brandName].length} Entries</span>
+            </div>
+            <table class="audit-table" style="width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--gray-200);">
+                <thead>
+                    <tr style="background: var(--gray-50); font-size: 0.85rem;">
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Date</th>
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200); text-align: left;">Product (Size)</th>
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Length</th>
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Unit KG</th>
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Qty (Pcs)</th>
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Total KG</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+                
+        let bPcs = 0;
+        let bKg = 0;
+        
+        grouped[brandName].sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(t => {
+            const w = parseFloat(t.itemWeight) || 0;
+            const q = parseInt(t.quantity) || 0;
+            const totalKg = w * q;
+            bPcs += q;
+            bKg += totalKg;
+            
+            html += `<tr style="font-size: 0.9rem;">
+                <td style="padding: 0.7rem; border: 1px solid var(--gray-200); text-align: center; color: var(--gray-500);">${new Date(t.date).toLocaleDateString()}</td>
+                <td style="padding: 0.7rem; border: 1px solid var(--gray-200); text-align: left; font-weight: 500;">${t.subName} (${t.itemName})</td>
+                <td style="padding: 0.7rem; border: 1px solid var(--gray-200); text-align: center;">${t.itemLength || '-'} ft</td>
+                <td style="padding: 0.7rem; border: 1px solid var(--gray-200); text-align: center;">${w.toFixed(2)}</td>
+                <td style="padding: 0.7rem; border: 1px solid var(--gray-200); text-align: center; font-weight: 700;">${q}</td>
+                <td style="padding: 0.7rem; border: 1px solid var(--gray-200); text-align: center; font-weight: 700; color: var(--sky-600);">${totalKg.toFixed(2)}</td>
+            </tr>`;
+        });
+        
+        grandPcs += bPcs;
+        grandKg += bKg;
+        
+        html += `</tbody>
+            <tfoot style="background: var(--sky-50); font-weight: 800; font-size: 1rem;">
+                <tr>
+                    <td colspan="4" style="text-align: right; padding: 0.8rem; border: 1px solid var(--gray-200);">${brandName} Totals:</td>
+                    <td style="text-align: center; border: 1px solid var(--gray-200); color: var(--gray-900);">${bPcs}</td>
+                    <td style="text-align: center; border: 1px solid var(--gray-200); color: var(--sky-700);">${bKg.toFixed(2)}</td>
+                </tr>
+            </tfoot>
+        </table></div>`;
+    });
+    
+    // Grand Summary
+    html += `
+        <div style="margin-top: 3rem; background: var(--gray-800); color: white; padding: 2rem; border-radius: 12px; border: 4px solid var(--sky-500); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0; letter-spacing: 1px;">🏭 OVERALL PRODUCTION SUMMARY</h3>
+                <span style="font-size: 0.85rem; opacity: 0.7; background: rgba(255,255,255,0.1); padding: 0.3rem 0.6rem; border-radius: 4px;">Report Generated: ${new Date().toLocaleString()}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; text-align: center;">
+                <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                    <label style="display: block; font-size: 1rem; margin-bottom: 0.8rem; color: var(--sky-300); text-transform: uppercase; letter-spacing: 1px;">Total Production Pieces</label>
+                    <strong style="font-size: 2.8rem; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">${grandPcs} <span style="font-size: 1.2rem; opacity: 0.7;">Pcs</span></strong>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                    <label style="display: block; font-size: 1rem; margin-bottom: 0.8rem; color: var(--sky-300); text-transform: uppercase; letter-spacing: 1px;">Total Production Weight</label>
+                    <strong style="font-size: 2.8rem; display: block; color: var(--sky-400); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">${grandKg.toFixed(2)} <span style="font-size: 1.2rem; opacity: 0.7;">KG</span></strong>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('prodReportContent').innerHTML = html;
+}
+
+function exportProductionReport(format) {
+    const fromDate = document.getElementById('prodReportFrom').value;
+    const toDate = document.getElementById('prodReportTo').value;
+    const brandId = document.getElementById('prodReportBrandSelect').value;
+    
+    const start = new Date(fromDate).setHours(0,0,0,0);
+    const end = new Date(toDate).setHours(23,59,59,999);
+    
+    const filtered = transactions.filter(t => {
+        if (t.type !== 'IN') return false;
+        const tDate = new Date(t.date).getTime();
+        const dateMatch = tDate >= start && tDate <= end;
+        const brandMatch = brandId === 'all' || t.mainId == brandId;
+        return dateMatch && brandMatch;
+    });
+
+    if (filtered.length === 0) { alert("No data to export!"); return; }
+
+    const reportData = filtered.map(t => ({
+        "Date": new Date(t.date).toLocaleDateString(),
+        "Brand": t.mainName,
+        "Product": `${t.subName} (${t.itemName})`,
+        "Length": t.itemLength || '-',
+        "Unit KG": parseFloat(t.itemWeight) || 0,
+        "Qty": parseInt(t.quantity) || 0,
+        "Total KG": (parseFloat(t.itemWeight) || 0) * (parseInt(t.quantity) || 0)
+    }));
+
+    if (format === 'excel') {
+        const ws = XLSX.utils.json_to_sheet(reportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Production");
+        XLSX.writeFile(wb, `Production_Report_${fromDate}_to_${toDate}.xlsx`);
+    }
+}
+

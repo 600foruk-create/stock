@@ -3,6 +3,7 @@
                         <button class="btn btn-success" onclick="showProductionEntry()">🏭 Production (IN)</button>
                         <button class="btn btn-primary" onclick="showSaleEntry()">🛒 Sale (OUT)</button>
                         <button class="btn" onclick="showAdjustmentEntry()">⚖️ Adjustment (+/-)</button>
+                        <button class="btn" style="background: #eab308; color: white;" onclick="showProductionReportModal()">📊 Production Report</button>
                     </div>
                     
                     <div id="productionForm" style="display: none; background: var(--gray-100); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem;">
@@ -88,3 +89,44 @@
                         </table>
                     </div>
                 </div>
+<!-- Production Report Modal -->
+<div id="prodReportModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 1000px; width: 95%;">
+        <div class="modal-header">
+            <h2 id="prodReportTitle">🏭 Production Report</h2>
+            <span class="close" onclick="closeProdReportModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="filter-bar no-print" style="margin-bottom: 1.5rem; background: var(--gray-50); padding: 1.5rem; border-radius: 12px; display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; border: 1px solid var(--gray-200);">
+                <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.85rem; color: var(--gray-500);">From Date</label>
+                    <input type="date" id="prodReportFrom" class="form-control">
+                </div>
+                <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.85rem; color: var(--gray-500);">To Date</label>
+                    <input type="date" id="prodReportTo" class="form-control">
+                </div>
+                <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.85rem; color: var(--gray-500);">Select Brand</label>
+                    <select id="prodReportBrandSelect" class="form-control">
+                        <option value="all">-- All Brands --</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="generateProductionReport()" style="padding: 0.6rem 1.5rem;">🔍 Search</button>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn" onclick="window.print()" style="background: #64748b; color: white; display: flex; align-items: center; gap: 0.3rem;">🖨️ Print</button>
+                    <button class="btn btn-success" onclick="exportProductionReport('excel')" style="display: flex; align-items: center; gap: 0.3rem;">📥 Excel</button>
+                </div>
+            </div>
+
+            <div id="prodReportPrintContainer" style="background: white; padding: 2rem; border: 1px solid var(--gray-200); border-radius: 8px; min-height: 400px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+                <div id="prodReportContent">
+                    <div style="text-align: center; color: var(--gray-400); padding: 7rem 0;">
+                        <div style="font-size: 4rem; margin-bottom: 1rem;">📊</div>
+                        <p>Select filters and click Search to generate the production report.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
