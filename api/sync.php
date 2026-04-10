@@ -18,6 +18,14 @@ try {
                 $cols = $conn->query("SHOW COLUMNS FROM customers")->fetchAll(PDO::FETCH_COLUMN);
                 if (!in_array('main_id', $cols)) $conn->exec("ALTER TABLE customers ADD COLUMN main_id INT DEFAULT NULL");
                 if (!in_array('sub_id', $cols)) $conn->exec("ALTER TABLE customers ADD COLUMN sub_id INT DEFAULT NULL");
+                
+                // ARCHIVE TABLE
+                $conn->exec("CREATE TABLE IF NOT EXISTS audit_reports_archive (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    date DATETIME NOT NULL,
+                    title VARCHAR(255) NOT NULL,
+                    data LONGTEXT NOT NULL
+                )");
             } catch (Exception $e) {}
 
             $data = [
@@ -34,6 +42,7 @@ try {
                 'rawMaterials' => $conn->query("SELECT id, name, category, unit, stock, threshold FROM raw_materials")->fetchAll(PDO::FETCH_ASSOC),
                 'storeItems' => $conn->query("SELECT id, name, description, stock FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
                 'latestAudit' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id)")->fetchAll(PDO::FETCH_ASSOC),
+                'archivedReports' => $conn->query("SELECT id, date, title FROM audit_reports_archive ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
             ];
             
             // Add order items to orders
@@ -44,6 +53,14 @@ try {
             }
             
             echo json_encode(['status' => 'success', 'data' => $data]);
+        } elseif ($action === 'get_archived_report') {
+            $id = $_GET['id'] ?? null;
+            if ($id) {
+                $stmt = $conn->prepare("SELECT * FROM audit_reports_archive WHERE id = ?");
+                $stmt->execute([$id]);
+                $report = $stmt->fetch(PDO::FETCH_ASSOC);
+                echo json_encode(['status' => 'success', 'report' => $report]);
+            } else { echo json_encode(['status' => 'error', 'message' => 'No ID']); }
         }
     } 
     elseif ($method === 'POST') {
@@ -101,6 +118,24 @@ try {
             }
             $conn->commit();
             echo json_encode(['status' => 'success']);
+        }
+
+        elseif ($action === 'archive_report') {
+            $title = $input['title'] ?? 'Audit Report';
+            $data = json_encode($input['data']);
+            $date = date('Y-m-d H:i:s');
+            $stmt = $conn->prepare("INSERT INTO audit_reports_archive (date, title, data) VALUES (?, ?, ?)");
+            $stmt->execute([$date, $title, $data]);
+            echo json_encode(['status' => 'success', 'id' => $conn->lastInsertId()]);
+        }
+
+        elseif ($action === 'delete_archived_report') {
+            $id = $input['id'] ?? null;
+            if ($id) {
+                $stmt = $conn->prepare("DELETE FROM audit_reports_archive WHERE id = ?");
+                $stmt->execute([$id]);
+                echo json_encode(['status' => 'success']);
+            } else { echo json_encode(['status' => 'error', 'message' => 'No ID']); }
         }
 
         elseif ($action === 'clear_audit') {

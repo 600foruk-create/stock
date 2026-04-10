@@ -51,6 +51,7 @@
                     <button class="nav-tab" onclick="showTab('stockList')">Stock List</button>
                     <button class="nav-tab" onclick="showTab('audit')">Monthly Audit</button>
                     <button class="nav-tab" onclick="showTab('lowStockReport')">Low Stock</button>
+                    <button class="nav-tab" onclick="showTab('reports')">Reports Archive</button>
                 </div>
 
                 <!-- Modular Tab Content Includes -->
@@ -58,6 +59,7 @@
                 <?php include 'views/dataentry.php'; ?>
                 <?php include 'views/orders.php'; ?>
                 <?php include 'views/categories.php'; ?>
+                <?php include 'views/reports.php'; ?>
                 <?php include 'views/customers.php'; ?>
                 <?php include 'views/stocklist.php'; ?>
                 <?php include 'views/monthlyaudit.php'; ?>

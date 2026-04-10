@@ -195,6 +195,7 @@ function showTab(tabName) {
     if (tabName === 'users') refreshUsersList();
     if (tabName === 'lowStockReport') refreshLowStockReport();
     if (tabName === 'audit') refreshAuditList();
+    if (tabName === 'reports') refreshArchivedReportsList();
 }
 
 function switchModule(module) {
@@ -2197,6 +2198,231 @@ function clearAuditFilters() {
     if (document.getElementById('auditDateFrom')) document.getElementById('auditDateFrom').value = '';
     if (document.getElementById('auditDateTo')) document.getElementById('auditDateTo').value = '';
     refreshAuditList();
+}
+
+// ==================== REPORTS ARCHIVE FUNCTIONS ====================
+async function archiveCurrentAudit() {
+    const reportTitle = prompt("Enter a title for this report (e.g., April 2026 Audit):", `Audit Report ${new Date().toLocaleDateString()}`);
+    if (!reportTitle) return;
+
+    // Collect all data currently shown in the audit list
+    // We iterate through all main categories and their items
+    const snapshotData = [];
+    
+    // We need to use the current items list, grouped by brand
+    mainCategories.forEach(brand => {
+        const brandItems = items.filter(i => i.mainId === brand.id);
+        if (brandItems.length === 0) return;
+
+        const brandGroup = {
+            brandName: brand.name,
+            items: []
+        };
+
+        brandItems.forEach(item => {
+            const sub = subCategories.find(s => s.id === item.subId);
+            const godownQty = auditSession[item.id] || "0";
+            const diff = (parseInt(godownQty) || 0) - (parseInt(item.stock) || 0);
+
+            brandGroup.items.push({
+                productCode: getProductCode(item, brand, sub),
+                size: sub ? sub.name : 'N/A',
+                systemQty: item.stock,
+                godownQty: godownQty,
+                diff: diff
+            });
+        });
+        snapshotData.push(brandGroup);
+    });
+
+    if (snapshotData.length === 0) {
+        alert("No data to archive.");
+        return;
+    }
+
+    try {
+        const response = await fetch('api/sync.php?action=archive_report', {
+            method: 'POST',
+            body: JSON.stringify({
+                title: reportTitle,
+                data: snapshotData
+            })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            alert("✅ Report archived successfully!");
+            if (typeof refreshArchivedReportsList === 'function') refreshArchivedReportsList();
+        } else {
+            alert("❌ Failed to archive: " + result.message);
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Connection error while archiving.");
+    }
+}
+
+let archivedReports = []; // Global list of archived report metadata
+let currentArchivedReport = null; // Currently viewed report data
+
+async function refreshArchivedReportsList() {
+    try {
+        const response = await fetch('api/sync.php?action=get_all');
+        const result = await response.json();
+        if (result.status === 'success') {
+            archivedReports = result.data.archivedReports || [];
+            const tbody = document.getElementById('archivedReportsBody');
+            if (!tbody) return;
+
+            if (archivedReports.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 3rem; color: var(--gray-400);"><div style="font-size: 3rem; margin-bottom: 1rem;">📂</div>No archived reports found.</td></tr>`;
+                return;
+            }
+
+            let rows = '';
+            archivedReports.forEach(r => {
+                rows += `<tr>
+                    <td style="padding: 1.2rem; font-weight: 600; color: var(--gray-800);">${r.title}</td>
+                    <td style="padding: 1.2rem; color: var(--gray-500);">${new Date(r.date).toLocaleString()}</td>
+                    <td style="padding: 1.2rem; display: flex; gap: 0.5rem; justify-content: center;">
+                        <button class="report-action-btn" onclick="viewArchivedReport(${r.id})">👁️ View</button>
+                        <button class="report-action-btn delete" onclick="deleteArchivedReport(${r.id})">🗑️ Delete</button>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = rows;
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function viewArchivedReport(id) {
+    try {
+        const response = await fetch(`api/sync.php?action=get_archived_report&id=${id}`);
+        const result = await response.json();
+        if (result.status === 'success' && result.report) {
+            currentArchivedReport = result.report;
+            currentArchivedReport.snapshot = JSON.parse(result.report.data);
+            
+            document.getElementById('reportViewerTitle').textContent = currentArchivedReport.title;
+            renderArchivedContent(currentArchivedReport.snapshot);
+            document.getElementById('reportViewerModal').style.display = 'block';
+        }
+    } catch (e) { alert("Failed to load report details."); }
+}
+
+function renderArchivedContent(data) {
+    let html = '';
+    data.forEach(group => {
+        html += `<div class="audit-group" style="margin-bottom: 2rem;">
+            <div class="audit-brand-header" style="background: var(--sky-600); color: white; padding: 0.8rem 1.2rem; border-radius: 8px 8px 0 0; font-weight: 600;">
+                ${group.brandName}
+            </div>
+            <table class="audit-table" style="width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--gray-200);">
+                <thead>
+                    <tr style="background: var(--gray-50);">
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Code</th>
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Size</th>
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">System Qty</th>
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Godown Qty</th>
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Difference</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+        group.items.forEach(item => {
+            const diffClass = item.diff > 0 ? 'diff-plus' : (item.diff < 0 ? 'diff-minus' : '');
+            const diffText = item.diff > 0 ? `+${item.diff}` : item.diff;
+            html += `<tr>
+                <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;">${item.productCode}</td>
+                <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;">${item.size}</td>
+                <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;">${item.systemQty}</td>
+                <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;"><strong>${item.godownQty}</strong></td>
+                <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;" class="${diffClass}">${diffText}</td>
+            </tr>`;
+        });
+        html += `</tbody></table></div>`;
+    });
+    document.getElementById('archivedReportContent').innerHTML = html;
+}
+
+function closeReportViewer() {
+    document.getElementById('reportViewerModal').style.display = 'none';
+}
+
+async function deleteArchivedReport(id) {
+    if (!confirm("Are you sure you want to delete this archived report?")) return;
+    try {
+        const response = await fetch('api/sync.php?action=delete_archived_report', {
+            method: 'POST',
+            body: JSON.stringify({ id: id })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            refreshArchivedReportsList();
+        }
+    } catch (e) { alert("Failed to delete report."); }
+}
+
+function printArchivedReport() {
+    window.print();
+}
+
+function exportArchivedToExcel() {
+    if (!currentArchivedReport) return;
+    const flatData = [];
+    currentArchivedReport.snapshot.forEach(group => {
+        group.items.forEach(item => {
+            flatData.push({
+                "Brand": group.brandName,
+                "Code": item.productCode,
+                "Size": item.size,
+                "System Qty": item.systemQty,
+                "Godown Qty": item.godownQty,
+                "Difference": item.diff
+            });
+        });
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(flatData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Archived Audit");
+    XLSX.writeFile(workbook, `${currentArchivedReport.title.replace(/\s+/g, '_')}.xlsx`);
+}
+
+function exportArchivedToPdf() {
+    if (!currentArchivedReport) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    doc.setFontSize(18);
+    doc.setTextColor(2, 132, 199);
+    doc.text(currentArchivedReport.title, 14, 22);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Saved Date: ${new Date(currentArchivedReport.date).toLocaleString()}`, 14, 30);
+
+    const flatData = [];
+    currentArchivedReport.snapshot.forEach(group => {
+        group.items.forEach(item => {
+            flatData.push([
+                group.brandName,
+                item.productCode,
+                item.size,
+                item.systemQty,
+                item.godownQty,
+                item.diff
+            ]);
+        });
+    });
+
+    doc.autoTable({
+        head: [["Brand", "Code", "Size", "System", "Godown", "Diff"]],
+        body: flatData,
+        startY: 40,
+        theme: 'grid',
+        headStyles: { fillColor: [2, 132, 199] }
+    });
+
+    doc.save(`${currentArchivedReport.title.replace(/\s+/g, '_')}.pdf`);
 }
 
 function refreshLowStockReport() {
