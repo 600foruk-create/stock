@@ -1750,3 +1750,31 @@
 .group-row-end, .group-row-end td {
     border-bottom: 3px solid #64748b !important; /* Bolder, darker slate color */
 }
+/* Fix for Print Truncation */
+@media print {
+    #printableAudit, #auditListContainer, .audit-group, .audit-table {
+        display: block !important;
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+        position: static !important;
+    }
+    
+    .audit-table {
+        display: table !important;
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+    
+    .audit-table thead {
+        display: table-header-group !important;
+    }
+    
+    .audit-table tbody {
+        display: table-row-group !important;
+    }
+    
+    .audit-table tr {
+        page-break-inside: avoid !important;
+    }
+}

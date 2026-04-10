@@ -1926,7 +1926,42 @@ function refreshAuditList() {
         }
     });
 
+    // Add Grand Total Summary at the bottom
+    html += `
+        <div id="grandTotalContainer" style="margin-top: 3rem; background: var(--gray-50); padding: 2rem; border-radius: 12px; border: 2px solid var(--gray-300);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 2px solid var(--gray-300); padding-bottom: 0.5rem;">
+                <h2 style="margin: 0; color: var(--gray-800);">🏆 Audit Grand Summary</h2>
+                <span style="font-size: 0.9rem; color: var(--gray-500);">All Brands Combined</span>
+            </div>
+            <table class="audit-table" style="margin-bottom: 0;">
+                <thead>
+                    <tr style="background: var(--gray-800); color: white;">
+                        <th style="color: white; padding: 1rem;">Metric</th>
+                        <th style="color: white; padding: 1rem;">System Stock</th>
+                        <th style="color: white; padding: 1rem;">Godown Stock</th>
+                        <th style="color: white; padding: 1rem;">Difference</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="font-size: 1.1rem; font-weight: 700;">
+                        <td style="background: var(--gray-100);">Total Pieces</td>
+                        <td id="grandTotalSysPcs">0</td>
+                        <td id="grandTotalGodownPcs" style="color: var(--sky-600);">0</td>
+                        <td id="grandTotalDiffPcs">0</td>
+                    </tr>
+                    <tr style="font-size: 1.1rem; font-weight: 700;">
+                        <td style="background: var(--gray-100);">Total Weight (KG)</td>
+                        <td id="grandTotalSysKg">0.00</td>
+                        <td id="grandTotalGodownKg" style="color: var(--sky-600);">0.00</td>
+                        <td id="grandTotalDiffKg">0.00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+
     const auditContainer = document.getElementById('auditListContainer');
+
     if (auditContainer) {
         auditContainer.innerHTML = html || '<p style="text-align:center; padding:3rem; color:var(--gray-500);">No brands or sizes found.</p>';
         
@@ -1935,6 +1970,7 @@ function refreshAuditList() {
             const hasInput = document.querySelector(`.audit-input-${m.id}`);
             if (hasInput) updateBrandAuditTotals(m.id);
         });
+        updateGrandAuditTotal();
     }
 }
 
@@ -1968,6 +2004,7 @@ function calculateAuditRow(itemId, unitWeight, brandId) {
 
     // Update Brand Sub-totals
     updateBrandAuditTotals(brandId);
+    updateGrandAuditTotal();
 }
 
 function updateBrandAuditTotals(brandId) {
@@ -2340,6 +2377,60 @@ function renderArchivedContent(data) {
         });
         html += `</tbody></table></div>`;
     });
+
+    // Add Totals for Archived Report
+    let gSysPcs = 0, gSysKg = 0;
+    let gGdPcs = 0, gGdKg = 0;
+    
+    data.forEach(group => {
+        group.items.forEach(item => {
+            gSysPcs += parseInt(item.systemQty) || 0;
+            // Need to derive weight if not stored, but usually archived items have systemKg? 
+            // Wait, snapshot items have: productCode, size, systemQty, godownQty, diff
+            // I'll calculate KG from the current items list if possible, or assume it's stored.
+            // Actually, I'll update archiveCurrentAudit to store systemKg too.
+        });
+    });
+
+    // Let's just calculate based on the data provided in the snapshot for now
+    data.forEach(group => {
+        let bSysPcs = 0, bGdPcs = 0;
+        group.items.forEach(item => {
+            bSysPcs += parseInt(item.systemQty) || 0;
+            bGdPcs += parseInt(item.godownQty) || 0;
+        });
+        gSysPcs += bSysPcs;
+        gGdPcs += bGdPcs;
+        
+        // Append brand sub-total in modal
+        html += `
+            <div style="background: var(--gray-100); padding: 0.8rem; margin-top:-2rem; margin-bottom: 2rem; border: 1px solid var(--gray-200); border-top: none; font-weight: bold; display: flex; justify-content: space-between;">
+                <span>${group.brandName} Total:</span>
+                <span>System: ${bSysPcs} | Godown: ${bGdPcs} | Diff: ${bGdPcs - bSysPcs}</span>
+            </div>
+        `;
+    });
+
+    html += `
+        <div style="margin-top: 2rem; background: var(--gray-800); color: white; padding: 1.5rem; border-radius: 8px;">
+            <h3 style="margin: 0 0 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">Report Grand Total</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; font-size: 1.2rem;">
+                <div>
+                    <label style="display: block; font-size: 0.8rem; opacity: 0.7;">System Total</label>
+                    <strong>${gSysPcs} Pcs</strong>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.8rem; opacity: 0.7;">Godown Total</label>
+                    <strong style="color: var(--sky-400);">${gGdPcs} Pcs</strong>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.8rem; opacity: 0.7;">Net Difference</label>
+                    <strong style="color: ${gGdPcs - gSysPcs >= 0 ? '#4ade80' : '#f87171'};">${(gGdPcs - gSysPcs > 0 ? '+' : '') + (gGdPcs - gSysPcs)} Pcs</strong>
+                </div>
+            </div>
+        </div>
+    `;
+
     document.getElementById('archivedReportContent').innerHTML = html;
 }
 
@@ -4772,3 +4863,49 @@ async function deleteCustDistrict(id) {
 
 // Initialize
 initApp();
+
+function updateGrandAuditTotal() {
+    let gSysPcs = 0, gSysKg = 0;
+    let gGdPcs = 0, gGdKg = 0;
+    let gDiffPcs = 0, gDiffKg = 0;
+
+    mainCategories.forEach(m => {
+        const sysPcs = parseInt(document.getElementById(`totalSysPcs_${m.id}`)?.textContent) || 0;
+        const sysKg = parseFloat(document.getElementById(`totalSysKg_${m.id}`)?.textContent) || 0;
+        const gdPcs = parseInt(document.getElementById(`totalGodownPcs_${m.id}`)?.textContent) || 0;
+        const gdKg = parseFloat(document.getElementById(`totalGodownKg_${m.id}`)?.textContent) || 0;
+        const diffPcsText = document.getElementById(`totalDiffPcs_${m.id}`)?.textContent || '0';
+        const diffKgText = document.getElementById(`totalDiffKg_${m.id}`)?.textContent || '0';
+        
+        const diffPcs = parseInt(diffPcsText.replace(/\+/g, '')) || 0;
+        const diffKg = parseFloat(diffKgText.replace(/\+/g, '')) || 0;
+
+        gSysPcs += sysPcs;
+        gSysKg += sysKg;
+        gGdPcs += gdPcs;
+        gGdKg += gdKg;
+        gDiffPcs += diffPcs;
+        gDiffKg += diffKg;
+    });
+
+    const elSysPcs = document.getElementById('grandTotalSysPcs');
+    const elSysKg = document.getElementById('grandTotalSysKg');
+    const elGdPcs = document.getElementById('grandTotalGodownPcs');
+    const elGdKg = document.getElementById('grandTotalGodownKg');
+    const elDiffPcs = document.getElementById('grandTotalDiffPcs');
+    const elDiffKg = document.getElementById('grandTotalDiffKg');
+
+    if (elSysPcs) elSysPcs.textContent = gSysPcs;
+    if (elSysKg) elSysKg.textContent = gSysKg.toFixed(2);
+    if (elGdPcs) elGdPcs.textContent = gGdPcs;
+    if (elGdKg) elGdKg.textContent = gGdKg.toFixed(2);
+    
+    if (elDiffPcs) {
+        elDiffPcs.textContent = (gDiffPcs > 0 ? '+' : '') + gDiffPcs;
+        elDiffPcs.className = gDiffPcs === 0 ? '' : (gDiffPcs > 0 ? 'diff-plus' : 'diff-minus');
+    }
+    if (elDiffKg) {
+        elDiffKg.textContent = (gDiffKg > 0 ? '+' : '') + gDiffKg.toFixed(2);
+        elDiffKg.className = gDiffKg === 0 ? '' : (gDiffKg > 0 ? 'diff-plus' : 'diff-minus');
+    }
+}
