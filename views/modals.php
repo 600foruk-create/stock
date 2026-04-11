@@ -102,6 +102,11 @@
                 <label>Opening Stock</label>
                 <input type="number" id="itemStock" class="form-control" value="0" min="0">
             </div>
+            <div class="form-group">
+                <label>Low Stock Limit (Alert Threshold)</label>
+                <input type="number" id="itemLowStock" class="form-control" placeholder="Leave empty for Brand default">
+                <small style="color: var(--gray-500);">Sets a custom alert limit for this specific item.</small>
+            </div>
             <button class="btn btn-success" onclick="saveItem()" style="width:100%;">Save Item</button>
         </div>
     </div>
@@ -242,6 +247,10 @@
             <div class="form-group">
                 <label>Weight (kg)</label>
                 <input type="number" id="quickItemWeight" class="form-control" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Low Stock Limit</label>
+                <input type="number" id="quickItemLowStock" class="form-control" placeholder="Optional">
             </div>
             <button class="btn btn-success" onclick="saveQuickItem()" style="width:100%;">Add Item</button>
         </div>

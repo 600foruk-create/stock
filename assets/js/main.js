@@ -1103,7 +1103,7 @@ function createSearchableInput(placeholder, options, onSelect, disabled = false,
             html = filteredOptions.map((opt, index) => `
                         <div class="searchable-item ${index === selectedIndex ? 'selected' : ''}" data-value="${opt.value}">
                             ${opt.text}
-                            ${opt.stock !== undefined ? `<span style="float: right; color: ${opt.stock <= (opt.minStock || 10) ? '#ff5252' : '#4caf50'}; font-weight: bold;">Stock: ${opt.stock}</span>` : ''}
+                            ${opt.stock !== undefined ? `<span style="float: right; color: ${opt.stock <= (opt.lowStockLimit || 10) ? '#ff5252' : '#4caf50'}; font-weight: bold;">Stock: ${opt.stock}</span>` : ''}
                         </div>
                     `).join('');
         }
@@ -1391,7 +1391,7 @@ async function saveQuickItem() {
         length,
         weight,
         stock: 0,
-        minStock: mainCategories.find(m => m.id == mainId)?.lowStockLimit || 10
+        lowStockLimit: parseInt(document.getElementById('quickItemLowStock').value) || null
     };
 
     try {
@@ -1459,7 +1459,7 @@ function refreshDashboard() {
 
     moduleItems.forEach(item => {
         let main = mainCategories.find(m => m.id == item.mainId);
-        let min = item.minStock || main?.lowStockLimit || 10;
+        let min = item.lowStockLimit || main?.lowStockLimit || 10;
         if (parseInt(item.stock) <= parseInt(min)) {
             globalLowStockItems.push({ item, main, min });
             if (main) {
@@ -2521,7 +2521,7 @@ function refreshLowStockReport() {
     let lowByBrand = {};
     items.forEach(item => {
         let main = mainCategories.find(m => m.id === item.mainId);
-        let min = item.minStock || main?.lowStockLimit || 10;
+        let min = item.lowStockLimit || main?.lowStockLimit || 10;
         if (item.stock <= min) {
             if (!lowByBrand[main.id]) {
                 lowByBrand[main.id] = {
@@ -2543,7 +2543,7 @@ function refreshLowStockReport() {
             let itemsHtml = '';
             brand.items.forEach(item => {
                 let sub = subCategories.find(s => s.id === item.subId);
-                let min = item.minStock || mainCategories.find(m => m.id === item.mainId)?.lowStockLimit || 10;
+                let min = item.lowStockLimit || mainCategories.find(m => m.id === item.mainId)?.lowStockLimit || 10;
                 let stockPercent = (item.stock / min) * 100;
                 let status = stockPercent <= 30 ? 'critical' : 'warning';
                 let size = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
@@ -3875,7 +3875,10 @@ function refreshCategoriesView() {
                                     </div>
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 1rem;">
-                                    <span class="item-stock">${item.stock || 0}</span>
+                                    <div style="text-align: right;">
+                                        <div class="item-stock" style="color: ${parseInt(item.stock) <= (item.lowStockLimit || main.lowStockLimit || 10) ? 'var(--red-500)' : ''}">${item.stock || 0}</div>
+                                        ${item.lowStockLimit ? `<div style="font-size: 0.7rem; color: var(--orange-500); font-weight: 600;">Limit: ${item.lowStockLimit}</div>` : ''}
+                                    </div>
                                     <div class="item-actions">
                                         <button class="btn-icon btn-icon-sm" onclick="editItem(${item.id})" title="Edit">✏️</button>
                                         <button class="btn-icon btn-icon-sm" onclick="deleteItem(${item.id})" title="Delete">🗑️</button>
@@ -4223,6 +4226,7 @@ function editItem(id) {
 
         document.getElementById('itemWeight').value = item.weight || '';
         document.getElementById('itemStock').value = item.stock || 0;
+        document.getElementById('itemLowStock').value = item.lowStockLimit || '';
         document.getElementById('addItemModal').style.display = 'block';
     }
 }
@@ -4256,6 +4260,7 @@ async function saveItem() {
     let length = parseFloat(document.getElementById('itemLength').value) || 13;
     let weight = parseFloat(document.getElementById('itemWeight').value);
     let stock = parseInt(document.getElementById('itemStock').value) || 0;
+    let lowStockLimit = parseInt(document.getElementById('itemLowStock').value) || null;
 
     if (!mainId || !subId || !weight) {
         alert('Please fill all required fields (Weight is required)');
@@ -4266,7 +4271,7 @@ async function saveItem() {
     let sub = subCategories.find(s => s.id === subId);
     let minStock = main ? main.lowStockLimit : 10;
 
-    let itemData = { id, mainId, subId, length, weight, stock };
+    let itemData = { id, mainId, subId, length, weight, stock, lowStockLimit };
 
     try {
         const response = await fetch('api/sync.php?action=save_item', {
@@ -4280,11 +4285,11 @@ async function saveItem() {
                 let item = items.find(i => i.id == id);
                 if (item) {
                     item.mainId = mainId; item.subId = subId; item.length = length;
-                    item.weight = weight; item.stock = stock; item.minStock = minStock;
+                    item.weight = weight; item.stock = stock; item.lowStockLimit = lowStockLimit;
                 }
             } else {
                 let newId = result.id;
-                items.push({ id: newId, code: '', mainId, subId, name: '', length, weight, stock, minStock });
+                items.push({ id: newId, code: '', mainId, subId, name: '', length, weight, stock, lowStockLimit });
             }
             resequenceCodes();
             saveData();

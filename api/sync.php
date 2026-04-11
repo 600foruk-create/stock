@@ -26,13 +26,19 @@ try {
                     title VARCHAR(255) NOT NULL,
                     data LONGTEXT NOT NULL
                 )");
+
+                // AUTO-REPAIR: Item Low Stock Limit
+                $itemCols = $conn->query("SHOW COLUMNS FROM items")->fetchAll(PDO::FETCH_COLUMN);
+                if (!in_array('low_stock_limit', $itemCols)) {
+                    $conn->exec("ALTER TABLE items ADD COLUMN low_stock_limit INT DEFAULT NULL");
+                }
             } catch (Exception $e) {}
 
             $data = [
                 'users' => $conn->query("SELECT id, name, username, password, role FROM users")->fetchAll(PDO::FETCH_ASSOC),
                 'mainCategories' => $conn->query("SELECT id, name, code, color, low_stock_limit AS lowStockLimit FROM main_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'subCategories' => $conn->query("SELECT id, main_id AS mainId, name FROM sub_categories")->fetchAll(PDO::FETCH_ASSOC),
-                'items' => $conn->query("SELECT id, main_id AS mainId, sub_id AS subId, name, length, weight, stock FROM items")->fetchAll(PDO::FETCH_ASSOC),
+                'items' => $conn->query("SELECT id, main_id AS mainId, sub_id AS subId, name, length, weight, stock, low_stock_limit AS lowStockLimit FROM items")->fetchAll(PDO::FETCH_ASSOC),
                 'customers' => $conn->query("SELECT id, unique_id AS uniqueId, name, address, mobile, main_id AS mainId, sub_id AS subId FROM customers")->fetchAll(PDO::FETCH_ASSOC),
                 'customerProvinces' => $conn->query("SELECT id, name FROM customer_main_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'customerDistricts' => $conn->query("SELECT id, main_id AS mainId, name FROM customer_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
@@ -76,11 +82,11 @@ try {
         elseif ($action === 'save_item') {
             $item = $input['item'];
             if (isset($item['id']) && !empty($item['id'])) {
-                $stmt = $conn->prepare("UPDATE items SET main_id = ?, sub_id = ?, name = ?, length = ?, weight = ?, stock = ? WHERE id = ?");
-                $stmt->execute([$item['mainId'], $item['subId'], $item['name'] ?? '', $item['length'] ?? 13, $item['weight'] ?? 0, $item['stock'] ?? 0, $item['id']]);
+                $stmt = $conn->prepare("UPDATE items SET main_id = ?, sub_id = ?, name = ?, length = ?, weight = ?, stock = ?, low_stock_limit = ? WHERE id = ?");
+                $stmt->execute([$item['mainId'], $item['subId'], $item['name'] ?? '', $item['length'] ?? 13, $item['weight'] ?? 0, $item['stock'] ?? 0, $item['lowStockLimit'] ?? null, $item['id']]);
             } else {
-                $stmt = $conn->prepare("INSERT INTO items (main_id, sub_id, name, length, weight, stock) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$item['mainId'], $item['subId'], $item['name'] ?? '', $item['length'] ?? 13, $item['weight'] ?? 0, $item['stock'] ?? 0]);
+                $stmt = $conn->prepare("INSERT INTO items (main_id, sub_id, name, length, weight, stock, low_stock_limit) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$item['mainId'], $item['subId'], $item['name'] ?? '', $item['length'] ?? 13, $item['weight'] ?? 0, $item['stock'] ?? 0, $item['lowStockLimit'] ?? null]);
                 $item['id'] = $conn->lastInsertId();
             }
             echo json_encode(['status' => 'success', 'id' => $item['id']]);

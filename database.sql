@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS `items` (
   `length` decimal(10,2) DEFAULT '13.00',
   `weight` decimal(10,2) DEFAULT '0.00',
   `stock` int(11) DEFAULT 0,
+  `low_stock_limit` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`main_id`) REFERENCES `main_categories`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`sub_id`) REFERENCES `sub_categories`(`id`) ON DELETE CASCADE
