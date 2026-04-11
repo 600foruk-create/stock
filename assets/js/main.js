@@ -29,6 +29,7 @@ let rawMaterials = [];
 let storeItems = [];
 let auditSession = {}; // Correctly initialized global session
 let auditRecords = [];
+let systemDateFormat = 'DD-MM-YYYY'; // Default format
 
 // Company Settings
 let companySettings = {
@@ -98,10 +99,18 @@ async function initApp() {
                         } else {
                             companySettings[s.key] = s.value;
                         }
+                    } else if (s.category === 'system') {
+                        if (s.key === 'date_format') {
+                            systemDateFormat = s.value;
+                            window.systemDateFormat = s.value;
+                        }
                     }
                 });
             }
             updateLengthDropdowns();
+            const dateSelect = document.getElementById('systemDateFormat');
+            if (dateSelect) dateSelect.value = systemDateFormat;
+            window.systemDateFormat = systemDateFormat;
 
             // Post-process transactions to match UI expectations
             transactions.forEach(t => {
@@ -574,7 +583,25 @@ function hideLogin() {
 function formatDate(dateString) {
     if (!dateString) return '';
     let date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString().slice(0, 5);
+    return (function() {
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return dateString;
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const monthShort = monthNames[d.getMonth()];
+        const time = d.toLocaleTimeString().slice(0, 5);
+        let formatted = '';
+        switch (window.systemDateFormat || 'DD-MM-YYYY') {
+            case 'DD-MMM-YYYY': formatted = `${day}-${monthShort}-${year}`; break;
+            case 'DD-MM-YYYY': formatted = `${day}-${month}-${year}`; break;
+            case 'DD/MM/YYYY': formatted = `${day}/${month}/${year}`; break;
+            case 'YYYY-MM-DD': formatted = `${year}-${month}-${day}`; break;
+            default: formatted = d.toLocaleDateString();
+        }
+        return formatted + ' ' + time;
+    })();
 }
 
 function filterTable(tableId, searchText) {
@@ -5095,6 +5122,35 @@ function exportProductionReport(format) {
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Production");
         XLSX.writeFile(wb, `Production_Report_${fromDate}_to_${toDate}.xlsx`);
+    }
+}
+
+async function updateDateFormat() {
+    const newFormat = document.getElementById('systemDateFormat').value;
+    if (!newFormat) return;
+    
+    window.systemDateFormat = newFormat;
+    
+    try {
+        const response = await fetch('api/sync.php?action=save_settings', {
+            method: 'POST',
+            body: JSON.stringify({
+                category: 'system',
+                settings: { date_format: newFormat }
+            })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            console.log('StockFlow: Date format updated successfully');
+            // Refresh views
+            refreshTransactions();
+            refreshDashboard();
+            if (typeof refreshOrders === 'function') refreshOrders();
+            refreshStockList();
+            refreshLowStockReport();
+        }
+    } catch (e) {
+        console.error('StockFlow: Failed to save date format:', e);
     }
 }
 

@@ -16,6 +16,22 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="system-settings" style="margin-top:2rem; padding:1.5rem; background:var(--sky-50); border-radius:1rem;">
+                            <h3 style="color:var(--sky-600); margin-bottom:1rem;">⚙️ System Preferences</h3>
+                            <div class="settings-grid">
+                                <div class="form-group">
+                                    <label>Date Format</label>
+                                    <select id="systemDateFormat" class="form-control" onchange="updateDateFormat()">
+                                        <option value="DD-MMM-YYYY">11-Apr-2026 (DD-MMM-YYYY)</option>
+                                        <option value="DD-MM-YYYY">11-04-2026 (DD-MM-YYYY)</option>
+                                        <option value="DD/MM/YYYY">11/04/2026 (DD/MM/YYYY)</option>
+                                        <option value="YYYY-MM-DD">2026-04-11 (YYYY-MM-DD)</option>
+                                    </select>
+                                    <p style="color:var(--gray-500); font-size:0.8rem; margin-top:0.5rem;">Choose how dates appear across the system.</p>
+                                </div>
+                            </div>
+                        </div>
                         <h3 style="color:var(--sky-600); margin:1rem 0;">Brand Low Stock Limits</h3>
                         <div class="brands-lowstock-container" id="brandLowStockSettings"></div>
 

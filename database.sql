@@ -131,7 +131,8 @@ CREATE TABLE IF NOT EXISTS `settings` (
 
 INSERT IGNORE INTO `settings` (`category`, `key`, `value`) VALUES
 ('company', 'name', 'StockFlow'),
-('company', 'logo', '📦');
+('company', 'logo', '📦'),
+('system', 'date_format', 'DD-MM-YYYY');
 
 -- --------------------------------------------------------
 

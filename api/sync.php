@@ -185,9 +185,10 @@ try {
         
         elseif ($action === 'save_settings') {
             $settings = $input['settings'];
+            $category = $input['category'] ?? 'company';
             foreach ($settings as $key => $val) {
-                $stmt = $conn->prepare("INSERT INTO settings (category, `key`, value) VALUES ('company', ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)");
-                $stmt->execute([$key, $val]);
+                $stmt = $conn->prepare("INSERT INTO settings (category, `key`, value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)");
+                $stmt->execute([$category, $key, $val]);
             }
             echo json_encode(['status' => 'success']);
         }
