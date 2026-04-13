@@ -30,6 +30,12 @@
                 <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Select Production Formula</label>
                 <select id="rmOutFormulaSelect" class="form-control" onchange="previewFormulaUsage()" style="padding: 0.6rem 1rem; font-size: 1rem; border: 2px solid var(--sky-200);"></select>
                 <div id="formulaPreview" style="margin-top: 0.5rem; padding: 0.6rem; background: var(--sky-50); border-radius: 6px; font-size: 0.85rem; color: var(--sky-800); border-left: 3px solid var(--sky-400);"></div>
+                
+                <!-- NEW: Editable ingredients list for current batch -->
+                <div id="rmFormulaIngredientsEditor" style="display: none; margin-top: 1rem;">
+                    <h4 style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Edit Quantities for this Batch:</h4>
+                    <div id="rmFormulaIngredientsList" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
@@ -43,8 +49,8 @@
             </div>
         </div>
         
-        <div style="margin-top: 1.5rem;">
-            <button class="btn btn-primary" style="background: var(--error); height: 45px; font-size: 1.1rem; font-weight: 800; border-radius: 8px; box-shadow: 0 4px 0 #b30000; padding: 0 2rem;" onclick="saveRMTransaction('OUT')">CONFIRM CONSUMPTION 📤</button>
+        <div style="margin-top: 1.5rem; padding-bottom: 8px;">
+            <button class="btn btn-primary" style="background: var(--error); height: 45px; font-size: 1.1rem; font-weight: 800; border-radius: 8px; box-shadow: 0 4px 0 #b30000; padding: 0 2rem;" onclick="saveRMTransaction('OUT')">CONFIRM CONSUMPTION</button>
         </div>
     </div>
 

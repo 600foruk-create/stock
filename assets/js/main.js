@@ -5635,6 +5635,11 @@ function editRMFormula(id) {
 }
 
 async function deleteRMFormula(id) {
+    const pwd = prompt('Enter Admin Password to delete formula:');
+    if (pwd !== 'admin123') {
+        if (pwd !== null) alert('Incorrect password!');
+        return;
+    }
     if (!confirm('Are you sure you want to delete this formula? This will not affect past transactions.')) return;
     const response = await fetch('api/sync.php?action=delete_rm_formula', {
         method: 'POST',
@@ -5673,6 +5678,11 @@ function toggleRMOutMode() {
         if (formulaGroup) formulaGroup.style.display = 'block';
         if (qtyLabel) qtyLabel.innerText = 'Multiplier (No. of Batches)';
     }
+    
+    // Hide formula editor initially
+    const editor = document.getElementById('rmFormulaIngredientsEditor');
+    if (editor) editor.style.display = 'none';
+
     refreshRMOutFormControls();
 }
 
@@ -5705,16 +5715,43 @@ function refreshRMOutFormControls() {
 function previewFormulaUsage() {
     const id = document.getElementById('rmOutFormulaSelect').value;
     const preview = document.getElementById('formulaPreview');
-    if (!id) { preview.innerHTML = ''; return; }
+    const editor = document.getElementById('rmFormulaIngredientsEditor');
+    const list = document.getElementById('rmFormulaIngredientsList');
+
+    if (!id) { 
+        if (preview) preview.innerHTML = ''; 
+        if (editor) editor.style.display = 'none';
+        return; 
+    }
     
     const items = rmFormulaItems.filter(fi => fi.formula_id == id);
-    let text = '<strong>Batch Composition:</strong> ';
+    let text = '<strong>Standard Batch:</strong> ';
+    
+    if (list) list.innerHTML = '';
+    
     items.forEach((fi, idx) => {
         const item = rmItems.find(i => i.id == fi.rm_item_id);
-        text += (item ? item.name : 'Unknown') + ' (' + fi.quantity + ')';
+        const name = item ? item.name : 'Unknown';
+        text += `${name} (${fi.quantity})`;
         if (idx < items.length - 1) text += ' + ';
+        
+        // Add to editor
+        if (list) {
+            const row = document.createElement('div');
+            row.style.cssText = 'display: grid; grid-template-columns: 1fr 100px; gap: 10px; align-items: center; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--gray-200);';
+            row.innerHTML = `
+                <span style="font-size: 0.9rem; font-weight: 500;">${name}</span>
+                <input type="number" class="form-control rm-formula-custom-qty" 
+                       data-item-id="${fi.rm_item_id}" 
+                       value="${fi.quantity}" 
+                       style="padding: 4px 8px; font-size: 0.9rem; height: 32px; text-align: right;">
+            `;
+            list.appendChild(row);
+        }
     });
-    preview.innerHTML = text;
+
+    if (preview) preview.innerHTML = text;
+    if (editor) editor.style.display = 'block';
 }
 
 function refreshRMOutHistoryTable() {
@@ -5811,13 +5848,25 @@ async function saveRMTransaction(type) {
         if (!formulaId) { alert('Select a formula'); return; }
         
         const formula = rmFormulas.find(f => f.id == formulaId);
-        const composition = rmFormulaItems.filter(fi => fi.formula_id == formulaId);
         
-        if (!confirm(`Using "${formula.name}" x ${multiplier}. Total of ${composition.length} items will be consumed. Proceed?`)) return;
+        // Collect custom quantities from the editor
+        const customRows = document.querySelectorAll('.rm-formula-custom-qty');
+        const customItems = [];
+        customRows.forEach(input => {
+            const itemId = input.getAttribute('data-item-id');
+            const qty = parseFloat(input.value);
+            if (itemId && !isNaN(qty) && qty > 0) {
+                customItems.push({ itemId, qty });
+            }
+        });
 
-        for (const fi of composition) {
-            const totalQty = fi.quantity * multiplier;
-            await recordSingleRMTransaction(fi.rm_item_id, totalQty, 'OUT', `[Formula: ${formula.name}] ${notes}`);
+        if (customItems.length === 0) { alert('No valid items to consume'); return; }
+        
+        if (!confirm(`Using "${formula.name}" x ${multiplier}. Total of ${customItems.length} items will be consumed with your adjusted quantities. Proceed?`)) return;
+
+        for (const item of customItems) {
+            const totalQty = item.qty * multiplier;
+            await recordSingleRMTransaction(item.itemId, totalQty, 'OUT', `[Formula: ${formula.name}] ${notes}`);
         }
     }
 
