@@ -19,6 +19,7 @@ let rmUnits = [];
 let rmFormulas = [];
 let rmFormulaItems = [];
 let storeItems = [];
+let rmTransactions = [];
 let rmCollapsedIds = new Set();
 
 let auditSession = {}; // Correctly initialized global session
@@ -79,6 +80,7 @@ async function initApp() {
             rmFormulas = d.rmFormulas || [];
             rmFormulaItems = d.rmFormulaItems || [];
             storeItems = d.storeItems || [];
+            rmTransactions = d.rmTransactions || [];
             
             // Sync Audit Session from DB: restore saved counts if they are not currently being edited
             if (d.latestAudit) {
@@ -250,6 +252,8 @@ function loadLocalData() {
         if (savedRM) rawMaterials = JSON.parse(savedRM);
         let savedStore = localStorage.getItem('stock_storeItems');
         if (savedStore) storeItems = JSON.parse(savedStore);
+        let savedRMTrans = localStorage.getItem('stock_rmTransactions');
+        if (savedRMTrans) rmTransactions = JSON.parse(savedRMTrans);
         let savedCompany = localStorage.getItem('stock_company');
         if (savedCompany) companySettings = JSON.parse(savedCompany);
         let savedUsers = localStorage.getItem('stock_users');
@@ -275,6 +279,7 @@ function saveData() {
     localStorage.setItem('stock_subCat', JSON.stringify(subCategories || []));
     localStorage.setItem('stock_rawMaterials', JSON.stringify(rawMaterials || []));
     localStorage.setItem('stock_storeItems', JSON.stringify(storeItems || []));
+    localStorage.setItem('stock_rmTransactions', JSON.stringify(rmTransactions || []));
     localStorage.setItem('stock_usedOrders', JSON.stringify(Array.from(usedCompletedOrders || [])));
     localStorage.setItem('stock_company', JSON.stringify(companySettings));
     localStorage.setItem('stock_users', JSON.stringify(users || []));
@@ -5908,7 +5913,7 @@ async function saveRMTransaction(type) {
         }
     }
 
-    initApp();
+    await initApp();
     
     // Reset Form Fields
     if (type === 'IN') {

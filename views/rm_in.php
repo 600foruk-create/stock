@@ -1,5 +1,5 @@
 <div class="rm-transactions">
-    <h2 style="color: var(--sky-600); margin-bottom: 2rem;">📥 Raw Material IN (Purchases / Stock)</h2>
+
     
     <div class="form-card" style="margin-bottom: 2rem; border-left: 4px solid var(--sky-500); background: #f0f7ff; box-shadow: var(--shadow-md);">
         <div class="settings-grid" style="gap: 0.8rem;">
@@ -20,7 +20,7 @@
         </div>
         
         <div style="margin-top: 2rem; padding-bottom: 10px;">
-            <button class="btn btn-primary" style="background: var(--sky-600); color: white !important; display: block; width: 100%; height: 50px; font-size: 1.2rem; font-weight: 800; border-radius: 10px; box-shadow: 0 4px 0 var(--sky-800); cursor: pointer; transition: 0.2s;" onclick="saveRMTransaction('IN')">CONFIRM STOCK RECEIPT</button>
+            <button class="btn btn-primary" style="background: var(--sky-600); color: white !important; display: inline-block; width: auto; padding: 0.6rem 2.5rem; font-size: 1rem; font-weight: 700; border-radius: 8px; box-shadow: 0 4px 0 var(--sky-800); cursor: pointer; transition: 0.2s;" onclick="saveRMTransaction('IN')">Save</button>
         </div>
     </div>
 
