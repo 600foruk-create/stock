@@ -198,6 +198,7 @@ function showTab(tabName) {
 
     if (tabName === 'dashboard') refreshDashboard();
     if (tabName === 'orders') refreshOrdersList();
+    if (tabName === 'dataEntry') refreshTransactions();
     if (tabName === 'categories') refreshCategoriesView();
     if (tabName === 'stockList') refreshStockList();
     if (tabName === 'customers') refreshCustomersList();
@@ -221,39 +222,6 @@ function showTab(tabName) {
     }
 }
 
-function switchModule(module) {
-    currentModule = module;
-    document.querySelectorAll('.menu-item').forEach(btn => btn.classList.remove('active'));
-    
-    if (module === 'finishGood') {
-        document.querySelectorAll('.menu-item')[0].classList.add('active');
-        document.getElementById('finishGoodTabs').style.display = 'flex';
-        document.getElementById('settingsPanel').style.display = 'none';
-        document.getElementById('rawMaterialsPanel').style.display = 'none';
-        document.getElementById('storePanel').style.display = 'none';
-        showTab('dashboard');
-    } else if (module === 'settings') {
-        document.querySelectorAll('.menu-item')[3].classList.add('active');
-        document.getElementById('finishGoodTabs').style.display = 'none';
-        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-        document.getElementById('settingsPanel').style.display = 'block';
-    } else {
-        // Raw Materials or Store
-        document.getElementById('finishGoodTabs').style.display = 'none';
-        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-        if (module === 'rawMaterials') {
-            document.querySelectorAll('.menu-item')[1].classList.add('active');
-            document.getElementById('rawMaterialsPanel').style.display = 'block';
-            document.getElementById('storePanel').style.display = 'none';
-            document.getElementById('settingsPanel').style.display = 'none';
-        } else if (module === 'store') {
-            document.querySelectorAll('.menu-item')[2].classList.add('active');
-            document.getElementById('storePanel').style.display = 'block';
-            document.getElementById('rawMaterialsPanel').style.display = 'none';
-            document.getElementById('settingsPanel').style.display = 'none';
-        }
-    }
-}
 
 function loadLegacyData() {
     let savedCompany = localStorage.getItem('stock_company');
@@ -638,37 +606,6 @@ function filterTable(tableId, searchText) {
     }
 }
 
-
-    if (currentModule !== 'finishGood') return;
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-    
-    // Find tab by name or case-insensitive search
-    const tabElement = document.getElementById(tabName);
-    if (tabElement) {
-        tabElement.classList.add('active');
-    }
-    
-    // Also update nav buttons active state
-    document.querySelectorAll('.nav-tab').forEach(btn => {
-        if (btn.getAttribute('onclick')?.includes(`'${tabName}'`)) {
-            btn.classList.add('active');
-        }
-    });
-    if (tabName === 'dashboard') refreshDashboard();
-    if (tabName === 'orders') refreshOrdersList();
-    if (tabName === 'dataEntry') {
-        refreshTransactions();
-        refreshCompletedOrderDropdown();
-    }
-    if (tabName === 'categories') refreshCategoriesView();
-    if (tabName === 'customers') refreshCustomersList();
-    if (tabName === 'stockList') refreshStockList();
-    if (tabName === 'audit') refreshAuditList();
-    if (tabName === 'lowStockReport') refreshLowStockReport();
-}
-
-// Customer Functions
 function showAddCustomerModal() {
     document.getElementById('customerModalTitle').textContent = '➕ Add Customer';
     document.getElementById('editCustomerId').value = '';
