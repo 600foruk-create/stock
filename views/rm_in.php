@@ -9,11 +9,8 @@
             </div>
             
             <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Quantity & Unit</label>
-                <div style="display:flex; gap: 0.5rem;">
-                    <input type="number" id="rmInQty" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem; flex: 2;" placeholder="0.00">
-                    <select id="rmInUnitSelect" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem; flex: 1;"></select>
-                </div>
+                <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Quantity (Purchase Amount)</label>
+                <input type="number" id="rmInQty" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem;" placeholder="0.00">
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">

@@ -33,11 +33,8 @@
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
-                <label id="rmOutQtyLabel" style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Quantity & Unit</label>
-                <div style="display:flex; gap: 0.5rem;">
-                    <input type="number" id="rmOutQty" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem; flex: 2;" placeholder="0.00" value="1">
-                    <select id="rmOutUnitSelect" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem; flex: 1;"></select>
-                </div>
+                <label id="rmOutQtyLabel" style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Quantity</label>
+                <input type="number" id="rmOutQty" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem;" placeholder="0.00" value="1">
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
