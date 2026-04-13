@@ -30,12 +30,6 @@
                 <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Select Production Formula</label>
                 <select id="rmOutFormulaSelect" class="form-control" onchange="previewFormulaUsage()" style="padding: 0.6rem 1rem; font-size: 1rem; border: 2px solid var(--sky-200);"></select>
                 <div id="formulaPreview" style="margin-top: 0.5rem; padding: 0.6rem; background: var(--sky-50); border-radius: 6px; font-size: 0.85rem; color: var(--sky-800); border-left: 3px solid var(--sky-400);"></div>
-                
-                <!-- NEW: Editable ingredients list for current batch -->
-                <div id="rmFormulaIngredientsEditor" style="display: none; margin-top: 1rem;">
-                    <h4 style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Edit Quantities for this Batch:</h4>
-                    <div id="rmFormulaIngredientsList" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
-                </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
@@ -48,9 +42,15 @@
                 <input type="text" id="rmOutNotes" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem;" placeholder="Batch #, Order ID...">
             </div>
         </div>
+
+        <!-- NEW: Formula Editor moved OUTSIDE the grid to prevent layout shifts -->
+        <div id="rmFormulaIngredientsEditor" style="display: none; margin-top: 1.5rem; padding: 1.2rem; background: #fffbff; border: 1px dashed var(--error); border-radius: 12px; box-shadow: var(--shadow-sm);">
+            <h4 style="font-size: 0.9rem; color: var(--error); margin-bottom: 1rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; border-bottom: 2px solid var(--error); display: inline-block; padding-bottom: 2px;">🧪 Edit Quantities for this Batch:</h4>
+            <div id="rmFormulaIngredientsList" style="display: flex; flex-direction: column; gap: 0.8rem;"></div>
+        </div>
         
-        <div style="margin-top: 1.5rem; padding-bottom: 8px;">
-            <button class="btn btn-primary" style="background: var(--error); height: 45px; font-size: 1.1rem; font-weight: 800; border-radius: 8px; box-shadow: 0 4px 0 #b30000; padding: 0 2rem;" onclick="saveRMTransaction('OUT')">CONFIRM CONSUMPTION</button>
+        <div style="margin-top: 2rem; padding-bottom: 10px;">
+            <button class="btn btn-primary" style="background: var(--error); color: white !important; display: block; width: 100%; height: 50px; font-size: 1.2rem; font-weight: 800; border-radius: 10px; box-shadow: 0 4px 0 #b30000; cursor: pointer; transition: 0.2s;" onclick="saveRMTransaction('OUT')">CONFIRM CONSUMPTION</button>
         </div>
     </div>
 

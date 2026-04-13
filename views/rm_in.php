@@ -19,8 +19,8 @@
             </div>
         </div>
         
-        <div style="margin-top: 1.5rem; padding-bottom: 8px;">
-            <button class="btn btn-primary" style="background: var(--sky-600); height: 45px; font-size: 1.1rem; font-weight: 800; border-radius: 8px; box-shadow: 0 4px 0 var(--sky-800); padding: 0 2rem;" onclick="saveRMTransaction('IN')">CONFIRM STOCK RECEIPT</button>
+        <div style="margin-top: 2rem; padding-bottom: 10px;">
+            <button class="btn btn-primary" style="background: var(--sky-600); color: white !important; display: block; width: 100%; height: 50px; font-size: 1.2rem; font-weight: 800; border-radius: 10px; box-shadow: 0 4px 0 var(--sky-800); cursor: pointer; transition: 0.2s;" onclick="saveRMTransaction('IN')">CONFIRM STOCK RECEIPT</button>
         </div>
     </div>
 

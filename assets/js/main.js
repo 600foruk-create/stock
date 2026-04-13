@@ -188,6 +188,7 @@ async function initApp() {
         refreshRMFormulas();
         refreshRMInFormControls();
         refreshRMOutFormControls();
+        refreshRMInventoryBalance();
     }
 }
 
@@ -5871,9 +5872,24 @@ async function saveRMTransaction(type) {
     }
 
     initApp();
-    qtyInput.value = (type === 'OUT' && mode === 'FORMULA') ? 1 : '';
-    if (type === 'IN') document.getElementById('rmInNotes').value = '';
-    else document.getElementById('rmOutNotes').value = '';
+    
+    // Reset Form Fields
+    if (type === 'IN') {
+        if (document.getElementById('rmInQty')) document.getElementById('rmInQty').value = '';
+        if (document.getElementById('rmInSelect')) document.getElementById('rmInSelect').value = '';
+        if (document.getElementById('rmInNotes')) document.getElementById('rmInNotes').value = '';
+    } else {
+        if (document.getElementById('rmOutQty')) document.getElementById('rmOutQty').value = '1';
+        if (document.getElementById('rmOutSelect')) document.getElementById('rmOutSelect').value = '';
+        if (document.getElementById('rmOutFormulaSelect')) document.getElementById('rmOutFormulaSelect').value = '';
+        if (document.getElementById('rmOutNotes')) document.getElementById('rmOutNotes').value = '';
+        
+        // Hide formula editor
+        const editor = document.getElementById('rmFormulaIngredientsEditor');
+        if (editor) editor.style.display = 'none';
+        const preview = document.getElementById('formulaPreview');
+        if (preview) preview.innerHTML = '';
+    }
 }
 
 // ==================== RM IN LOGIC ====================
@@ -5960,5 +5976,45 @@ function exportRMInToExcel() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+function refreshRMInventoryBalance() {
+    const tbody = document.getElementById('rmBalanceTable');
+    if (!tbody) return;
+
+    if (!rmItems || rmItems.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--gray-500);">No raw materials found.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '';
+    
+    // Sort items by name for consistent reporting
+    const sortedItems = [...rmItems].sort((a, b) => a.name.localeCompare(b.name));
+
+    sortedItems.forEach(item => {
+        // Calculate flows from transactions
+        const itemTransactions = (typeof rmTransactions !== 'undefined' ? rmTransactions : []).filter(t => t.rm_item_id == item.id);
+        
+        const totalIn = itemTransactions.filter(t => t.type === 'IN').reduce((sum, t) => sum + parseFloat(t.quantity), 0);
+        const totalOut = itemTransactions.filter(t => t.type === 'OUT').reduce((sum, t) => sum + parseFloat(t.quantity), 0);
+        
+        // Base math: Current Stock = Opening + IN - OUT => Opening = Current - IN + OUT
+        const currentStock = parseFloat(item.stock) || 0;
+        const openingStock = currentStock - totalIn + totalOut;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td style="font-weight: 600;">
+                <div>${item.name}</div>
+                <div style="font-size: 0.75rem; color: var(--gray-400); font-weight: normal;">${item.code}</div>
+            </td>
+            <td style="color: var(--gray-600);">${openingStock.toFixed(2)} ${item.unit}</td>
+            <td style="color: var(--success); font-weight: 600;">+${totalIn.toFixed(2)}</td>
+            <td style="color: var(--error); font-weight: 600;">-${totalOut.toFixed(2)}</td>
+            <td style="font-weight: 800; font-size: 1.1rem; color: var(--sky-700); background: var(--sky-50);">${currentStock.toFixed(2)} ${item.unit}</td>
+        `;
+        tbody.appendChild(row);
+    });
 }
 

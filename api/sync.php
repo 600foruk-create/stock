@@ -40,6 +40,7 @@ try {
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_units (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(50) UNIQUE)");
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_formulas (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL)");
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_formula_items (id INT AUTO_INCREMENT PRIMARY KEY, formula_id INT NOT NULL, rm_item_id INT NOT NULL, quantity DECIMAL(15,3) NOT NULL, FOREIGN KEY (formula_id) REFERENCES rm_formulas(id) ON DELETE CASCADE)");
+                $conn->exec("CREATE TABLE IF NOT EXISTS rm_transactions (id INT AUTO_INCREMENT PRIMARY KEY, date DATETIME DEFAULT CURRENT_TIMESTAMP, rm_item_id INT NOT NULL, quantity DECIMAL(15,3) NOT NULL, type ENUM('IN', 'OUT') NOT NULL, notes TEXT, FOREIGN KEY (rm_item_id) REFERENCES rm_items(id))");
             } catch (Exception $e) {}
 
             $data = [
@@ -60,6 +61,7 @@ try {
                 'rmUnits' => $conn->query("SELECT id, name FROM rm_units")->fetchAll(PDO::FETCH_ASSOC),
                 'rmFormulas' => $conn->query("SELECT * FROM rm_formulas")->fetchAll(PDO::FETCH_ASSOC),
                 'rmFormulaItems' => $conn->query("SELECT * FROM rm_formula_items")->fetchAll(PDO::FETCH_ASSOC),
+                'rmTransactions' => $conn->query("SELECT * FROM rm_transactions ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
                 'storeItems' => $conn->query("SELECT id, name, description, stock FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
                 'latestAudit' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id)")->fetchAll(PDO::FETCH_ASSOC),
                 'archivedReports' => $conn->query("SELECT id, date, title FROM audit_reports_archive ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
@@ -135,9 +137,25 @@ try {
 
         elseif ($action === 'save_rm_transaction') {
             $t = $input['transaction'];
-            $stmt = $conn->prepare("INSERT INTO rm_transactions (rm_item_id, quantity, type, notes) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$t['rm_item_id'], $t['quantity'], $t['type'], $t['notes'] ?? '']);
-            echo json_encode(['status' => 'success']);
+            $conn->beginTransaction();
+            try {
+                $stmt = $conn->prepare("INSERT INTO rm_transactions (rm_item_id, quantity, type, notes) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$t['rm_item_id'], $t['quantity'], $t['type'], $t['notes'] ?? '']);
+                
+                // Update stock
+                if ($t['type'] === 'IN') {
+                    $stmt = $conn->prepare("UPDATE rm_items SET stock = stock + ? WHERE id = ?");
+                } else {
+                    $stmt = $conn->prepare("UPDATE rm_items SET stock = stock - ? WHERE id = ?");
+                }
+                $stmt->execute([$t['quantity'], $t['rm_item_id']]);
+                
+                $conn->commit();
+                echo json_encode(['status' => 'success']);
+            } catch (Exception $e) {
+                $conn->rollBack();
+                throw $e;
+            }
         }
 
         elseif ($action === 'save_audit') {
