@@ -408,6 +408,7 @@
         </div>
     </div>
 
+    <!-- Manage Units Modal -->
     <div id="manageRMUnitsModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -432,5 +433,32 @@
                     <tbody id="rmUnitsListTable"></tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    <!-- RM Formula Modal -->
+    <div id="addRMFormulaModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="rmFormulaModalTitle">➕ Add Production Formula</h3>
+                <span class="close-modal" onclick="closeAddRMFormulaModal()">&times;</span>
+            </div>
+            <input type="hidden" id="editRMFormulaId">
+            <div class="form-group">
+                <label>Formula Name (e.g. Master Flex Batch)</label>
+                <input type="text" id="rmFormulaName" class="form-control" placeholder="Enter name...">
+            </div>
+            
+            <div style="margin-top: 1.5rem;">
+                <label style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem;">
+                    <strong>Composition (Select Materials)</strong>
+                    <button class="btn btn-sm btn-outline" onclick="addRMFormulaItemRow()">+ Add Item</button>
+                </label>
+                <div id="rmFormulaItemsContainer" style="max-height: 300px; overflow-y: auto; padding: 0.5rem; border: 1px solid var(--gray-200); border-radius: 6px;">
+                    <!-- Rows will be added dynamically here -->
+                </div>
+            </div>
+            
+            <button class="btn btn-success" onclick="saveRMFormula()" style="width:100%; margin-top: 1.5rem;">Save Formula</button>
         </div>
     </div>

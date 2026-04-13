@@ -1,18 +1,11 @@
 <div class="rm-formulas">
-    <h2 style="color: var(--sky-600); margin-bottom: 1.5rem;">🧪 Production Formulas (Recipes)</h2>
-    <p style="color: var(--gray-500);">Define the quantity of raw materials required to produce each Finish Good item.</p>
-    <div class="table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Finish Good Item</th>
-                    <th>RM Composition</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="rmFormulasTable">
-                <!-- Data populated via JS -->
-            </tbody>
-        </table>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <h2 style="color: var(--sky-600);">🧪 Production Formulas (Recipes)</h2>
+        <button class="btn btn-primary" onclick="showAddRMFormulaModal()">+ Add New Formula</button>
+    </div>
+    <p style="color: var(--gray-500); margin-bottom: 2rem;">Define exactly what materials and quantities are needed for specific production batches.</p>
+    
+    <div id="rmFormulasContainer">
+        <!-- populated by JS -->
     </div>
 </div>

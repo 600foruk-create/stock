@@ -37,7 +37,9 @@ try {
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_main_categories (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL)");
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_sub_categories (id INT AUTO_INCREMENT PRIMARY KEY, main_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL)");
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_items (id INT AUTO_INCREMENT PRIMARY KEY, sub_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL, unit VARCHAR(50), stock DECIMAL(15,3) DEFAULT 0, threshold DECIMAL(15,3) DEFAULT 0)");
-                $conn->exec("CREATE TABLE IF NOT EXISTS rm_units (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL)");
+                $conn->exec("CREATE TABLE IF NOT EXISTS rm_units (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(50) UNIQUE)");
+                $conn->exec("CREATE TABLE IF NOT EXISTS rm_formulas (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL)");
+                $conn->exec("CREATE TABLE IF NOT EXISTS rm_formula_items (id INT AUTO_INCREMENT PRIMARY KEY, formula_id INT NOT NULL, rm_item_id INT NOT NULL, quantity DECIMAL(15,3) NOT NULL, FOREIGN KEY (formula_id) REFERENCES rm_formulas(id) ON DELETE CASCADE)");
             } catch (Exception $e) {}
 
             $data = [
@@ -56,6 +58,8 @@ try {
                 'rmSubCategories' => $conn->query("SELECT id, main_id AS mainId, name, code FROM rm_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'rmItems' => $conn->query("SELECT id, sub_id AS subId, name, code, unit, stock, threshold FROM rm_items")->fetchAll(PDO::FETCH_ASSOC),
                 'rmUnits' => $conn->query("SELECT id, name FROM rm_units")->fetchAll(PDO::FETCH_ASSOC),
+                'rmFormulas' => $conn->query("SELECT * FROM rm_formulas")->fetchAll(PDO::FETCH_ASSOC),
+                'rmFormulaItems' => $conn->query("SELECT * FROM rm_formula_items")->fetchAll(PDO::FETCH_ASSOC),
                 'storeItems' => $conn->query("SELECT id, name, description, stock FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
                 'latestAudit' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id)")->fetchAll(PDO::FETCH_ASSOC),
                 'archivedReports' => $conn->query("SELECT id, date, title FROM audit_reports_archive ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
@@ -497,6 +501,32 @@ try {
         elseif ($action === 'delete_rm_unit') {
             $id = $input['id'];
             $conn->prepare("DELETE FROM rm_units WHERE id = ?")->execute([$id]);
+            echo json_encode(['status' => 'success']);
+        }
+
+        elseif ($action === 'save_rm_formula') {
+            $f = $input['formula'];
+            $items = $input['items'] ?? [];
+            if (!empty($f['id'])) {
+                $stmt = $conn->prepare("UPDATE rm_formulas SET name=? WHERE id=?");
+                $stmt->execute([$f['name'], $f['id']]);
+                $formulaId = $f['id'];
+                $conn->prepare("DELETE FROM rm_formula_items WHERE formula_id=?")->execute([$formulaId]);
+            } else {
+                $stmt = $conn->prepare("INSERT INTO rm_formulas (name) VALUES (?)");
+                $stmt->execute([$f['name']]);
+                $formulaId = $conn->lastInsertId();
+            }
+            foreach ($items as $item) {
+                $stmt = $conn->prepare("INSERT INTO rm_formula_items (formula_id, rm_item_id, quantity) VALUES (?, ?, ?)");
+                $stmt->execute([$formulaId, $item['rm_item_id'], $item['quantity']]);
+            }
+            echo json_encode(['status' => 'success', 'id' => $formulaId]);
+        }
+
+        elseif ($action === 'delete_rm_formula') {
+            $id = $input['id'];
+            $conn->prepare("DELETE FROM rm_formulas WHERE id=?")->execute([$id]);
             echo json_encode(['status' => 'success']);
         }
 

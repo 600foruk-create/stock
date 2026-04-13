@@ -16,6 +16,8 @@ let rmMainCategories = [];
 let rmSubCategories = [];
 let rmItems = [];
 let rmUnits = [];
+let rmFormulas = [];
+let rmFormulaItems = [];
 let storeItems = [];
 let rmCollapsedIds = new Set();
 
@@ -74,6 +76,8 @@ async function initApp() {
             rmSubCategories = d.rmSubCategories || [];
             rmItems = d.rmItems || [];
             rmUnits = d.rmUnits || [];
+            rmFormulas = d.rmFormulas || [];
+            rmFormulaItems = d.rmFormulaItems || [];
             storeItems = d.storeItems || [];
             
             // Sync Audit Session from DB: restore saved counts if they are not currently being edited
@@ -181,6 +185,8 @@ async function initApp() {
         // Raw Material Refreshes
         refreshRMInventory();
         refreshRMDashboard();
+        refreshRMFormulas();
+        refreshRMOutFormControls();
     }
 }
 
@@ -5497,5 +5503,246 @@ async function deleteRMItem(id) {
         body: JSON.stringify({ id })
     });
     if ((await response.json()).status === 'success') initApp();
+}
+
+// ==================== RM FORMULA FUNCTIONS ====================
+
+function refreshRMFormulas() {
+    const container = document.getElementById('rmFormulasContainer');
+    if (!container) return;
+
+    if (rmFormulas.length === 0) {
+        container.innerHTML = '<div class="table-container"><p style="text-align:center; padding:2rem; color:var(--gray-500);">No formulas defined. Click "+ Add New Formula" to start.</p></div>';
+        return;
+    }
+
+    let html = `
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Formula Name</th>
+                    <th>Composition (Ingredients)</th>
+                    <th style="width: 120px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+    rmFormulas.sort((a,b) => a.name.localeCompare(b.name)).forEach(f => {
+        const items = rmFormulaItems.filter(fi => fi.formula_id == f.id);
+        let itemsHtml = '<ul style="margin:0; padding-left: 1.2rem; font-size: 0.85rem; color: var(--gray-700);">';
+        items.forEach(fi => {
+            const item = rmItems.find(i => i.id == fi.rm_item_id);
+            itemsHtml += `<li><strong>${item ? item.name : 'Unknown'}</strong>: ${fi.quantity} ${item ? item.unit : ''}</li>`;
+        });
+        itemsHtml += '</ul>';
+
+        html += `
+        <tr>
+            <td style="font-weight: bold; color: var(--sky-700); font-size: 1.1rem;">${f.name}</td>
+            <td>${itemsHtml}</td>
+            <td style="text-align: center;">
+                <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                    <button class="btn btn-icon" onclick="editRMFormula(${f.id})">✏️</button>
+                    <button class="btn btn-icon text-error" onclick="deleteRMFormula(${f.id})">🗑️</button>
+                </div>
+            </td>
+        </tr>`;
+    });
+
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+}
+
+function showAddRMFormulaModal() {
+    document.getElementById('editRMFormulaId').value = '';
+    document.getElementById('rmFormulaName').value = '';
+    document.getElementById('rmFormulaItemsContainer').innerHTML = '';
+    document.getElementById('rmFormulaModalTitle').innerText = '➕ Add Production Formula';
+    addRMFormulaItemRow(); // start with one row
+    document.getElementById('addRMFormulaModal').style.display = 'block';
+}
+
+function closeAddRMFormulaModal() {
+    document.getElementById('addRMFormulaModal').style.display = 'none';
+}
+
+function addRMFormulaItemRow(data = null) {
+    const container = document.getElementById('rmFormulaItemsContainer');
+    const rowId = 'row_' + Date.now() + Math.random().toString(36).substr(2, 5);
+    
+    const row = document.createElement('div');
+    row.id = rowId;
+    row.className = 'formula-item-row';
+    row.style = 'display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; background: #f8fafc; padding: 0.5rem; border-radius: 4px; border: 1px solid #e2e8f0;';
+
+    let options = '<option value="">-- Select Item --</option>';
+    rmItems.sort((a,b) => a.name.localeCompare(b.name)).forEach(i => {
+        options += `<option value="${i.id}" ${data && data.rm_item_id == i.id ? 'selected' : ''}>${i.name} (${i.unit})</option>`;
+    });
+
+    row.innerHTML = `
+        <select class="form-control rm-item-select" style="flex: 2; font-size: 0.85rem;">${options}</select>
+        <input type="number" class="form-control rm-item-qty" step="0.001" placeholder="Qty" value="${data ? data.quantity : ''}" style="flex: 1; font-size: 0.85rem;">
+        <button class="btn btn-icon text-error" onclick="document.getElementById('${rowId}').remove()">✕</button>
+    `;
+    container.appendChild(row);
+}
+
+async function saveRMFormula() {
+    const id = document.getElementById('editRMFormulaId').value;
+    const name = document.getElementById('rmFormulaName').value.trim();
+    if (!name) { alert('Please enter formula name'); return; }
+
+    const rows = document.querySelectorAll('.formula-item-row');
+    const items = [];
+    rows.forEach(r => {
+        const itemId = r.querySelector('.rm-item-select').value;
+        const qty = r.querySelector('.rm-item-qty').value;
+        if (itemId && qty > 0) {
+            items.push({ rm_item_id: itemId, quantity: qty });
+        }
+    });
+
+    if (items.length === 0) { alert('Add at least one item to formula'); return; }
+
+    const response = await fetch('api/sync.php?action=save_rm_formula', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formula: { id, name }, items })
+    });
+
+    if ((await response.json()).status === 'success') {
+        initApp();
+        closeAddRMFormulaModal();
+    }
+}
+
+function editRMFormula(id) {
+    const f = rmFormulas.find(x => x.id == id);
+    if (!f) return;
+    document.getElementById('editRMFormulaId').value = f.id;
+    document.getElementById('rmFormulaName').value = f.name;
+    document.getElementById('rmFormulaModalTitle').innerText = '✏️ Edit Production Formula';
+    
+    const container = document.getElementById('rmFormulaItemsContainer');
+    container.innerHTML = '';
+    const items = rmFormulaItems.filter(fi => fi.formula_id == f.id);
+    items.forEach(fi => addRMFormulaItemRow(fi));
+    
+    document.getElementById('addRMFormulaModal').style.display = 'block';
+}
+
+async function deleteRMFormula(id) {
+    if (!confirm('Are you sure you want to delete this formula? This will not affect past transactions.')) return;
+    const response = await fetch('api/sync.php?action=delete_rm_formula', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    });
+    if ((await response.json()).status === 'success') initApp();
+}
+
+// ==================== RM OUT LOGIC (FORMULAS) ====================
+
+function toggleRMOutMode() {
+    const mode = document.querySelector('input[name="rmOutMode"]:checked').value;
+    const singleGroup = document.getElementById('rmOutSingleGroup');
+    const formulaGroup = document.getElementById('rmOutFormulaGroup');
+    const qtyLabel = document.getElementById('rmOutQtyLabel');
+
+    if (mode === 'SINGLE') {
+        singleGroup.style.display = 'block';
+        formulaGroup.style.display = 'none';
+        qtyLabel.innerText = 'Quantity';
+    } else {
+        singleGroup.style.display = 'none';
+        formulaGroup.style.display = 'block';
+        qtyLabel.innerText = 'Multiplier (No. of Batches)';
+    }
+    refreshRMOutFormControls();
+}
+
+function refreshRMOutFormControls() {
+    const itemSelect = document.getElementById('rmOutSelect');
+    if (itemSelect) {
+        itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
+        rmItems.sort((a,b) => a.name.localeCompare(b.name)).forEach(i => {
+            const opt = document.createElement('option');
+            opt.value = i.id;
+            opt.innerText = `${i.name} (Stock: ${i.stock} ${i.unit})`;
+            itemSelect.appendChild(opt);
+        });
+    }
+
+    const formulaSelect = document.getElementById('rmOutFormulaSelect');
+    if (formulaSelect) {
+        formulaSelect.innerHTML = '<option value="">-- Select Formula --</option>';
+        rmFormulas.sort((a,b) => a.name.localeCompare(b.name)).forEach(f => {
+            const opt = document.createElement('option');
+            opt.value = f.id;
+            opt.innerText = f.name;
+            formulaSelect.appendChild(opt);
+        });
+    }
+}
+
+function previewFormulaUsage() {
+    const id = document.getElementById('rmOutFormulaSelect').value;
+    const preview = document.getElementById('formulaPreview');
+    if (!id) { preview.innerHTML = ''; return; }
+    
+    const items = rmFormulaItems.filter(fi => fi.formula_id == id);
+    let text = 'Contains: ';
+    items.forEach((fi, idx) => {
+        const item = rmItems.find(i => i.id == fi.rm_item_id);
+        text += (item ? item.name : 'Unknown') + ' (' + fi.quantity + ')';
+        if (idx < items.length - 1) text += ' + ';
+    });
+    preview.innerHTML = `<i class="text-sky-600">${text}</i>`;
+}
+
+// Process RM Transaction
+async function saveRMTransaction(type) {
+    const mode = type === 'OUT' ? (document.querySelector('input[name="rmOutMode"]:checked')?.value || 'SINGLE') : 'SINGLE';
+    const notes = type === 'IN' ? document.getElementById('rmInNotes').value : document.getElementById('rmOutNotes').value;
+    const qtyInput = type === 'IN' ? document.getElementById('rmInQty') : document.getElementById('rmOutQty');
+    const multiplier = parseFloat(qtyInput.value);
+
+    if (isNaN(multiplier) || multiplier <= 0) { alert('Enter a valid quantity'); return; }
+
+    if (mode === 'SINGLE') {
+        const itemId = type === 'IN' ? document.getElementById('rmInSelect').value : document.getElementById('rmOutSelect').value;
+        if (!itemId) { alert('Select a material'); return; }
+        
+        await recordSingleRMTransaction(itemId, multiplier, type, notes);
+    } else {
+        // Formula Mode
+        const formulaId = document.getElementById('rmOutFormulaSelect').value;
+        if (!formulaId) { alert('Select a formula'); return; }
+        
+        const formula = rmFormulas.find(f => f.id == formulaId);
+        const composition = rmFormulaItems.filter(fi => fi.formula_id == formulaId);
+        
+        if (!confirm(`Using "${formula.name}" x ${multiplier}. Total of ${composition.length} items will be consumed. Proceed?`)) return;
+
+        for (const fi of composition) {
+            const totalQty = fi.quantity * multiplier;
+            await recordSingleRMTransaction(fi.rm_item_id, totalQty, 'OUT', `[Formula: ${formula.name}] ${notes}`);
+        }
+    }
+
+    initApp();
+    qtyInput.value = (type === 'OUT' && mode === 'FORMULA') ? 1 : '';
+    if (type === 'IN') document.getElementById('rmInNotes').value = '';
+    else document.getElementById('rmOutNotes').value = '';
+}
+
+async function recordSingleRMTransaction(itemId, qty, type, notes) {
+    await fetch('api/sync.php?action=save_rm_transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transaction: { rm_item_id: itemId, quantity: qty, type, notes } })
+    });
 }
 
