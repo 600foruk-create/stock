@@ -5574,12 +5574,12 @@ function refreshRMFormulas() {
 
     rmFormulas.sort((a,b) => a.name.localeCompare(b.name)).forEach(f => {
         const items = rmFormulaItems.filter(fi => fi.formula_id == f.id);
-        let itemsHtml = '<ul style="margin:0; padding-left: 1.2rem; font-size: 0.85rem; color: var(--gray-700);">';
+        let itemsHtml = '<ol style="margin:0; padding-left: 1.2rem; font-size: 0.85rem; color: var(--gray-700);">';
         items.forEach(fi => {
             const item = rmItems.find(i => i.id == fi.rm_item_id);
             itemsHtml += `<li><strong>${item ? item.name : 'Unknown'}</strong>: ${fi.quantity} ${item ? item.unit : ''}</li>`;
         });
-        itemsHtml += '</ul>';
+        itemsHtml += '</ol>';
 
         html += `
         <tr>
