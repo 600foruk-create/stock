@@ -186,6 +186,7 @@ async function initApp() {
         refreshRMInventory();
         refreshRMDashboard();
         refreshRMFormulas();
+        refreshRMInFormControls();
         refreshRMOutFormControls();
     }
 }
@@ -5645,6 +5646,18 @@ async function deleteRMFormula(id) {
 
 // ==================== RM OUT LOGIC (FORMULAS) ====================
 
+function setRMOutMode(mode) {
+    // Update Radio
+    const radio = document.querySelector(`input[name="rmOutMode"][value="${mode}"]`);
+    if (radio) radio.checked = true;
+    
+    // Update UI Classes
+    document.querySelectorAll('.mode-toggle-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`modeBtn_${mode}`).classList.add('active');
+    
+    toggleRMOutMode();
+}
+
 function toggleRMOutMode() {
     const mode = document.querySelector('input[name="rmOutMode"]:checked').value;
     const singleGroup = document.getElementById('rmOutSingleGroup');
@@ -5652,13 +5665,13 @@ function toggleRMOutMode() {
     const qtyLabel = document.getElementById('rmOutQtyLabel');
 
     if (mode === 'SINGLE') {
-        singleGroup.style.display = 'block';
-        formulaGroup.style.display = 'none';
-        qtyLabel.innerText = 'Quantity';
+        if (singleGroup) singleGroup.style.display = 'block';
+        if (formulaGroup) formulaGroup.style.display = 'none';
+        if (qtyLabel) qtyLabel.innerText = 'Quantity (Single Item)';
     } else {
-        singleGroup.style.display = 'none';
-        formulaGroup.style.display = 'block';
-        qtyLabel.innerText = 'Multiplier (No. of Batches)';
+        if (singleGroup) singleGroup.style.display = 'none';
+        if (formulaGroup) formulaGroup.style.display = 'block';
+        if (qtyLabel) qtyLabel.innerText = 'Multiplier (No. of Batches)';
     }
     refreshRMOutFormControls();
 }
@@ -5666,7 +5679,7 @@ function toggleRMOutMode() {
 function refreshRMOutFormControls() {
     const itemSelect = document.getElementById('rmOutSelect');
     if (itemSelect) {
-        itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
+        itemSelect.innerHTML = '<option value="">-- Select Material --</option>';
         rmItems.sort((a,b) => a.name.localeCompare(b.name)).forEach(i => {
             const opt = document.createElement('option');
             opt.value = i.id;
@@ -5677,7 +5690,7 @@ function refreshRMOutFormControls() {
 
     const formulaSelect = document.getElementById('rmOutFormulaSelect');
     if (formulaSelect) {
-        formulaSelect.innerHTML = '<option value="">-- Select Formula --</option>';
+        formulaSelect.innerHTML = '<option value="">-- Select Production Formula --</option>';
         rmFormulas.sort((a,b) => a.name.localeCompare(b.name)).forEach(f => {
             const opt = document.createElement('option');
             opt.value = f.id;
@@ -5685,6 +5698,8 @@ function refreshRMOutFormControls() {
             formulaSelect.appendChild(opt);
         });
     }
+    
+    refreshRMOutHistoryTable();
 }
 
 function previewFormulaUsage() {
@@ -5693,13 +5708,87 @@ function previewFormulaUsage() {
     if (!id) { preview.innerHTML = ''; return; }
     
     const items = rmFormulaItems.filter(fi => fi.formula_id == id);
-    let text = 'Contains: ';
+    let text = '<strong>Batch Composition:</strong> ';
     items.forEach((fi, idx) => {
         const item = rmItems.find(i => i.id == fi.rm_item_id);
         text += (item ? item.name : 'Unknown') + ' (' + fi.quantity + ')';
         if (idx < items.length - 1) text += ' + ';
     });
-    preview.innerHTML = `<i class="text-sky-600">${text}</i>`;
+    preview.innerHTML = text;
+}
+
+function refreshRMOutHistoryTable() {
+    const tbody = document.getElementById('rmOutTable');
+    if (!tbody) return;
+    
+    const consumption = rmTransactions.filter(t => t.type === 'OUT').sort((a,b) => b.id - a.id).slice(0, 50);
+    tbody.innerHTML = '';
+    
+    consumption.forEach(t => {
+        const item = rmItems.find(i => i.id == t.rm_item_id);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${t.date ? t.date.split(' ')[0] : '---'}</td>
+            <td style="font-weight: 600;">${item ? item.name : 'Unknown'}</td>
+            <td><span class="badge" style="background: #fff5f5; color: var(--error); border: 1px solid #feb2b2;">CONSUMPTION</span></td>
+            <td style="font-weight: bold;">${t.quantity} ${item ? item.unit : ''}</td>
+            <td style="color: var(--gray-500); font-style: italic; font-size: 0.85rem;">${t.notes || ''}</td>
+            <td style="text-align: center;">
+                <button class="btn btn-icon text-error" onclick="deleteRMTransaction(${t.id})" title="Delete Record">🗑️</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+async function deleteRMTransaction(id) {
+    if (!confirm('Are you sure you want to delete this specific history record?')) return;
+    const response = await fetch('api/sync.php?action=delete_transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    });
+    if ((await response.json()).status === 'success') {
+        initApp();
+    }
+}
+
+async function deleteAllRMOutHistory() {
+    if (!confirm('🛑 WARNING: This will permanently delete ALL Consumption (OUT) history. Current stock levels will NOT be changed. Do you want to proceed?')) return;
+    
+    const response = await fetch('api/sync.php?action=delete_all_rm_transactions_out', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if ((await response.json()).status === 'success') {
+        initApp();
+    }
+}
+
+function exportRMOutToExcel() {
+    const consumption = rmTransactions.filter(t => t.type === 'OUT').sort((a,b) => b.id - a.id);
+    if (consumption.length === 0) { alert('No consumption history to export.'); return; }
+
+    let csv = 'Date,Material,Type,Quantity,Unit,Notes\n';
+    consumption.forEach(t => {
+        const item = rmItems.find(i => i.id == t.rm_item_id);
+        const date = t.date ? t.date.split(' ')[0] : '---';
+        const name = item ? item.name : 'Unknown';
+        const unit = item ? item.unit : '';
+        const notes = (t.notes || '').replace(/,/g, ' '); // simple sanitization
+        csv += `${date},${name},CONSUMPTION,${t.quantity},${unit},${notes}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `RM_Consumption_History_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 // Process RM Transaction
@@ -5738,11 +5827,89 @@ async function saveRMTransaction(type) {
     else document.getElementById('rmOutNotes').value = '';
 }
 
+// ==================== RM IN LOGIC ====================
+
+function refreshRMInFormControls() {
+    const itemSelect = document.getElementById('rmInSelect');
+    if (itemSelect) {
+        itemSelect.innerHTML = '<option value="">-- Select Material --</option>';
+        rmItems.sort((a,b) => a.name.localeCompare(b.name)).forEach(i => {
+            const opt = document.createElement('option');
+            opt.value = i.id;
+            opt.innerText = `${i.name} (Current: ${i.stock} ${i.unit})`;
+            itemSelect.appendChild(opt);
+        });
+    }
+    refreshRMInHistoryTable();
+}
+
+function refreshRMInHistoryTable() {
+    const tbody = document.getElementById('rmInTable');
+    if (!tbody) return;
+    
+    const purchases = rmTransactions.filter(t => t.type === 'IN').sort((a,b) => b.id - a.id).slice(0, 50);
+    tbody.innerHTML = '';
+    
+    purchases.forEach(t => {
+        const item = rmItems.find(i => i.id == t.rm_item_id);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${t.date ? t.date.split(' ')[0] : '---'}</td>
+            <td style="font-weight: 600;">${item ? item.name : 'Unknown'}</td>
+            <td><span class="badge" style="background: #f0f7ff; color: var(--sky-600); border: 1px solid var(--sky-200);">STOCKED</span></td>
+            <td style="font-weight: bold; color: var(--success); font-size: 1.1rem;">+${t.quantity} ${item ? item.unit : ''}</td>
+            <td style="color: var(--gray-500); font-style: italic; font-size: 0.85rem;">${t.notes || ''}</td>
+            <td style="text-align: center;">
+                <button class="btn btn-icon text-error" onclick="deleteRMTransaction(${t.id})" title="Delete Record">🗑️</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+async function deleteAllRMInHistory() {
+    if (!confirm('🛑 WARNING: This will permanently delete ALL Purchase (IN) history. Stock levels will NOT be changed. Continue?')) return;
+    
+    const response = await fetch('api/sync.php?action=delete_all_rm_transactions_in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if ((await response.json()).status === 'success') {
+        initApp();
+    }
+}
+
 async function recordSingleRMTransaction(itemId, qty, type, notes) {
     await fetch('api/sync.php?action=save_rm_transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transaction: { rm_item_id: itemId, quantity: qty, type, notes } })
     });
+}
+
+function exportRMInToExcel() {
+    const purchases = rmTransactions.filter(t => t.type === 'IN').sort((a,b) => b.id - a.id);
+    if (purchases.length === 0) { alert('No purchase history to export.'); return; }
+
+    let csv = 'Date,Material,Type,QuantityReceived,Unit,Notes\n';
+    purchases.forEach(t => {
+        const item = rmItems.find(i => i.id == t.rm_item_id);
+        const date = t.date ? t.date.split(' ')[0] : '---';
+        const name = item ? item.name : 'Unknown';
+        const unit = item ? item.unit : '';
+        const notes = (t.notes || '').replace(/,/g, ' ');
+        csv += `${date},${name},STOCKED,${t.quantity},${unit},${notes}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `RM_Purchase_History_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 

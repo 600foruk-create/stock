@@ -1,55 +1,88 @@
 <div class="rm-transactions">
-    <h2 style="color: var(--error); margin-bottom: 1.5rem;">📤 Raw Material OUT (Consumption / Production)</h2>
+    <h2 style="color: var(--error); margin-bottom: 2rem;">📤 Raw Material OUT (Consumption / Production)</h2>
     
-    <div class="form-card" style="margin-bottom: 2rem; border-left: 4px solid var(--error); background: #fff5f5;">
-        <div style="margin-bottom: 1.5rem; display: flex; gap: 2rem; font-weight: 600;">
-            <label style="cursor: pointer;"><input type="radio" name="rmOutMode" value="SINGLE" checked onclick="toggleRMOutMode()"> Single Item</label>
-            <label style="cursor: pointer;"><input type="radio" name="rmOutMode" value="FORMULA" onclick="toggleRMOutMode()"> Use Production Formula</label>
+    <div class="form-card" style="margin-bottom: 2rem; border-left: 4px solid var(--error); background: #fffdfd; box-shadow: var(--shadow-md);">
+        <!-- Segmented Control Style Toggles -->
+        <div style="margin-bottom: 2rem; display: flex; background: var(--gray-100); padding: 5px; border-radius: 12px; max-width: 500px; border: 1px solid var(--gray-200);">
+            <label style="flex: 1;">
+                <input type="radio" name="rmOutMode" value="SINGLE" checked onclick="toggleRMOutMode()" style="display: none;">
+                <div class="mode-toggle-btn active" id="modeBtn_SINGLE" onclick="setRMOutMode('SINGLE')" style="text-align:center; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 700; transition: 0.3s; font-size: 1rem;">
+                    📦 Single Item
+                </div>
+            </label>
+            <label style="flex: 1;">
+                <input type="radio" name="rmOutMode" value="FORMULA" onclick="toggleRMOutMode()" style="display: none;">
+                <div class="mode-toggle-btn" id="modeBtn_FORMULA" onclick="setRMOutMode('FORMULA')" style="text-align:center; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 700; transition: 0.3s; font-size: 1rem;">
+                    🧪 Use Formula
+                </div>
+            </label>
         </div>
 
-        <div class="settings-grid">
+        <div class="settings-grid" style="gap: 1.5rem;">
             <!-- Single Item Mode -->
             <div id="rmOutSingleGroup" class="form-group">
-                <label>Select Raw Material</label>
-                <select id="rmOutSelect" class="form-control"></select>
+                <label style="font-weight: 700; color: var(--gray-700);">Select Raw Material</label>
+                <select id="rmOutSelect" class="form-control" style="height: 45px; font-size: 1rem;"></select>
             </div>
             
             <!-- Formula Mode -->
             <div id="rmOutFormulaGroup" class="form-group" style="display: none;">
-                <label>Select Formula</label>
-                <select id="rmOutFormulaSelect" class="form-control" onchange="previewFormulaUsage()"></select>
-                <div id="formulaPreview" style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--gray-600);"></div>
+                <label style="font-weight: 700; color: var(--gray-700);">Select Production Formula</label>
+                <select id="rmOutFormulaSelect" class="form-control" onchange="previewFormulaUsage()" style="height: 45px; font-size: 1rem; border: 2px solid var(--sky-200);"></select>
+                <div id="formulaPreview" style="margin-top: 0.8rem; padding: 0.8rem; background: var(--sky-50); border-radius: 6px; font-size: 0.9rem; color: var(--sky-800); border-left: 3px solid var(--sky-400);"></div>
             </div>
 
             <div class="form-group">
-                <label id="rmOutQtyLabel">Quantity (Kg/Bags/etc.)</label>
-                <input type="number" id="rmOutQty" class="form-control" placeholder="0.00" value="1">
+                <label id="rmOutQtyLabel" style="font-weight: 700; color: var(--gray-700);">Quantity</label>
+                <input type="number" id="rmOutQty" class="form-control" style="height: 45px; font-size: 1rem;" placeholder="0.00" value="1">
             </div>
 
             <div class="form-group">
-                <label>Reference / Notes</label>
-                <input type="text" id="rmOutNotes" class="form-control" placeholder="Consumption Batch #, Order ID, etc.">
+                <label style="font-weight: 700; color: var(--gray-700);">Reference / Notes</label>
+                <input type="text" id="rmOutNotes" class="form-control" style="height: 45px; font-size: 1rem;" placeholder="Batch #, Order ID...">
             </div>
         </div>
         
-        <div style="margin-top: 1rem;">
-            <button class="btn btn-primary" style="background: var(--error); width: 200px;" onclick="saveRMTransaction('OUT')">Confirm RM OUT</button>
+        <div style="margin-top: 2rem;">
+            <button class="btn btn-primary" style="background: var(--error); height: 50px; font-size: 1.1rem; font-weight: 800; border-radius: 8px; box-shadow: 0 4px 0 #b30000;" onclick="saveRMTransaction('OUT')">CONFIRM CONSUMPTION 📤</button>
         </div>
     </div>
 
     <div class="table-container">
-        <h3>Recent Consumption History</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3 style="margin: 0; color: var(--gray-800);">Recent Consumption History</h3>
+            <div style="display: flex; gap: 0.8rem;">
+                <button class="btn" style="background: #27ae60; color: white; display: flex; align-items: center; gap: 5px;" onclick="exportRMOutToExcel()">
+                    <span>📊 Export Excel</span>
+                </button>
+                <button class="btn btn-danger" style="display: flex; align-items: center; gap: 5px;" onclick="deleteAllRMOutHistory()">
+                    <span>🗑️ Delete All</span>
+                </button>
+            </div>
+        </div>
         <table class="data-table">
             <thead>
                 <tr>
                     <th>Date</th>
                     <th>Material / Formula</th>
                     <th>Type</th>
-                    <th>Quantity/Multiplier</th>
+                    <th>Qty / Multiplier</th>
                     <th>Notes</th>
+                    <th style="width: 80px; text-align: center;">Action</th>
                 </tr>
             </thead>
             <tbody id="rmOutTable"></tbody>
         </table>
     </div>
 </div>
+
+<style>
+.mode-toggle-btn.active {
+    background: white;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    color: var(--error);
+}
+.mode-toggle-btn:not(.active):hover {
+    background: var(--gray-200);
+}
+</style>

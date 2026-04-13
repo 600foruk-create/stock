@@ -128,6 +128,18 @@ try {
             } else { echo json_encode(['status' => 'error', 'message' => 'Cannot delete this user']); }
         }
 
+        elseif ($action === 'delete_all_rm_transactions_in') {
+            $conn->exec("DELETE FROM rm_transactions WHERE type = 'IN'");
+            echo json_encode(['status' => 'success']);
+        }
+
+        elseif ($action === 'save_rm_transaction') {
+            $t = $input['transaction'];
+            $stmt = $conn->prepare("INSERT INTO rm_transactions (rm_item_id, quantity, type, notes) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$t['rm_item_id'], $t['quantity'], $t['type'], $t['notes'] ?? '']);
+            echo json_encode(['status' => 'success']);
+        }
+
         elseif ($action === 'save_audit') {
             $auditRecords = $input['records'];
             $conn->beginTransaction();
@@ -527,6 +539,16 @@ try {
         elseif ($action === 'delete_rm_formula') {
             $id = $input['id'];
             $conn->prepare("DELETE FROM rm_formulas WHERE id=?")->execute([$id]);
+            echo json_encode(['status' => 'success']);
+        }
+
+        elseif ($action === 'delete_all_rm_transactions_out') {
+            $conn->prepare("DELETE FROM rm_transactions WHERE type='OUT'")->execute();
+            echo json_encode(['status' => 'success']);
+        }
+
+        elseif ($action === 'delete_all_rm_transactions_in') {
+            $conn->prepare("DELETE FROM rm_transactions WHERE type='IN'")->execute();
             echo json_encode(['status' => 'success']);
         }
 
