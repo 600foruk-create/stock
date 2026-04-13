@@ -5110,19 +5110,8 @@ function refreshRMDashboard() {
     console.log('StockFlow: Refreshing RM Dashboard...');
     const totalItems = rmItems.length;
     let lowStockCount = 0;
-    let totalValue = 0;
     
-    let summaryHtml = `
-        <table class="data-table" style="width: 100%; border-collapse: separate; border-spacing: 0;">
-            <thead>
-                <tr style="background: var(--gray-50); position: sticky; top: 0; z-index: 10;">
-                    <th style="padding: 10px; text-align: left; font-size: 0.8rem; color: var(--gray-600); border-bottom: 2px solid var(--gray-100);">Material Name</th>
-                    <th style="padding: 10px; text-align: center; font-size: 0.8rem; color: var(--gray-600); border-bottom: 2px solid var(--gray-100);">Available Stock</th>
-                    <th style="padding: 10px; text-align: right; font-size: 0.8rem; color: var(--gray-600); border-bottom: 2px solid var(--gray-100);">Unit</th>
-                </tr>
-            </thead>
-            <tbody>`;
-            
+    let summaryHtml = '';
     let alertsHtml = '';
 
     rmItems.forEach(item => {
@@ -5130,6 +5119,19 @@ function refreshRMDashboard() {
         const threshold = parseFloat(item.threshold) || 0;
         const isLow = stock <= threshold;
         
+        // Inventory Summary Cards
+        summaryHtml += `
+            <div style="background: white; border: 1px solid var(--gray-100); padding: 12px 15px; border-radius: 12px; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: 0.2s; border-left: 4px solid var(--sky-400);">
+                <div>
+                    <div style="font-weight: 700; color: var(--gray-800); font-size: 1rem;">${item.name}</div>
+                    <div style="font-size: 0.8rem; color: var(--gray-500); margin-top: 2px;">Item Code: ${item.code}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 800; color: var(--sky-700); font-size: 1.1rem;">${stock.toLocaleString()}</div>
+                    <div style="font-size: 0.75rem; font-weight: 600; color: var(--gray-400); text-transform: uppercase;">${item.unit}</div>
+                </div>
+            </div>`;
+
         if (isLow) {
             lowStockCount++;
             alertsHtml += `
@@ -5141,24 +5143,14 @@ function refreshRMDashboard() {
                     <div style="background: #fc8181; color: white; padding: 4px 10px; border-radius: 50px; font-weight: 800; font-size: 0.8rem;">REORDER</div>
                 </div>`;
         }
-        
-        summaryHtml += `
-            <tr style="border-bottom: 1px solid var(--gray-50);">
-                <td style="padding: 12px 10px; font-weight: 600; color: var(--gray-800); font-size: 0.9rem;">${item.name}</td>
-                <td style="padding: 12px 10px; text-align: center;">
-                    <span style="font-weight: 800; color: ${isLow ? 'var(--error)' : 'var(--sky-600)'}; font-size: 1rem;">${stock.toLocaleString()}</span>
-                </td>
-                <td style="padding: 12px 10px; text-align: right; color: var(--gray-500); font-weight: 600;">${item.unit}</td>
-            </tr>`;
     });
 
-    summaryHtml += `</tbody></table>`;
     if (rmItems.length === 0) summaryHtml = '<div style="text-align: center; padding: 3rem; color: var(--gray-400);">No materials found in inventory.</div>';
     if (!alertsHtml) alertsHtml = '<div style="text-align: center; padding: 3rem; color: var(--gray-400); font-style: italic;">✅ All stocks are healthy.</div>';
 
     if (document.getElementById('rmTotalItems')) document.getElementById('rmTotalItems').innerText = totalItems;
     if (document.getElementById('rmLowStockCount')) document.getElementById('rmLowStockCount').innerText = lowStockCount;
-    if (document.getElementById('rmStockValuation')) document.getElementById('rmStockValuation').innerText = 'Rs. ' + totalValue.toLocaleString();
+    // Note: Valuation card was removed from UI so we don't need to update it
     
     if (document.getElementById('rmInventorySummary')) document.getElementById('rmInventorySummary').innerHTML = summaryHtml;
     if (document.getElementById('rmLowStockAlerts')) document.getElementById('rmLowStockAlerts').innerHTML = alertsHtml;
