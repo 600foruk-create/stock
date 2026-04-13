@@ -17,6 +17,7 @@ let rmSubCategories = [];
 let rmItems = [];
 let rmUnits = [];
 let storeItems = [];
+let rmCollapsedIds = new Set();
 
 let auditSession = {}; // Correctly initialized global session
 let auditRecords = [];
@@ -5119,85 +5120,103 @@ function refreshRMInventory() {
     if (!container) return;
 
     if (rmMainCategories.length === 0) {
-        container.innerHTML = '<div class="table-container"><p style="text-align:center; padding:2rem; color:var(--gray-500);">No RM Brands established. Start by adding a Brand.</p></div>';
+        container.innerHTML = '<div class="table-container"><p style="text-align:center; padding:2rem; color:var(--gray-500);">No RM Categories established. Start by adding a Main Category.</p></div>';
         return;
     }
 
     let html = '';
     rmMainCategories.sort((a,b) => a.code.localeCompare(b.code)).forEach(main => {
+        const isCollapsed = rmCollapsedIds.has(`main_${main.id}`);
         html += `
-        <div class="brand-group" style="margin-bottom: 2rem; border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden;">
-            <div class="brand-header" style="background: var(--gray-50); padding: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gray-200);">
-                <div>
-                    <span style="font-weight: bold; color: var(--sky-700); font-size: 1.1rem;">${main.name}</span>
-                    <span style="margin-left: 1rem; background: var(--sky-100); color: var(--sky-700); padding: 2px 8px; border-radius: 4px; font-family: monospace;">${main.code}</span>
+        <div class="brand-group" style="margin-bottom: 1.5rem; border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; background: white; box-shadow: var(--shadow-sm);">
+            <div class="brand-header" style="background: var(--gray-50); padding: 0.8rem 1.2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gray-200); cursor: pointer;" onclick="toggleRMCollapse('main_${main.id}')">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span style="font-size: 1.2rem;">${isCollapsed ? '📁' : '📂'}</span>
+                    <div>
+                        <div style="font-weight: bold; color: var(--sky-700); font-size: 1.1rem;">${main.name}</div>
+                        <div style="color: var(--gray-500); font-family: monospace; font-size: 0.85rem;">${main.code}</div>
+                    </div>
                 </div>
-                <div class="actions">
-                    <button class="btn btn-sm" onclick="showAddRMSubCategoryModal(${main.id})" title="Add Sub-Category">➕ Sub</button>
-                    <button class="btn btn-sm" onclick="editRMMain(${main.id})" title="Edit Brand">✏️</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteRMMain(${main.id})" title="Delete Brand">🗑️</button>
+                <div class="actions" style="display: flex; gap: 0.5rem;" onclick="event.stopPropagation()">
+                    <button class="btn btn-sm btn-outline" onclick="showAddRMSubCategoryModal(${main.id})" title="Add Sub-Category">➕ Sub</button>
+                    <button class="btn btn-sm btn-outline" onclick="editRMMain(${main.id})" title="Edit Category">✏️</button>
+                    <button class="btn btn-sm btn-outline text-error" onclick="deleteRMMain(${main.id})" title="Delete Category">🗑️</button>
                 </div>
             </div>
-            <div class="sub-categories-list" style="padding: 1rem;">`;
+            <div class="sub-categories-list" style="padding: 1rem; ${isCollapsed ? 'display: none;' : ''}">`;
 
         const subs = rmSubCategories.filter(s => s.mainId == main.id).sort((a,b) => a.code.localeCompare(b.code));
         if (subs.length === 0) {
-            html += `<p style="color: var(--gray-400); font-style: italic; font-size: 0.9rem;">No sub-categories in this brand.</p>`;
+            html += `<p style="color: var(--gray-400); font-style: italic; font-size: 0.9rem; padding: 0.5rem;">No sub-categories in this category.</p>`;
         } else {
             subs.forEach(sub => {
+                const isSubCollapsed = rmCollapsedIds.has(`sub_${sub.id}`);
                 html += `
-                <div class="sub-category-item" style="margin-bottom: 1rem; padding: 1rem; background: white; border: 1px solid var(--gray-100); border-radius: 6px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <div>
-                            <span style="font-weight: 600; color: var(--gray-800);">${sub.name}</span>
-                            <span style="margin-left: 0.5rem; color: var(--gray-500); font-family: monospace; font-size: 0.85rem;">${sub.code}</span>
+                <div class="sub-category-item" style="margin-bottom: 1rem; border: 1px solid var(--gray-100); border-radius: 6px; background: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; background: var(--gray-25); border-bottom: 1px solid var(--gray-50); cursor: pointer;" onclick="toggleRMCollapse('sub_${sub.id}')">
+                        <div style="display: flex; align-items: center; gap: 0.8rem;">
+                            <span style="color: var(--gray-400);">${isSubCollapsed ? '➕' : '➖'}</span>
+                            <span style="font-weight: 600; color: var(--gray-800); font-size: 1rem;">${sub.name}</span>
+                            <span style="color: var(--gray-500); font-family: monospace; font-size: 0.85rem;">${sub.code}</span>
                         </div>
-                        <div class="actions">
-                            <button class="btn btn-sm btn-outline" onclick="showAddRMItemModal(${sub.id})" title="Add Item">➕ Item</button>
-                            <button class="btn btn-icon" onclick="editRMSub(${sub.id})">✏️</button>
-                            <button class="btn btn-icon text-error" onclick="deleteRMSub(${sub.id})">🗑️</button>
+                        <div class="actions" style="display: flex; gap: 0.4rem;" onclick="event.stopPropagation()">
+                            <button class="btn btn-sm" style="padding: 2px 8px; font-size: 0.8rem;" onclick="showAddRMItemModal(${sub.id})" title="Add Item">➕ Item</button>
+                            <button class="btn btn-icon btn-sm" onclick="editRMSub(${sub.id})">✏️</button>
+                            <button class="btn btn-icon btn-sm text-error" onclick="deleteRMSub(${sub.id})">🗑️</button>
                         </div>
                     </div>
-                    <table class="data-table" style="font-size: 0.9rem;">
-                        <thead>
-                            <tr>
-                                <th>Item Name</th>
-                                <th>Code</th>
-                                <th>Stock</th>
-                                <th>Unit</th>
-                                <th>Threshold</th>
-                                <th style="width: 80px;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
+                    <div style="${isSubCollapsed ? 'display: none;' : ''}">
+                        <table class="data-table" style="font-size: 0.9rem; margin: 0; border: none;">
+                            <thead>
+                                <tr style="background: var(--gray-50);">
+                                    <th style="padding: 0.5rem 1rem;">Item Name</th>
+                                    <th>Code</th>
+                                    <th>Stock</th>
+                                    <th>Unit</th>
+                                    <th>Threshold</th>
+                                    <th style="width: 100px; text-align: center;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
                 
                 const itemsList = rmItems.filter(i => i.subId == sub.id).sort((a,b) => a.code.localeCompare(b.code));
                 if (itemsList.length === 0) {
-                    html += `<tr><td colspan="6" style="text-align:center; color: var(--gray-400);">No items added yet.</td></tr>`;
+                    html += `<tr><td colspan="6" style="text-align:center; color: var(--gray-400); padding: 1.5rem;">No items added yet.</td></tr>`;
                 } else {
                     itemsList.forEach(item => {
                         const isLow = parseFloat(item.stock) <= parseFloat(item.threshold);
                         html += `
                         <tr>
-                            <td style="font-weight: 500;">${item.name}</td>
+                            <td style="font-weight: 500; padding: 0.5rem 1rem;">${item.name}</td>
                             <td style="font-family: monospace; color: var(--gray-600);">${item.code}</td>
                             <td><span class="badge ${isLow ? 'badge-error' : 'badge-success'}">${item.stock}</span></td>
                             <td>${item.unit}</td>
                             <td>${item.threshold}</td>
-                            <td>
-                                <button class="btn-icon" onclick="editRMItem(${item.id})">✏️</button>
-                                <button class="btn-icon text-error" onclick="deleteRMItem(${item.id})">🗑️</button>
+                            <td style="text-align: center;">
+                                <div style="display: flex; justify-content: center; gap: 0.3rem;">
+                                    <button class="btn-icon" onclick="editRMItem(${item.id})">✏️</button>
+                                    <button class="btn-icon text-error" onclick="deleteRMItem(${item.id})">🗑️</button>
+                                </div>
                             </td>
                         </tr>`;
                     });
                 }
-                html += `</tbody></table></div>`;
+                html += `</tbody></table></div></div>`;
             });
         }
         html += `</div></div>`;
     });
 
     container.innerHTML = html;
+}
+
+function toggleRMCollapse(id) {
+    if (rmCollapsedIds.has(id)) {
+        rmCollapsedIds.delete(id);
+    } else {
+        rmCollapsedIds.add(id);
+    }
+    refreshRMInventory();
 }
 
 // ==================== RM MODAL FUNCTIONS ====================
@@ -5248,7 +5267,7 @@ function showAddRMSubCategoryModal(mainId) {
     const main = rmMainCategories.find(m => m.id == mainId);
     const existing = rmSubCategories.filter(s => s.mainId == mainId);
     let nextNum = existing.length + 1;
-    document.getElementById('rmSubCategoryCode').value = main.code + String(nextNum).padStart(3, '0');
+    document.getElementById('rmSubCategoryCode').value = (main ? main.code : 'RM-') + String(nextNum).padStart(3, '0');
     
     document.getElementById('rmSubCategoryModalTitle').innerText = '➕ Add RM Sub-Category';
     document.getElementById('addRMSubCategoryModal').style.display = 'block';
@@ -5435,7 +5454,14 @@ async function editRMItem(id) {
 }
 
 async function deleteRMMain(id) {
-    if (!confirm('Warning: This will delete the brand. Sub-categories and items will become orphaned. Continue?')) return;
+    // Check if empty
+    const hasSubs = rmSubCategories.some(s => s.mainId == id);
+    if (hasSubs) {
+        alert('Cannot delete category because it contains sub-categories. Please delete sub-categories first.');
+        return;
+    }
+
+    if (!confirm('Are you sure you want to delete this main category?')) return;
     const response = await fetch('api/sync.php?action=delete_rm_main', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -5445,7 +5471,14 @@ async function deleteRMMain(id) {
 }
 
 async function deleteRMSub(id) {
-    if (!confirm('Delete this sub-category? Items will be orphaned.')) return;
+    // Check if empty
+    const hasItems = rmItems.some(i => i.subId == id);
+    if (hasItems) {
+        alert('Cannot delete sub-category because it contains items. Please delete items first.');
+        return;
+    }
+
+    if (!confirm('Are you sure you want to delete this sub-category?')) return;
     const response = await fetch('api/sync.php?action=delete_rm_sub', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

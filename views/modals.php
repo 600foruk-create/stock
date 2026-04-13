@@ -334,19 +334,19 @@
     <div id="addRMMainCategoryModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="rmMainCategoryModalTitle">➕ Add RM Brand</h3>
+                <h3 id="rmMainCategoryModalTitle">➕ Add Main Category</h3>
                 <span class="close-modal" onclick="closeAddRMMainCategoryModal()">&times;</span>
             </div>
             <input type="hidden" id="editRMMainCategoryId">
             <div class="form-group">
-                <label>Brand Name</label>
+                <label>Category Name</label>
                 <input type="text" id="rmMainCategoryName" class="form-control">
             </div>
             <div class="form-group">
-                <label>Brand Code (Manual, e.g., RM-01)</label>
+                <label>Category Code (Manual, e.g., RM-01)</label>
                 <input type="text" id="rmMainCategoryCode" class="form-control" placeholder="RM-01">
             </div>
-            <button class="btn btn-success" onclick="saveRMMainCategory()" style="width:100%;">Save RM Brand</button>
+            <button class="btn btn-success" onclick="saveRMMainCategory()" style="width:100%;">Save Main Category</button>
         </div>
     </div>
 
@@ -358,7 +358,7 @@
             </div>
             <input type="hidden" id="editRMSubCategoryId">
             <div class="form-group">
-                <label>RM Brand</label>
+                <label>Main Category</label>
                 <select id="rmSubCategoryMainSelect" class="form-control" disabled></select>
             </div>
             <div class="form-group">
