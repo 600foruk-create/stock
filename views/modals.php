@@ -410,24 +410,36 @@
 
     <!-- Manage Units Modal -->
     <div id="manageRMUnitsModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
-                <h3>⚙️ Manage RM Units</h3>
+                <h3>⚙️ Manage RM Units & Conversion</h3>
                 <span class="close-modal" onclick="closeManageRMUnitsModal()">&times;</span>
             </div>
             <div class="form-group">
-                <label>Add New Unit</label>
-                <div class="input-group" style="display:flex; gap:0.5rem;">
-                    <input type="text" id="newRMUnitName" class="form-control" placeholder="e.g., kg">
-                    <button class="btn btn-success" onclick="saveRMUnit()">Add</button>
+                <label>Add/Update Unit</label>
+                <div style="display:grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem; align-items: end;">
+                    <div>
+                        <small style="color:var(--gray-500)">Unit Name (e.g. Gram)</small>
+                        <input type="text" id="newRMUnitName" class="form-control" placeholder="Gram">
+                    </div>
+                    <div>
+                        <small style="color:var(--gray-500)">Rate to KG (e.g. 0.001)</small>
+                        <input type="number" id="newRMUnitRate" step="0.000001" class="form-control" value="1.0">
+                    </div>
+                    <button class="btn btn-success" onclick="saveRMUnit()" style="height:45px;">Save</button>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--gray-500); margin-top: 0.5rem;">
+                    * 1 Gram = 0.001 KG | 1 KG = 1.0 KG | 1 Bag (50kg) = 50.0
                 </div>
             </div>
-            <div style="max-height: 200px; overflow-y: auto; margin-top: 1rem;">
+            
+            <div style="max-height: 250px; overflow-y: auto; margin-top: 1rem; border: 1px solid var(--gray-200); border-radius: 8px;">
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>Unit Name</th>
-                            <th>Action</th>
+                            <th>Rate to KG</th>
+                            <th style="width: 50px;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="rmUnitsListTable"></tbody>

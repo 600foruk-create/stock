@@ -5368,26 +5368,30 @@ function refreshRMUnitsList() {
     if (!tbody) return;
     tbody.innerHTML = '';
     rmUnits.forEach(u => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
             <td>${u.name}</td>
-            <td><button class="btn btn-icon text-error" onclick="deleteRMUnit(${u.id})">🗑️</button></td>
+            <td style="font-weight:bold;">${u.rate} <small>KG</small></td>
+            <td>
+                <button class="btn btn-icon text-error" onclick="deleteRMUnit(${u.id})">🗑️</button>
+            </td>
         `;
-        tbody.appendChild(row);
+        tbody.appendChild(tr);
     });
 }
 
 async function saveRMUnit() {
-    const name = document.getElementById('newRMUnitName').value;
-    if (!name) return;
+    const name = document.getElementById('newRMUnitName').value.trim();
+    const rate = parseFloat(document.getElementById('newRMUnitRate').value);
+    if (!name || isNaN(rate)) { alert('Enter name and valid rate'); return; }
     const response = await fetch('api/sync.php?action=save_rm_unit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ unit: { name } })
+        body: JSON.stringify({ unit: { name, rate } })
     });
-    const result = await response.json();
-    if (result.status === 'success') {
+    if ((await response.json()).status === 'success') {
         document.getElementById('newRMUnitName').value = '';
+        document.getElementById('newRMUnitRate').value = '1.0';
         initApp();
         setTimeout(refreshRMUnitsList, 500);
     }
@@ -5683,7 +5687,7 @@ function refreshRMOutFormControls() {
         rmItems.sort((a,b) => a.name.localeCompare(b.name)).forEach(i => {
             const opt = document.createElement('option');
             opt.value = i.id;
-            opt.innerText = `${i.name} (Stock: ${i.stock} ${i.unit})`;
+            opt.innerText = `${i.name} (Stock: ${i.stock} KG)`;
             itemSelect.appendChild(opt);
         });
     }
@@ -5698,6 +5702,22 @@ function refreshRMOutFormControls() {
             formulaSelect.appendChild(opt);
         });
     }
+    
+    // Populate Units
+    const unitSelects = ['rmOutUnitSelect'];
+    unitSelects.forEach(sid => {
+        const s = document.getElementById(sid);
+        if (s) {
+            s.innerHTML = '';
+            rmUnits.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.name;
+                opt.innerText = u.name;
+                if (u.name.toLowerCase() === 'kg') opt.selected = true;
+                s.appendChild(opt);
+            });
+        }
+    });
     
     refreshRMOutHistoryTable();
 }
@@ -5731,7 +5751,7 @@ function refreshRMOutHistoryTable() {
             <td>${t.date ? t.date.split(' ')[0] : '---'}</td>
             <td style="font-weight: 600;">${item ? item.name : 'Unknown'}</td>
             <td><span class="badge" style="background: #fff5f5; color: var(--error); border: 1px solid #feb2b2;">CONSUMPTION</span></td>
-            <td style="font-weight: bold;">${t.quantity} ${item ? item.unit : ''}</td>
+            <td style="font-weight: bold; color: var(--error); font-size: 1.1rem;">-${parseFloat(t.quantity).toFixed(3)} KG</td>
             <td style="color: var(--gray-500); font-style: italic; font-size: 0.85rem;">${t.notes || ''}</td>
             <td style="text-align: center;">
                 <button class="btn btn-icon text-error" onclick="deleteRMTransaction(${t.id})" title="Delete Record">🗑️</button>
@@ -5796,27 +5816,34 @@ async function saveRMTransaction(type) {
     const mode = type === 'OUT' ? (document.querySelector('input[name="rmOutMode"]:checked')?.value || 'SINGLE') : 'SINGLE';
     const notes = type === 'IN' ? document.getElementById('rmInNotes').value : document.getElementById('rmOutNotes').value;
     const qtyInput = type === 'IN' ? document.getElementById('rmInQty') : document.getElementById('rmOutQty');
-    const multiplier = parseFloat(qtyInput.value);
+    const unitSelect = type === 'IN' ? document.getElementById('rmInUnitSelect') : document.getElementById('rmOutUnitSelect');
+    
+    const inputQty = parseFloat(qtyInput.value);
+    const unitName = unitSelect ? unitSelect.value : 'KG';
+    const unitObj = rmUnits.find(u => u.name === unitName);
+    const rate = unitObj ? unitObj.rate : 1.0;
 
-    if (isNaN(multiplier) || multiplier <= 0) { alert('Enter a valid quantity'); return; }
+    if (isNaN(inputQty) || inputQty <= 0) { alert('Enter a valid quantity'); return; }
+
+    const normalizedQty = inputQty * rate;
 
     if (mode === 'SINGLE') {
         const itemId = type === 'IN' ? document.getElementById('rmInSelect').value : document.getElementById('rmOutSelect').value;
         if (!itemId) { alert('Select a material'); return; }
         
-        await recordSingleRMTransaction(itemId, multiplier, type, notes);
+        await recordSingleRMTransaction(itemId, normalizedQty, type, `${unitName != 'KG' ? '('+inputQty+' '+unitName+') ' : ''}${notes}`);
     } else {
-        // Formula Mode
+        // Formula Mode - Formula quantities are already normalized (KG)
         const formulaId = document.getElementById('rmOutFormulaSelect').value;
         if (!formulaId) { alert('Select a formula'); return; }
         
         const formula = rmFormulas.find(f => f.id == formulaId);
         const composition = rmFormulaItems.filter(fi => fi.formula_id == formulaId);
         
-        if (!confirm(`Using "${formula.name}" x ${multiplier}. Total of ${composition.length} items will be consumed. Proceed?`)) return;
+        if (!confirm(`Using "${formula.name}" x ${inputQty} Batches. Proceed?`)) return;
 
         for (const fi of composition) {
-            const totalQty = fi.quantity * multiplier;
+            const totalQty = fi.quantity * inputQty; // multiplier is inputQty in this mode
             await recordSingleRMTransaction(fi.rm_item_id, totalQty, 'OUT', `[Formula: ${formula.name}] ${notes}`);
         }
     }
@@ -5836,8 +5863,21 @@ function refreshRMInFormControls() {
         rmItems.sort((a,b) => a.name.localeCompare(b.name)).forEach(i => {
             const opt = document.createElement('option');
             opt.value = i.id;
-            opt.innerText = `${i.name} (Current: ${i.stock} ${i.unit})`;
+            opt.innerText = `${i.name} (Current: ${i.stock} KG)`;
             itemSelect.appendChild(opt);
+        });
+    }
+
+    // Populate Units
+    const s = document.getElementById('rmInUnitSelect');
+    if (s) {
+        s.innerHTML = '';
+        rmUnits.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.name;
+            opt.innerText = u.name;
+            if (u.name.toLowerCase() === 'kg') opt.selected = true;
+            s.appendChild(opt);
         });
     }
     refreshRMInHistoryTable();
@@ -5857,7 +5897,7 @@ function refreshRMInHistoryTable() {
             <td>${t.date ? t.date.split(' ')[0] : '---'}</td>
             <td style="font-weight: 600;">${item ? item.name : 'Unknown'}</td>
             <td><span class="badge" style="background: #f0f7ff; color: var(--sky-600); border: 1px solid var(--sky-200);">STOCKED</span></td>
-            <td style="font-weight: bold; color: var(--success); font-size: 1.1rem;">+${t.quantity} ${item ? item.unit : ''}</td>
+            <td style="font-weight: bold; color: var(--success); font-size: 1.1rem;">+${parseFloat(t.quantity).toFixed(3)} KG</td>
             <td style="color: var(--gray-500); font-style: italic; font-size: 0.85rem;">${t.notes || ''}</td>
             <td style="text-align: center;">
                 <button class="btn btn-icon text-error" onclick="deleteRMTransaction(${t.id})" title="Delete Record">🗑️</button>
