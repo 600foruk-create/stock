@@ -5823,7 +5823,7 @@ function refreshRMOutHistoryTable() {
 
 async function deleteRMTransaction(id) {
     if (!confirm('Are you sure you want to delete this specific history record?')) return;
-    const response = await fetch('api/sync.php?action=delete_transaction', {
+    const response = await fetch('api/sync.php?action=delete_rm_transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })

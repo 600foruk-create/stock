@@ -570,6 +570,15 @@ try {
             echo json_encode(['status' => 'success']);
         }
 
+        elseif ($action === 'delete_rm_transaction') {
+            $id = $input['id'] ?? $_GET['id'] ?? null;
+            if ($id) {
+                $stmt = $conn->prepare("DELETE FROM rm_transactions WHERE id = ?");
+                $stmt->execute([$id]);
+                echo json_encode(['status' => 'success']);
+            } else { echo json_encode(['status' => 'error', 'message' => 'No ID provided']); }
+        }
+
         elseif ($action === 'delete_transaction') {
             $id = $input['id'] ?? $_GET['id'] ?? null;
             if ($id) {

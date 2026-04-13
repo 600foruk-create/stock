@@ -1,7 +1,7 @@
 <div class="rm-transactions">
 
     
-    <div class="form-card" style="margin-bottom: 2rem; border-left: 4px solid var(--sky-500); background: #f0f7ff; box-shadow: var(--shadow-md);">
+    <div class="form-card" style="margin-bottom: 2rem; box-shadow: var(--shadow-md); border-radius: 12px; border: 1px solid var(--gray-200); background: white;">
         <div class="settings-grid" style="gap: 0.8rem;">
             <div class="form-group" style="margin-bottom: 0;">
                 <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Select Raw Material</label>
