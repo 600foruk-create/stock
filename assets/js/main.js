@@ -5781,13 +5781,13 @@ function previewFormulaUsage() {
         // Add to editor
         if (list) {
             const row = document.createElement('div');
-            row.style.cssText = 'display: grid; grid-template-columns: 1fr 100px; gap: 10px; align-items: center; background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--gray-200);';
+            row.style.cssText = 'display: grid; grid-template-columns: 1fr 100px; gap: 8px; align-items: center; background: white; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--gray-200); margin-bottom: 2px;';
             row.innerHTML = `
-                <span style="font-size: 0.9rem; font-weight: 500;">${name}</span>
+                <span style="font-size: 0.85rem; font-weight: 500; color: var(--gray-700);">${name}</span>
                 <input type="number" class="form-control rm-formula-custom-qty" 
                        data-item-id="${fi.rm_item_id}" 
                        value="${fi.quantity}" 
-                       style="padding: 4px 8px; font-size: 0.9rem; height: 32px; text-align: right;">
+                       style="padding: 2px 6px; font-size: 0.85rem; height: 28px; text-align: right; border: 1px solid var(--gray-300);">
             `;
             list.appendChild(row);
         }
