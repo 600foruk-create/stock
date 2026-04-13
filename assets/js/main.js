@@ -5150,7 +5150,10 @@ function refreshRMDashboard() {
 
     if (document.getElementById('rmTotalItems')) document.getElementById('rmTotalItems').innerText = totalItems;
     if (document.getElementById('rmLowStockCount')) document.getElementById('rmLowStockCount').innerText = lowStockCount;
-    // Note: Valuation card was removed from UI so we don't need to update it
+    
+    if (document.getElementById('rmStockValuation')) {
+        document.getElementById('rmStockValuation').parentElement.style.display = 'none';
+    }
     
     if (document.getElementById('rmInventorySummary')) document.getElementById('rmInventorySummary').innerHTML = summaryHtml;
     if (document.getElementById('rmLowStockAlerts')) document.getElementById('rmLowStockAlerts').innerHTML = alertsHtml;
