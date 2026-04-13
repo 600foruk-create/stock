@@ -18,33 +18,33 @@
             </label>
         </div>
 
-        <div class="settings-grid" style="gap: 1.5rem;">
+        <div class="settings-grid" style="gap: 0.8rem;">
             <!-- Single Item Mode -->
-            <div id="rmOutSingleGroup" class="form-group">
-                <label style="font-weight: 700; color: var(--gray-700);">Select Raw Material</label>
-                <select id="rmOutSelect" class="form-control" style="height: 45px; font-size: 1rem;"></select>
+            <div id="rmOutSingleGroup" class="form-group" style="margin-bottom: 0;">
+                <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Select Raw Material</label>
+                <select id="rmOutSelect" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem;"></select>
             </div>
             
             <!-- Formula Mode -->
-            <div id="rmOutFormulaGroup" class="form-group" style="display: none;">
-                <label style="font-weight: 700; color: var(--gray-700);">Select Production Formula</label>
-                <select id="rmOutFormulaSelect" class="form-control" onchange="previewFormulaUsage()" style="height: 45px; font-size: 1rem; border: 2px solid var(--sky-200);"></select>
-                <div id="formulaPreview" style="margin-top: 0.8rem; padding: 0.8rem; background: var(--sky-50); border-radius: 6px; font-size: 0.9rem; color: var(--sky-800); border-left: 3px solid var(--sky-400);"></div>
+            <div id="rmOutFormulaGroup" class="form-group" style="display: none; margin-bottom: 0;">
+                <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Select Production Formula</label>
+                <select id="rmOutFormulaSelect" class="form-control" onchange="previewFormulaUsage()" style="padding: 0.6rem 1rem; font-size: 1rem; border: 2px solid var(--sky-200);"></select>
+                <div id="formulaPreview" style="margin-top: 0.5rem; padding: 0.6rem; background: var(--sky-50); border-radius: 6px; font-size: 0.85rem; color: var(--sky-800); border-left: 3px solid var(--sky-400);"></div>
             </div>
 
-            <div class="form-group">
-                <label id="rmOutQtyLabel" style="font-weight: 700; color: var(--gray-700);">Quantity</label>
-                <input type="number" id="rmOutQty" class="form-control" style="height: 45px; font-size: 1rem;" placeholder="0.00" value="1">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label id="rmOutQtyLabel" style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Quantity</label>
+                <input type="number" id="rmOutQty" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem;" placeholder="0.00" value="1">
             </div>
 
-            <div class="form-group">
-                <label style="font-weight: 700; color: var(--gray-700);">Reference / Notes</label>
-                <input type="text" id="rmOutNotes" class="form-control" style="height: 45px; font-size: 1rem;" placeholder="Batch #, Order ID...">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Reference / Notes</label>
+                <input type="text" id="rmOutNotes" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem;" placeholder="Batch #, Order ID...">
             </div>
         </div>
         
-        <div style="margin-top: 2rem;">
-            <button class="btn btn-primary" style="background: var(--error); height: 50px; font-size: 1.1rem; font-weight: 800; border-radius: 8px; box-shadow: 0 4px 0 #b30000;" onclick="saveRMTransaction('OUT')">CONFIRM CONSUMPTION 📤</button>
+        <div style="margin-top: 1.5rem;">
+            <button class="btn btn-primary" style="background: var(--error); height: 45px; font-size: 1.1rem; font-weight: 800; border-radius: 8px; box-shadow: 0 4px 0 #b30000; padding: 0 2rem;" onclick="saveRMTransaction('OUT')">CONFIRM CONSUMPTION 📤</button>
         </div>
     </div>
 
