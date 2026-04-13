@@ -32,6 +32,12 @@ try {
                 if (!in_array('low_stock_limit', $itemCols)) {
                     $conn->exec("ALTER TABLE items ADD COLUMN low_stock_limit INT DEFAULT NULL");
                 }
+
+                // NEW: Raw Materials Hierarchy Tables
+                $conn->exec("CREATE TABLE IF NOT EXISTS rm_main_categories (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL)");
+                $conn->exec("CREATE TABLE IF NOT EXISTS rm_sub_categories (id INT AUTO_INCREMENT PRIMARY KEY, main_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL)");
+                $conn->exec("CREATE TABLE IF NOT EXISTS rm_items (id INT AUTO_INCREMENT PRIMARY KEY, sub_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL, unit VARCHAR(50), stock DECIMAL(15,3) DEFAULT 0, threshold DECIMAL(15,3) DEFAULT 0)");
+                $conn->exec("CREATE TABLE IF NOT EXISTS rm_units (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL)");
             } catch (Exception $e) {}
 
             $data = [
@@ -45,7 +51,11 @@ try {
                 'orders' => $conn->query("SELECT o.id, o.date, o.customer_id AS customerId, o.status, o.total_qty AS totalQty, o.total_kg AS totalKg, c.name AS customerName FROM orders o LEFT JOIN customers c ON o.customer_id = c.id")->fetchAll(PDO::FETCH_ASSOC),
                 'transactions' => $conn->query("SELECT t.id, t.date, t.type, t.main_id AS mainId, t.sub_id AS subId, t.item_id AS itemId, t.quantity, t.customer_id AS customerId, t.notes, mc.name AS mainName, sc.name AS subName, i.name AS itemName, i.weight AS itemWeight, i.length AS itemLength, c.name AS customer FROM transactions t LEFT JOIN main_categories mc ON t.main_id = mc.id LEFT JOIN sub_categories sc ON t.sub_id = sc.id LEFT JOIN items i ON t.item_id = i.id LEFT JOIN customers c ON t.customer_id = c.id ORDER BY t.date DESC")->fetchAll(PDO::FETCH_ASSOC),
                 'settings' => $conn->query("SELECT id, category, `key`, value FROM settings")->fetchAll(PDO::FETCH_ASSOC),
-                'rawMaterials' => $conn->query("SELECT id, name, category, unit, stock, threshold FROM raw_materials")->fetchAll(PDO::FETCH_ASSOC),
+                'rawMaterials' => $conn->query("SELECT id, name, category, unit, stock, threshold FROM raw_materials")->fetchAll(PDO::FETCH_ASSOC), // Legacy support
+                'rmMainCategories' => $conn->query("SELECT id, name, code FROM rm_main_categories")->fetchAll(PDO::FETCH_ASSOC),
+                'rmSubCategories' => $conn->query("SELECT id, main_id AS mainId, name, code FROM rm_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
+                'rmItems' => $conn->query("SELECT id, sub_id AS subId, name, code, unit, stock, threshold FROM rm_items")->fetchAll(PDO::FETCH_ASSOC),
+                'rmUnits' => $conn->query("SELECT id, name FROM rm_units")->fetchAll(PDO::FETCH_ASSOC),
                 'storeItems' => $conn->query("SELECT id, name, description, stock FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
                 'latestAudit' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id)")->fetchAll(PDO::FETCH_ASSOC),
                 'archivedReports' => $conn->query("SELECT id, date, title FROM audit_reports_archive ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
@@ -410,6 +420,84 @@ try {
                 $si['id'] = $conn->lastInsertId();
             }
             echo json_encode(['status' => 'success', 'id' => $si['id']]);
+        }
+
+        // --- NEW RAW MATERIALS ACTIONS ---
+        elseif ($action === 'save_rm_main') {
+            $m = $input['main'];
+            if (isset($m['id']) && !empty($m['id'])) {
+                $stmt = $conn->prepare("UPDATE rm_main_categories SET name = ?, code = ? WHERE id = ?");
+                $stmt->execute([$m['name'], $m['code'], $m['id']]);
+            } else {
+                $stmt = $conn->prepare("INSERT INTO rm_main_categories (name, code) VALUES (?, ?)");
+                $stmt->execute([$m['name'], $m['code']]);
+                $m['id'] = $conn->lastInsertId();
+            }
+            echo json_encode(['status' => 'success', 'id' => $m['id']]);
+        }
+
+        elseif ($action === 'delete_rm_main') {
+            $id = $input['id'];
+            $conn->prepare("DELETE FROM rm_main_categories WHERE id = ?")->execute([$id]);
+            // Cascade delete or keep as orphaned? For simplicity, we just delete the parent.
+            echo json_encode(['status' => 'success']);
+        }
+
+        elseif ($action === 'save_rm_sub') {
+            $s = $input['sub'];
+            if (isset($s['id']) && !empty($s['id'])) {
+                $stmt = $conn->prepare("UPDATE rm_sub_categories SET main_id = ?, name = ?, code = ? WHERE id = ?");
+                $stmt->execute([$s['mainId'], $s['name'], $s['code'], $s['id']]);
+            } else {
+                $stmt = $conn->prepare("INSERT INTO rm_sub_categories (main_id, name, code) VALUES (?, ?, ?)");
+                $stmt->execute([$s['mainId'], $s['name'], $s['code']]);
+                $s['id'] = $conn->lastInsertId();
+            }
+            echo json_encode(['status' => 'success', 'id' => $s['id']]);
+        }
+
+        elseif ($action === 'delete_rm_sub') {
+            $id = $input['id'];
+            $conn->prepare("DELETE FROM rm_sub_categories WHERE id = ?")->execute([$id]);
+            echo json_encode(['status' => 'success']);
+        }
+
+        elseif ($action === 'save_rm_item') {
+            $i = $input['item'];
+            if (isset($i['id']) && !empty($i['id'])) {
+                $stmt = $conn->prepare("UPDATE rm_items SET sub_id = ?, name = ?, code = ?, unit = ?, stock = ?, threshold = ? WHERE id = ?");
+                $stmt->execute([$i['subId'], $i['name'], $i['code'], $i['unit'], $i['stock'], $i['threshold'], $i['id']]);
+            } else {
+                $stmt = $conn->prepare("INSERT INTO rm_items (sub_id, name, code, unit, stock, threshold) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$i['subId'], $i['name'], $i['code'], $i['unit'], $i['stock'], $i['threshold']]);
+                $i['id'] = $conn->lastInsertId();
+            }
+            echo json_encode(['status' => 'success', 'id' => $i['id']]);
+        }
+
+        elseif ($action === 'delete_rm_item') {
+            $id = $input['id'];
+            $conn->prepare("DELETE FROM rm_items WHERE id = ?")->execute([$id]);
+            echo json_encode(['status' => 'success']);
+        }
+
+        elseif ($action === 'save_rm_unit') {
+            $u = $input['unit'];
+            if (isset($u['id']) && !empty($u['id'])) {
+                $stmt = $conn->prepare("UPDATE rm_units SET name = ? WHERE id = ?");
+                $stmt->execute([$u['name'], $u['id']]);
+            } else {
+                $stmt = $conn->prepare("INSERT INTO rm_units (name) VALUES (?)");
+                $stmt->execute([$u['name']]);
+                $u['id'] = $conn->lastInsertId();
+            }
+            echo json_encode(['status' => 'success', 'id' => $u['id']]);
+        }
+
+        elseif ($action === 'delete_rm_unit') {
+            $id = $input['id'];
+            $conn->prepare("DELETE FROM rm_units WHERE id = ?")->execute([$id]);
+            echo json_encode(['status' => 'success']);
         }
 
         elseif ($action === 'delete_transaction') {

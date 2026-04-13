@@ -329,3 +329,108 @@
             <button class="btn btn-success" onclick="saveCustDistrict()" style="width:100%;">Save District</button>
         </div>
     </div>
+
+    <!-- Raw Materials Modals -->
+    <div id="addRMMainCategoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="rmMainCategoryModalTitle">➕ Add RM Brand</h3>
+                <span class="close-modal" onclick="closeAddRMMainCategoryModal()">&times;</span>
+            </div>
+            <input type="hidden" id="editRMMainCategoryId">
+            <div class="form-group">
+                <label>Brand Name</label>
+                <input type="text" id="rmMainCategoryName" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Brand Code (Manual, e.g., RM-01)</label>
+                <input type="text" id="rmMainCategoryCode" class="form-control" placeholder="RM-01">
+            </div>
+            <button class="btn btn-success" onclick="saveRMMainCategory()" style="width:100%;">Save RM Brand</button>
+        </div>
+    </div>
+
+    <div id="addRMSubCategoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="rmSubCategoryModalTitle">➕ Add RM Sub-Category</h3>
+                <span class="close-modal" onclick="closeAddRMSubCategoryModal()">&times;</span>
+            </div>
+            <input type="hidden" id="editRMSubCategoryId">
+            <div class="form-group">
+                <label>RM Brand</label>
+                <select id="rmSubCategoryMainSelect" class="form-control" disabled></select>
+            </div>
+            <div class="form-group">
+                <label>Sub-Category Name</label>
+                <input type="text" id="rmSubCategoryName" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Auto-Generated Code</label>
+                <input type="text" id="rmSubCategoryCode" class="form-control" readonly placeholder="Auto-gen">
+            </div>
+            <button class="btn btn-success" onclick="saveRMSubCategory()" style="width:100%;">Save Sub-Category</button>
+        </div>
+    </div>
+
+    <div id="addRMItemModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="rmItemModalTitle">➕ Add RM Item</h3>
+                <span class="close-modal" onclick="closeAddRMItemModal()">&times;</span>
+            </div>
+            <input type="hidden" id="editRMItemId">
+            <input type="hidden" id="rmItemSubId">
+            <div class="form-group">
+                <label>Item Name</label>
+                <input type="text" id="rmItemName" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Auto-Generated Code</label>
+                <input type="text" id="rmItemCode" class="form-control" readonly placeholder="Auto-gen">
+            </div>
+            <div class="form-group">
+                <label>Unit</label>
+                <div class="input-group" style="display:flex; gap:0.5rem;">
+                    <select id="rmItemUnit" class="form-control"></select>
+                    <button class="btn btn-primary" onclick="showManageRMUnitsModal()">⚙️</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Opening Stock</label>
+                <input type="number" id="rmItemStock" step="0.001" class="form-control" value="0">
+            </div>
+            <div class="form-group">
+                <label>Low Stock Threshold</label>
+                <input type="number" id="rmItemThreshold" step="0.001" class="form-control" value="0">
+            </div>
+            <button class="btn btn-success" onclick="saveRMItem()" style="width:100%;">Save RM Item</button>
+        </div>
+    </div>
+
+    <div id="manageRMUnitsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ Manage RM Units</h3>
+                <span class="close-modal" onclick="closeManageRMUnitsModal()">&times;</span>
+            </div>
+            <div class="form-group">
+                <label>Add New Unit</label>
+                <div class="input-group" style="display:flex; gap:0.5rem;">
+                    <input type="text" id="newRMUnitName" class="form-control" placeholder="e.g., kg">
+                    <button class="btn btn-success" onclick="saveRMUnit()">Add</button>
+                </div>
+            </div>
+            <div style="max-height: 200px; overflow-y: auto; margin-top: 1rem;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Unit Name</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rmUnitsListTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>

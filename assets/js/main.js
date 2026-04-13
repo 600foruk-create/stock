@@ -3,30 +3,21 @@ let users = [];
 let currentUser = null;
 let currentModule = 'finishGood';
 let usedCompletedOrders = new Set();
-let mainCategories = [
-    { id: 1, name: 'Master Flex', color: '#2196f3', lowStockLimit: 10 },
-    { id: 2, name: 'Eco Flex', color: '#4caf50', lowStockLimit: 10 }
-];
-let subCategories = [
-    { id: 1, mainId: 1, name: '2"' },
-    { id: 2, mainId: 1, name: '3"' },
-    { id: 3, mainId: 2, name: '2"' },
-    { id: 4, mainId: 2, name: '3"' }
-];
-let items = [
-    { id: 1, mainId: 1, subId: 1, name: '', length: 13, weight: 2.0, stock: 25, minStock: 10 },
-    { id: 2, mainId: 1, subId: 1, name: '', length: 13, weight: 2.5, stock: 15, minStock: 10 },
-    { id: 3, mainId: 1, subId: 2, name: '', length: 13, weight: 2.0, stock: 8, minStock: 10 },
-    { id: 4, mainId: 2, subId: 3, name: '', length: 13, weight: 1.5, stock: 30, minStock: 15 },
-    { id: 5, mainId: 2, subId: 4, name: '', length: 13, weight: 2.0, stock: 5, minStock: 10 }
-];
+let mainCategories = [];
+let subCategories = [];
+let items = [];
 let customers = [];
 let customerProvinces = [];
 let customerDistricts = [];
 let transactions = [];
 let orders = [];
-let rawMaterials = [];
+let rawMaterials = []; // Legacy
+let rmMainCategories = [];
+let rmSubCategories = [];
+let rmItems = [];
+let rmUnits = [];
 let storeItems = [];
+
 let auditSession = {}; // Correctly initialized global session
 let auditRecords = [];
 let systemDateFormat = 'DD-MM-YYYY'; // Default format
@@ -77,7 +68,11 @@ async function initApp() {
             customerDistricts = d.customerDistricts || [];
             orders = d.orders || [];
             transactions = d.transactions || [];
-            rawMaterials = d.rawMaterials || [];
+            rawMaterials = d.rawMaterials || []; // Legacy
+            rmMainCategories = d.rmMainCategories || [];
+            rmSubCategories = d.rmSubCategories || [];
+            rmItems = d.rmItems || [];
+            rmUnits = d.rmUnits || [];
             storeItems = d.storeItems || [];
             
             // Sync Audit Session from DB: restore saved counts if they are not currently being edited
@@ -180,6 +175,11 @@ async function initApp() {
         refreshUsersList();
         refreshLowStockReport();
         refreshAuditList();
+        refreshArchivedReportsList();
+        
+        // Raw Material Refreshes
+        refreshRMInventory();
+        refreshRMDashboard();
     }
 }
 
@@ -5099,13 +5099,12 @@ async function updateDateFormat() {
 
 function refreshRMDashboard() {
     console.log('StockFlow: Refreshing RM Dashboard...');
-    // Calculate stats from rawMaterials array
-    const totalItems = rawMaterials.length;
+    const totalItems = rmItems.length;
     let lowStockCount = 0;
     let totalValue = 0;
 
-    rawMaterials.forEach(rm => {
-        if (parseFloat(rm.stock) <= parseFloat(rm.threshold)) lowStockCount++;
+    rmItems.forEach(item => {
+        if (parseFloat(item.stock) <= parseFloat(item.threshold)) lowStockCount++;
         // Valuation logic can be added later if unit prices are implemented
     });
 
@@ -5115,65 +5114,353 @@ function refreshRMDashboard() {
 }
 
 function refreshRMInventory() {
-    console.log('StockFlow: Refreshing RM Inventory...');
-    const tbody = document.getElementById('rmInventoryTable');
+    console.log('StockFlow: Refreshing RM Hierarchical Inventory...');
+    const container = document.getElementById('rmInventoryContainer');
+    if (!container) return;
+
+    if (rmMainCategories.length === 0) {
+        container.innerHTML = '<div class="table-container"><p style="text-align:center; padding:2rem; color:var(--gray-500);">No RM Brands established. Start by adding a Brand.</p></div>';
+        return;
+    }
+
+    let html = '';
+    rmMainCategories.sort((a,b) => a.code.localeCompare(b.code)).forEach(main => {
+        html += `
+        <div class="brand-group" style="margin-bottom: 2rem; border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden;">
+            <div class="brand-header" style="background: var(--gray-50); padding: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gray-200);">
+                <div>
+                    <span style="font-weight: bold; color: var(--sky-700); font-size: 1.1rem;">${main.name}</span>
+                    <span style="margin-left: 1rem; background: var(--sky-100); color: var(--sky-700); padding: 2px 8px; border-radius: 4px; font-family: monospace;">${main.code}</span>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-sm" onclick="showAddRMSubCategoryModal(${main.id})" title="Add Sub-Category">➕ Sub</button>
+                    <button class="btn btn-sm" onclick="editRMMain(${main.id})" title="Edit Brand">✏️</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteRMMain(${main.id})" title="Delete Brand">🗑️</button>
+                </div>
+            </div>
+            <div class="sub-categories-list" style="padding: 1rem;">`;
+
+        const subs = rmSubCategories.filter(s => s.mainId == main.id).sort((a,b) => a.code.localeCompare(b.code));
+        if (subs.length === 0) {
+            html += `<p style="color: var(--gray-400); font-style: italic; font-size: 0.9rem;">No sub-categories in this brand.</p>`;
+        } else {
+            subs.forEach(sub => {
+                html += `
+                <div class="sub-category-item" style="margin-bottom: 1rem; padding: 1rem; background: white; border: 1px solid var(--gray-100); border-radius: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <div>
+                            <span style="font-weight: 600; color: var(--gray-800);">${sub.name}</span>
+                            <span style="margin-left: 0.5rem; color: var(--gray-500); font-family: monospace; font-size: 0.85rem;">${sub.code}</span>
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-sm btn-outline" onclick="showAddRMItemModal(${sub.id})" title="Add Item">➕ Item</button>
+                            <button class="btn btn-icon" onclick="editRMSub(${sub.id})">✏️</button>
+                            <button class="btn btn-icon text-error" onclick="deleteRMSub(${sub.id})">🗑️</button>
+                        </div>
+                    </div>
+                    <table class="data-table" style="font-size: 0.9rem;">
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th>Code</th>
+                                <th>Stock</th>
+                                <th>Unit</th>
+                                <th>Threshold</th>
+                                <th style="width: 80px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                
+                const itemsList = rmItems.filter(i => i.subId == sub.id).sort((a,b) => a.code.localeCompare(b.code));
+                if (itemsList.length === 0) {
+                    html += `<tr><td colspan="6" style="text-align:center; color: var(--gray-400);">No items added yet.</td></tr>`;
+                } else {
+                    itemsList.forEach(item => {
+                        const isLow = parseFloat(item.stock) <= parseFloat(item.threshold);
+                        html += `
+                        <tr>
+                            <td style="font-weight: 500;">${item.name}</td>
+                            <td style="font-family: monospace; color: var(--gray-600);">${item.code}</td>
+                            <td><span class="badge ${isLow ? 'badge-error' : 'badge-success'}">${item.stock}</span></td>
+                            <td>${item.unit}</td>
+                            <td>${item.threshold}</td>
+                            <td>
+                                <button class="btn-icon" onclick="editRMItem(${item.id})">✏️</button>
+                                <button class="btn-icon text-error" onclick="deleteRMItem(${item.id})">🗑️</button>
+                            </td>
+                        </tr>`;
+                    });
+                }
+                html += `</tbody></table></div>`;
+            });
+        }
+        html += `</div></div>`;
+    });
+
+    container.innerHTML = html;
+}
+
+// ==================== RM MODAL FUNCTIONS ====================
+
+function showAddRMMainCategoryModal() {
+    document.getElementById('editRMMainCategoryId').value = '';
+    document.getElementById('rmMainCategoryName').value = '';
+    document.getElementById('rmMainCategoryCode').value = '';
+    document.getElementById('rmMainCategoryModalTitle').innerText = '➕ Add RM Brand';
+    document.getElementById('addRMMainCategoryModal').style.display = 'block';
+}
+
+function closeAddRMMainCategoryModal() { document.getElementById('addRMMainCategoryModal').style.display = 'none'; }
+
+async function saveRMMainCategory() {
+    const id = document.getElementById('editRMMainCategoryId').value;
+    const name = document.getElementById('rmMainCategoryName').value;
+    const code = document.getElementById('rmMainCategoryCode').value;
+
+    if (!name || !code) { alert('Please fill all fields'); return; }
+
+    const response = await fetch('api/sync.php?action=save_rm_main', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ main: { id, name, code } })
+    });
+    const result = await response.json();
+    if (result.status === 'success') {
+        initApp();
+        closeAddRMMainCategoryModal();
+    }
+}
+
+function showAddRMSubCategoryModal(mainId) {
+    document.getElementById('editRMSubCategoryId').value = '';
+    const mainSelect = document.getElementById('rmSubCategoryMainSelect');
+    mainSelect.innerHTML = '';
+    rmMainCategories.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.innerText = m.name;
+        if (m.id == mainId) opt.selected = true;
+        mainSelect.appendChild(opt);
+    });
+    document.getElementById('rmSubCategoryName').value = '';
+    
+    // Auto-generate Sub Code
+    const main = rmMainCategories.find(m => m.id == mainId);
+    const existing = rmSubCategories.filter(s => s.mainId == mainId);
+    let nextNum = existing.length + 1;
+    document.getElementById('rmSubCategoryCode').value = main.code + String(nextNum).padStart(3, '0');
+    
+    document.getElementById('rmSubCategoryModalTitle').innerText = '➕ Add RM Sub-Category';
+    document.getElementById('addRMSubCategoryModal').style.display = 'block';
+}
+
+function closeAddRMSubCategoryModal() { document.getElementById('addRMSubCategoryModal').style.display = 'none'; }
+
+async function saveRMSubCategory() {
+    const id = document.getElementById('editRMSubCategoryId').value;
+    const mainId = document.getElementById('rmSubCategoryMainSelect').value;
+    const name = document.getElementById('rmSubCategoryName').value;
+    const code = document.getElementById('rmSubCategoryCode').value;
+
+    if (!name || !code) { alert('Please fill all fields'); return; }
+
+    const response = await fetch('api/sync.php?action=save_rm_sub', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sub: { id, mainId, name, code } })
+    });
+    const result = await response.json();
+    if (result.status === 'success') {
+        initApp();
+        closeAddRMSubCategoryModal();
+    }
+}
+
+function showAddRMItemModal(subId) {
+    document.getElementById('editRMItemId').value = '';
+    document.getElementById('rmItemSubId').value = subId;
+    document.getElementById('rmItemName').value = '';
+    
+    // Auto-generate Item Code
+    const sub = rmSubCategories.find(s => s.id == subId);
+    const existing = rmItems.filter(i => i.subId == subId);
+    let nextNum = existing.length + 1;
+    document.getElementById('rmItemCode').value = sub.code + String(nextNum).padStart(4, '0');
+    
+    // Units populate
+    const unitSelect = document.getElementById('rmItemUnit');
+    unitSelect.innerHTML = '<option value="">Select Unit...</option>';
+    rmUnits.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.name;
+        opt.innerText = u.name;
+        unitSelect.appendChild(opt);
+    });
+    
+    document.getElementById('rmItemStock').value = 0;
+    document.getElementById('rmItemThreshold').value = 0;
+    document.getElementById('rmItemModalTitle').innerText = '➕ Add RM Item';
+    document.getElementById('addRMItemModal').style.display = 'block';
+}
+
+function closeAddRMItemModal() { document.getElementById('addRMItemModal').style.display = 'none'; }
+
+async function saveRMItem() {
+    const id = document.getElementById('editRMItemId').value;
+    const subId = document.getElementById('rmItemSubId').value;
+    const name = document.getElementById('rmItemName').value;
+    const code = document.getElementById('rmItemCode').value;
+    const unit = document.getElementById('rmItemUnit').value;
+    const stock = document.getElementById('rmItemStock').value;
+    const threshold = document.getElementById('rmItemThreshold').value;
+
+    if (!name || !code || !unit) { alert('Please fill all required fields'); return; }
+
+    const response = await fetch('api/sync.php?action=save_rm_item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item: { id, subId, name, code, unit, stock, threshold } })
+    });
+    const result = await response.json();
+    if (result.status === 'success') {
+        initApp();
+        closeAddRMItemModal();
+    }
+}
+
+function showManageRMUnitsModal() {
+    refreshRMUnitsList();
+    document.getElementById('manageRMUnitsModal').style.display = 'block';
+}
+
+function closeManageRMUnitsModal() { document.getElementById('manageRMUnitsModal').style.display = 'none'; }
+
+function refreshRMUnitsList() {
+    const tbody = document.getElementById('rmUnitsListTable');
     if (!tbody) return;
     tbody.innerHTML = '';
-
-    rawMaterials.forEach(rm => {
+    rmUnits.forEach(u => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${rm.name}</td>
-            <td>${rm.category || '-'}</td>
-            <td><span class="badge ${parseFloat(rm.stock) <= parseFloat(rm.threshold) ? 'badge-error' : 'badge-success'}">${rm.stock}</span></td>
-            <td>${rm.unit}</td>
-            <td>${rm.threshold}</td>
-            <td>
-                <button class="btn-icon" onclick="editRM(${rm.id})">✏️</button>
-                <button class="btn-icon text-error" onclick="deleteRM(${rm.id})">🗑️</button>
-            </td>
+            <td>${u.name}</td>
+            <td><button class="btn btn-icon text-error" onclick="deleteRMUnit(${u.id})">🗑️</button></td>
         `;
         tbody.appendChild(row);
     });
 }
 
-function refreshRMTransactions(type) {
-    console.log(`StockFlow: Refreshing RM ${type} Transactions...`);
-    const select = document.getElementById(type === 'IN' ? 'rmInSelect' : 'rmOutSelect');
-    if (select) {
-        select.innerHTML = '<option value="">Select Material...</option>';
-        rawMaterials.forEach(rm => {
-            const opt = document.createElement('option');
-            opt.value = rm.id;
-            opt.innerText = rm.name;
-            select.appendChild(opt);
-        });
+async function saveRMUnit() {
+    const name = document.getElementById('newRMUnitName').value;
+    if (!name) return;
+    const response = await fetch('api/sync.php?action=save_rm_unit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ unit: { name } })
+    });
+    const result = await response.json();
+    if (result.status === 'success') {
+        document.getElementById('newRMUnitName').value = '';
+        initApp();
+        setTimeout(refreshRMUnitsList, 500);
     }
 }
 
-function refreshRMFormulas() { console.log('StockFlow: Refreshing RM Formulas...'); }
-function refreshRMInventoryBalance() { console.log('StockFlow: Refreshing RM Inventory Balance...'); }
-function refreshRMAudit() { console.log('StockFlow: Refreshing RM Audit...'); }
-function refreshRMReports() { console.log('StockFlow: Refreshing RM Reports...'); }
-function refreshRMConsumptionReport() { console.log('StockFlow: Refreshing RM Consumption...'); }
-
-async function saveRMTransaction(type) {
-    const rmId = document.getElementById(type === 'IN' ? 'rmInSelect' : 'rmOutSelect').value;
-    const qtyInput = document.getElementById(type === 'IN' ? 'rmInQty' : 'rmOutQty');
-    const qty = parseFloat(qtyInput.value);
-    const notes = document.getElementById(type === 'IN' ? 'rmInNotes' : 'rmOutNotes').value;
-
-    if (!rmId || isNaN(qty) || qty <= 0) {
-        alert('Please select a material and enter a valid quantity.');
-        return;
+async function deleteRMUnit(id) {
+    if (!confirm('Are you sure you want to delete this unit?')) return;
+    const response = await fetch('api/sync.php?action=delete_rm_unit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    });
+    if ((await response.json()).status === 'success') {
+        initApp();
+        setTimeout(refreshRMUnitsList, 500);
     }
-
-    // Logic to save transaction via API can be added later
-    alert(`${type} transaction recorded (Local Simulation)`);
-    qtyInput.value = '';
 }
 
-function showAddRMModal() { alert('Add RM Modal coming soon.'); }
-function editRM(id) { alert('Edit RM coming soon.'); }
-async function deleteRM(id) { alert('Delete RM coming soon.'); }
+// Edit/Delete handlers for RM hierarchy
+async function editRMMain(id) {
+    const m = rmMainCategories.find(x => x.id == id);
+    if (!m) return;
+    document.getElementById('editRMMainCategoryId').value = m.id;
+    document.getElementById('rmMainCategoryName').value = m.name;
+    document.getElementById('rmMainCategoryCode').value = m.code;
+    document.getElementById('rmMainCategoryModalTitle').innerText = '✏️ Edit RM Brand';
+    document.getElementById('addRMMainCategoryModal').style.display = 'block';
+}
+
+async function editRMSub(id) {
+    const s = rmSubCategories.find(x => x.id == id);
+    if (!s) return;
+    document.getElementById('editRMSubCategoryId').value = s.id;
+    
+    const mainSelect = document.getElementById('rmSubCategoryMainSelect');
+    mainSelect.innerHTML = '';
+    rmMainCategories.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.innerText = m.name;
+        if (m.id == s.mainId) opt.selected = true;
+        mainSelect.appendChild(opt);
+    });
+    
+    document.getElementById('rmSubCategoryName').value = s.name;
+    document.getElementById('rmSubCategoryCode').value = s.code;
+    document.getElementById('rmSubCategoryModalTitle').innerText = '✏️ Edit RM Sub-Category';
+    document.getElementById('addRMSubCategoryModal').style.display = 'block';
+}
+
+async function editRMItem(id) {
+    const item = rmItems.find(x => x.id == id);
+    if (!item) return;
+    document.getElementById('editRMItemId').value = item.id;
+    document.getElementById('rmItemSubId').value = item.subId;
+    document.getElementById('rmItemName').value = item.name;
+    document.getElementById('rmItemCode').value = item.code;
+    
+    const unitSelect = document.getElementById('rmItemUnit');
+    unitSelect.innerHTML = '<option value="">Select Unit...</option>';
+    rmUnits.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.name;
+        opt.innerText = u.name;
+        if (u.name == item.unit) opt.selected = true;
+        unitSelect.appendChild(opt);
+    });
+    
+    document.getElementById('rmItemStock').value = item.stock;
+    document.getElementById('rmItemThreshold').value = item.threshold;
+    document.getElementById('rmItemModalTitle').innerText = '✏️ Edit RM Item';
+    document.getElementById('addRMItemModal').style.display = 'block';
+}
+
+async function deleteRMMain(id) {
+    if (!confirm('Warning: This will delete the brand. Sub-categories and items will become orphaned. Continue?')) return;
+    const response = await fetch('api/sync.php?action=delete_rm_main', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    });
+    if ((await response.json()).status === 'success') initApp();
+}
+
+async function deleteRMSub(id) {
+    if (!confirm('Delete this sub-category? Items will be orphaned.')) return;
+    const response = await fetch('api/sync.php?action=delete_rm_sub', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    });
+    if ((await response.json()).status === 'success') initApp();
+}
+
+async function deleteRMItem(id) {
+    if (!confirm('Delete this item?')) return;
+    const response = await fetch('api/sync.php?action=delete_rm_item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    });
+    if ((await response.json()).status === 'success') initApp();
+}
 
