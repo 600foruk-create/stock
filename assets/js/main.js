@@ -184,6 +184,7 @@ async function initApp() {
 }
 
 function showTab(tabName) {
+    if (currentModule === 'settings') return;
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
     
@@ -192,7 +193,7 @@ function showTab(tabName) {
     
     // Set active button
     document.querySelectorAll('.nav-tab').forEach(btn => {
-        if (btn.textContent.toLowerCase().includes(tabName)) btn.classList.add('active');
+        if (btn.getAttribute('onclick')?.includes(`'${tabName}'`)) btn.classList.add('active');
     });
 
     if (tabName === 'dashboard') refreshDashboard();
@@ -205,6 +206,19 @@ function showTab(tabName) {
     if (tabName === 'lowStockReport') refreshLowStockReport();
     if (tabName === 'audit') refreshAuditList();
     if (tabName === 'reports') refreshArchivedReportsList();
+
+    // Raw Material refreshers
+    if (tabName.startsWith('rm_')) {
+        if (tabName === 'rm_dashboard') if (typeof refreshRMDashboard === 'function') refreshRMDashboard();
+        if (tabName === 'rm_in') if (typeof refreshRMTransactions === 'function') refreshRMTransactions('IN');
+        if (tabName === 'rm_out') if (typeof refreshRMTransactions === 'function') refreshRMTransactions('OUT');
+        if (tabName === 'rm_formulas') if (typeof refreshRMFormulas === 'function') refreshRMFormulas();
+        if (tabName === 'rm_inventory') if (typeof refreshRMInventory === 'function') refreshRMInventory();
+        if (tabName === 'rm_balance') if (typeof refreshRMInventoryBalance === 'function') refreshRMInventoryBalance();
+        if (tabName === 'rm_audit') if (typeof refreshRMAudit === 'function') refreshRMAudit();
+        if (tabName === 'rm_reports') if (typeof refreshRMReports === 'function') refreshRMReports();
+        if (tabName === 'rm_consumption') if (typeof refreshRMConsumptionReport === 'function') refreshRMConsumptionReport();
+    }
 }
 
 function switchModule(module) {
@@ -481,7 +495,14 @@ function switchModule(module) {
         refreshUsersList();
         refreshBrandLowStockSettings();
     } else if (module === 'rawMaterials') {
-        document.getElementById('rawMaterialsPanel').style.display = 'block';
+        document.getElementById('rawMaterialsTabs').style.display = 'flex';
+        const activeTabBtn = document.querySelector('#rawMaterialsTabs .nav-tab.active');
+        if (activeTabBtn) {
+            const onclickArr = activeTabBtn.getAttribute('onclick').match(/'([^']+)'/);
+            showTab(onclickArr ? onclickArr[1] : 'rm_dashboard');
+        } else {
+            showTab('rm_dashboard');
+        }
     } else if (module === 'store') {
         document.getElementById('storePanel').style.display = 'block';
     }
@@ -617,7 +638,7 @@ function filterTable(tableId, searchText) {
     }
 }
 
-function showTab(tabName) {
+
     if (currentModule !== 'finishGood') return;
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
@@ -5153,4 +5174,86 @@ async function updateDateFormat() {
         console.error('StockFlow: Failed to save date format:', e);
     }
 }
+
+// ==================== RAW MATERIALS MODULE LOGIC ====================
+
+function refreshRMDashboard() {
+    console.log('StockFlow: Refreshing RM Dashboard...');
+    // Calculate stats from rawMaterials array
+    const totalItems = rawMaterials.length;
+    let lowStockCount = 0;
+    let totalValue = 0;
+
+    rawMaterials.forEach(rm => {
+        if (parseFloat(rm.stock) <= parseFloat(rm.threshold)) lowStockCount++;
+        // Valuation logic can be added later if unit prices are implemented
+    });
+
+    if (document.getElementById('rmTotalItems')) document.getElementById('rmTotalItems').innerText = totalItems;
+    if (document.getElementById('rmLowStockCount')) document.getElementById('rmLowStockCount').innerText = lowStockCount;
+    if (document.getElementById('rmStockValuation')) document.getElementById('rmStockValuation').innerText = 'Rs. ' + totalValue.toLocaleString();
+}
+
+function refreshRMInventory() {
+    console.log('StockFlow: Refreshing RM Inventory...');
+    const tbody = document.getElementById('rmInventoryTable');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    rawMaterials.forEach(rm => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${rm.name}</td>
+            <td>${rm.category || '-'}</td>
+            <td><span class="badge ${parseFloat(rm.stock) <= parseFloat(rm.threshold) ? 'badge-error' : 'badge-success'}">${rm.stock}</span></td>
+            <td>${rm.unit}</td>
+            <td>${rm.threshold}</td>
+            <td>
+                <button class="btn-icon" onclick="editRM(${rm.id})">✏️</button>
+                <button class="btn-icon text-error" onclick="deleteRM(${rm.id})">🗑️</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function refreshRMTransactions(type) {
+    console.log(`StockFlow: Refreshing RM ${type} Transactions...`);
+    const select = document.getElementById(type === 'IN' ? 'rmInSelect' : 'rmOutSelect');
+    if (select) {
+        select.innerHTML = '<option value="">Select Material...</option>';
+        rawMaterials.forEach(rm => {
+            const opt = document.createElement('option');
+            opt.value = rm.id;
+            opt.innerText = rm.name;
+            select.appendChild(opt);
+        });
+    }
+}
+
+function refreshRMFormulas() { console.log('StockFlow: Refreshing RM Formulas...'); }
+function refreshRMInventoryBalance() { console.log('StockFlow: Refreshing RM Inventory Balance...'); }
+function refreshRMAudit() { console.log('StockFlow: Refreshing RM Audit...'); }
+function refreshRMReports() { console.log('StockFlow: Refreshing RM Reports...'); }
+function refreshRMConsumptionReport() { console.log('StockFlow: Refreshing RM Consumption...'); }
+
+async function saveRMTransaction(type) {
+    const rmId = document.getElementById(type === 'IN' ? 'rmInSelect' : 'rmOutSelect').value;
+    const qtyInput = document.getElementById(type === 'IN' ? 'rmInQty' : 'rmOutQty');
+    const qty = parseFloat(qtyInput.value);
+    const notes = document.getElementById(type === 'IN' ? 'rmInNotes' : 'rmOutNotes').value;
+
+    if (!rmId || isNaN(qty) || qty <= 0) {
+        alert('Please select a material and enter a valid quantity.');
+        return;
+    }
+
+    // Logic to save transaction via API can be added later
+    alert(`${type} transaction recorded (Local Simulation)`);
+    qtyInput.value = '';
+}
+
+function showAddRMModal() { alert('Add RM Modal coming soon.'); }
+function editRM(id) { alert('Edit RM coming soon.'); }
+async function deleteRM(id) { alert('Delete RM coming soon.'); }
 

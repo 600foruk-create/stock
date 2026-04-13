@@ -54,6 +54,18 @@
                     <button class="nav-tab" onclick="showTab('reports')">Reports Archive</button>
                 </div>
 
+                <div class="nav-tabs no-print" id="rawMaterialsTabs" style="display: none;">
+                    <button class="nav-tab active" onclick="showTab('rm_dashboard')">Dashboard</button>
+                    <button class="nav-tab" onclick="showTab('rm_in')">RM IN</button>
+                    <button class="nav-tab" onclick="showTab('rm_out')">RM OUT</button>
+                    <button class="nav-tab" onclick="showTab('rm_formulas')">Formulas</button>
+                    <button class="nav-tab" onclick="showTab('rm_inventory')">RM Inventory</button>
+                    <button class="nav-tab" onclick="showTab('rm_balance')">Inventory Balance</button>
+                    <button class="nav-tab" onclick="showTab('rm_audit')">Monthly Audit</button>
+                    <button class="nav-tab" onclick="showTab('rm_reports')">Reports</button>
+                    <button class="nav-tab" onclick="showTab('rm_consumption')">PR vs RM Consumption</button>
+                </div>
+
                 <!-- Modular Tab Content Includes -->
                 <?php include 'views/dashboard.php'; ?>
                 <?php include 'views/dataentry.php'; ?>
@@ -65,12 +77,16 @@
                 <?php include 'views/monthlyaudit.php'; ?>
                 <?php include 'views/lowstockreport.php'; ?>
 
-                <!-- New Modules Placeholders -->
-                <div id="rawMaterialsPanel" style="display: none; padding: 2rem; text-align: center;">
-                    <div style="font-size: 4rem; margin-bottom: 1rem;">🏗️</div>
-                    <h2 style="color: var(--sky-600);">Raw Materials</h2>
-                    <p style="color: var(--gray-500);">Module coming soon. Here you can manage your inventory of raw materials.</p>
-                </div>
+                <!-- Raw Materials Module Views -->
+                <div id="rm_dashboard" class="tab-content"></div>
+                <div id="rm_in" class="tab-content"></div>
+                <div id="rm_out" class="tab-content"></div>
+                <div id="rm_formulas" class="tab-content"></div>
+                <div id="rm_inventory" class="tab-content"></div>
+                <div id="rm_balance" class="tab-content"></div>
+                <div id="rm_audit" class="tab-content"></div>
+                <div id="rm_reports" class="tab-content"></div>
+                <div id="rm_consumption" class="tab-content"></div>
 
                 <div id="storePanel" style="display: none; padding: 2rem; text-align: center;">
                     <div style="font-size: 4rem; margin-bottom: 1rem;">🏬</div>
