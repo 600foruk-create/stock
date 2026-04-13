@@ -20,7 +20,7 @@ let rmFormulas = [];
 let rmFormulaItems = [];
 let storeItems = [];
 let rmTransactions = [];
-let rmCollapsedIds = new Set();
+let rmExpandedIds = new Set();
 
 let auditSession = {}; // Correctly initialized global session
 let auditRecords = [];
@@ -5176,12 +5176,12 @@ function refreshRMInventory() {
 
     let html = '';
     rmMainCategories.sort((a,b) => a.code.localeCompare(b.code)).forEach(main => {
-        const isCollapsed = rmCollapsedIds.has(`main_${main.id}`);
+        const isExpanded = rmExpandedIds.has(`main_${main.id}`);
         html += `
         <div class="brand-group" style="margin-bottom: 2rem; border: 1px solid var(--sky-200); border-radius: 10px; overflow: hidden; background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
             <div class="brand-header" style="background: var(--sky-600); color: white; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleRMCollapse('main_${main.id}')">
                 <div style="display: flex; align-items: center; gap: 1.2rem;">
-                    <span style="font-size: 1.4rem;">${isCollapsed ? '📁' : '📂'}</span>
+                    <span style="font-size: 1.4rem;">${isExpanded ? '📂' : '📁'}</span>
                     <div>
                         <div style="font-weight: 800; font-size: 1.2rem; letter-spacing: 0.5px;">${main.name}</div>
                         <div style="color: rgba(255,255,255,0.8); font-family: monospace; font-size: 0.9rem; font-weight: 600;">Code: ${main.code}</div>
@@ -5193,19 +5193,19 @@ function refreshRMInventory() {
                     <button class="btn btn-sm" style="background: rgba(255,100,100,0.3); color: white; border: 1px solid rgba(255,255,255,0.4);" onclick="deleteRMMain(${main.id})" title="Delete Category">🗑️</button>
                 </div>
             </div>
-            <div class="sub-categories-list" style="padding: 1.2rem; background: #f8fafc; ${isCollapsed ? 'display: none;' : ''}">`;
+            <div class="sub-categories-list" style="padding: 1.2rem; background: #f8fafc; ${isExpanded ? '' : 'display: none;'}">`;
 
         const subs = rmSubCategories.filter(s => s.mainId == main.id).sort((a,b) => a.code.localeCompare(b.code));
         if (subs.length === 0) {
             html += `<p style="color: var(--gray-400); font-style: italic; font-size: 0.95rem; padding: 1rem; background: white; border-radius: 8px; border: 1px dashed var(--gray-200);">No sub-categories in this category.</p>`;
         } else {
             subs.forEach(sub => {
-                const isSubCollapsed = rmCollapsedIds.has(`sub_${sub.id}`);
+                const isSubExpanded = rmExpandedIds.has(`sub_${sub.id}`);
                 html += `
                 <div class="sub-category-item" style="margin-bottom: 1.2rem; border: 1px solid var(--gray-200); border-radius: 8px; background: white; box-shadow: var(--shadow-sm);">
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1.2rem; background: #edf2f7; border-bottom: 1px solid var(--gray-200); cursor: pointer;" onclick="toggleRMCollapse('sub_${sub.id}')">
                         <div style="display: flex; align-items: center; gap: 1rem;">
-                            <span style="color: var(--sky-600); font-weight: bold;">${isSubCollapsed ? '➕' : '➖'}</span>
+                            <span style="color: var(--sky-600); font-weight: bold;">${isSubExpanded ? '➖' : '➕'}</span>
                             <div>
                                 <span style="font-weight: 700; color: var(--gray-800); font-size: 1.05rem;">${sub.name}</span>
                                 <span style="margin-left: 0.8rem; color: var(--gray-500); font-family: monospace; font-size: 0.85rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${sub.code}</span>
@@ -5217,7 +5217,7 @@ function refreshRMInventory() {
                             <button class="btn btn-icon btn-sm text-error" style="background: white;" onclick="deleteRMSub(${sub.id})">🗑️</button>
                         </div>
                     </div>
-                    <div style="${isSubCollapsed ? 'display: none;' : ''}">
+                    <div style="${isSubExpanded ? '' : 'display: none;'}">
                         <table class="data-table" style="font-size: 0.9rem; margin: 0; border: none; width: 100%;">
                             <thead>
                                 <tr style="background: #f1f5f9; border-bottom: 2px solid var(--gray-200);">
@@ -5263,10 +5263,10 @@ function refreshRMInventory() {
 }
 
 function toggleRMCollapse(id) {
-    if (rmCollapsedIds.has(id)) {
-        rmCollapsedIds.delete(id);
+    if (rmExpandedIds.has(id)) {
+        rmExpandedIds.delete(id);
     } else {
-        rmCollapsedIds.add(id);
+        rmExpandedIds.add(id);
     }
     refreshRMInventory();
 }
@@ -5315,11 +5315,27 @@ function showAddRMSubCategoryModal(mainId) {
     });
     document.getElementById('rmSubCategoryName').value = '';
     
-    // Auto-generate Sub Code
+    // Auto-generate Sub Code with Gap Filling logic
     const main = rmMainCategories.find(m => m.id == mainId);
-    const existing = rmSubCategories.filter(s => s.mainId == mainId);
-    let nextNum = existing.length + 1;
-    document.getElementById('rmSubCategoryCode').value = (main ? main.code : 'RM-') + String(nextNum).padStart(3, '0');
+    const prefix = main ? main.code : 'RM-';
+    const existingCodes = rmSubCategories.filter(s => s.mainId == mainId).map(s => s.code);
+    
+    // Find first available number that isn't already used
+    const usedNums = existingCodes
+        .filter(c => c.startsWith(prefix))
+        .map(c => parseInt(c.slice(prefix.length)))
+        .filter(n => !isNaN(n))
+        .sort((a, b) => a - b);
+
+    let nextNum = 1;
+    for (const num of usedNums) {
+        if (num === nextNum) {
+            nextNum++;
+        } else if (num > nextNum) {
+            break;
+        }
+    }
+    document.getElementById('rmSubCategoryCode').value = prefix + String(nextNum).padStart(3, '0');
     
     document.getElementById('rmSubCategoryModalTitle').innerText = '➕ Add RM Sub-Category';
     document.getElementById('addRMSubCategoryModal').style.display = 'block';
@@ -5352,11 +5368,26 @@ function showAddRMItemModal(subId) {
     document.getElementById('rmItemSubId').value = subId;
     document.getElementById('rmItemName').value = '';
     
-    // Auto-generate Item Code
+    // Auto-generate Item Code with Gap Filling logic
     const sub = rmSubCategories.find(s => s.id == subId);
-    const existing = rmItems.filter(i => i.subId == subId);
-    let nextNum = existing.length + 1;
-    document.getElementById('rmItemCode').value = sub.code + String(nextNum).padStart(4, '0');
+    const prefix = sub ? sub.code : 'RM-XXXXX';
+    const existingCodes = rmItems.filter(i => i.subId == subId).map(i => i.code);
+
+    const usedNums = existingCodes
+        .filter(c => c.startsWith(prefix))
+        .map(c => parseInt(c.slice(prefix.length)))
+        .filter(n => !isNaN(n))
+        .sort((a, b) => a - b);
+
+    let nextNum = 1;
+    for (const num of usedNums) {
+        if (num === nextNum) {
+            nextNum++;
+        } else if (num > nextNum) {
+            break;
+        }
+    }
+    document.getElementById('rmItemCode').value = prefix + String(nextNum).padStart(4, '0');
     
     // Units populate
     const unitSelect = document.getElementById('rmItemUnit');
