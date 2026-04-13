@@ -12,7 +12,7 @@
             </label>
             <label style="flex: 1;">
                 <input type="radio" name="rmOutMode" value="FORMULA" onclick="toggleRMOutMode()" style="display: none;">
-                <div class="mode-toggle-btn" id="modeBtn_FORMULA" onclick="setRMOutMode('FORMULA')" style="text-align:center; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 700; transition: 0.3s; font-size: 1rem;">
+                <div class="mode-toggle-btn" id="modeBtn_FORMULA" onclick="setRMOutMode('FORMULA')" style="text-align:center; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.3s; font-size: 0.95rem;">
                     Use Formula
                 </div>
             </label>
@@ -22,23 +22,23 @@
             <!-- Single Item Mode -->
             <div id="rmOutSingleGroup" class="form-group" style="margin-bottom: 0;">
                 <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Select Raw Material</label>
-                <select id="rmOutSelect" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem; border: 1.5px solid var(--gray-400);"></select>
+                <select id="rmOutSelect" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem; border: 2px solid #94a3b8;"></select>
             </div>
             
             <!-- Formula Mode -->
             <div id="rmOutFormulaGroup" class="form-group" style="display: none; margin-bottom: 0;">
                 <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Select Production Formula</label>
-                <select id="rmOutFormulaSelect" class="form-control" onchange="previewFormulaUsage()" style="padding: 0.6rem 1rem; font-size: 1rem; border: 1.5px solid var(--sky-400);"></select>
+                <select id="rmOutFormulaSelect" class="form-control" onchange="previewFormulaUsage()" style="padding: 0.6rem 1rem; font-size: 1rem; border: 2px solid var(--sky-500);"></select>
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
                 <label id="rmOutQtyLabel" style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Quantity</label>
-                <input type="number" id="rmOutQty" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem; border: 1.5px solid var(--gray-400);" placeholder="0.00" value="1">
+                <input type="number" id="rmOutQty" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem; border: 2px solid #94a3b8; background: white;" placeholder="1" value="1">
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
                 <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Reference / Notes</label>
-                <input type="text" id="rmOutNotes" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem; border: 1.5px solid var(--gray-400);" placeholder="Batch #, Order ID...">
+                <input type="text" id="rmOutNotes" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem; border: 2px solid #94a3b8; background: white;" placeholder="Batch #, Order ID...">
             </div>
         </div>
 
@@ -51,7 +51,7 @@
         </div>
         
         <div style="margin-top: 2rem; padding-bottom: 10px;">
-            <button class="btn btn-primary" style="background: var(--error); color: white !important; display: inline-block; width: auto; padding: 0.6rem 2.5rem; font-size: 1rem; font-weight: 700; border-radius: 8px; box-shadow: 0 4px 0 #b30000; cursor: pointer; transition: 0.2s;" onclick="saveRMTransaction('OUT')">Save</button>
+            <button class="btn btn-primary" style="background: var(--sky-600); color: white !important; display: inline-block; width: auto; padding: 0.7rem 3rem; font-size: 1.1rem; font-weight: 700; border-radius: 8px; box-shadow: 0 4px 0 var(--sky-800); border: none; cursor: pointer; transition: 0.2s;" onclick="saveRMTransaction('OUT')">Save</button>
         </div>
     </div>
 
@@ -85,11 +85,14 @@
 
 <style>
 .mode-toggle-btn.active {
-    background: white;
+    background: var(--sky-600);
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-    color: var(--error);
+    color: white;
 }
 .mode-toggle-btn:not(.active):hover {
-    background: var(--gray-200);
+    background: var(--gray-300);
+}
+.mode-toggle-btn:not(.active) {
+    color: var(--gray-700);
 }
 </style>
