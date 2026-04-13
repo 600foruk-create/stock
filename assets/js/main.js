@@ -223,35 +223,59 @@ function showTab(tabName) {
 }
 
 
-function loadLegacyData() {
-    let savedCompany = localStorage.getItem('stock_company');
-    if (savedCompany) companySettings = JSON.parse(savedCompany);
-    users = JSON.parse(localStorage.getItem('stock_users')) || [
-        { id: 1, name: 'Admin', username: 'admin', password: 'admin123', role: 'Admin' }
-    ];
-    mainCategories = JSON.parse(localStorage.getItem('stock_mainCat')) || [];
-    subCategories = JSON.parse(localStorage.getItem('stock_subCat')) || [];
-    items = JSON.parse(localStorage.getItem('stock_items')) || [];
-    customers = JSON.parse(localStorage.getItem('stock_customers')) || [];
-    orders = JSON.parse(localStorage.getItem('stock_orders')) || [];
+function loadLocalData() {
+    try {
+        let savedOrders = localStorage.getItem('stock_orders');
+        if (savedOrders) orders = JSON.parse(savedOrders);
+        let savedCustomers = localStorage.getItem('stock_customers');
+        if (savedCustomers) customers = JSON.parse(savedCustomers);
+        let savedTransactions = localStorage.getItem('stock_transactions');
+        if (savedTransactions) transactions = JSON.parse(savedTransactions);
+        let savedItems = localStorage.getItem('stock_items');
+        if (savedItems) items = JSON.parse(savedItems);
+        let savedMainCat = localStorage.getItem('stock_mainCat');
+        if (savedMainCat) mainCategories = JSON.parse(savedMainCat);
+        let savedSubCat = localStorage.getItem('stock_subCat');
+        if (savedSubCat) subCategories = JSON.parse(savedSubCat);
+        let savedRM = localStorage.getItem('stock_rawMaterials');
+        if (savedRM) rawMaterials = JSON.parse(savedRM);
+        let savedStore = localStorage.getItem('stock_storeItems');
+        if (savedStore) storeItems = JSON.parse(savedStore);
+        let savedCompany = localStorage.getItem('stock_company');
+        if (savedCompany) companySettings = JSON.parse(savedCompany);
+        let savedUsers = localStorage.getItem('stock_users');
+        if (savedUsers) users = JSON.parse(savedUsers);
+        
+        let savedUsedOrders = localStorage.getItem('stock_usedOrders');
+        if (savedUsedOrders) {
+            try {
+                usedCompletedOrders = new Set(JSON.parse(savedUsedOrders));
+            } catch (e) { }
+        }
+    } catch (e) { console.warn('StockFlow: Error loading local data', e); }
 }
 
+function loadLegacyData() { loadLocalData(); } // For backward compatibility in catch blocks
+
 function saveData() {
-    localStorage.setItem('stock_currentUser', JSON.stringify(currentUser));
-    localStorage.setItem('stock_users', JSON.stringify(users));
-    localStorage.setItem('stock_mainCat', JSON.stringify(mainCategories));
-    localStorage.setItem('stock_subCat', JSON.stringify(subCategories));
-    localStorage.setItem('stock_items', JSON.stringify(items));
-    localStorage.setItem('stock_customers', JSON.stringify(customers));
-    localStorage.setItem('stock_orders', JSON.stringify(orders));
-    localStorage.setItem('stock_transactions', JSON.stringify(transactions));
-    localStorage.setItem('stock_rawMaterials', JSON.stringify(rawMaterials));
-    localStorage.setItem('stock_storeItems', JSON.stringify(storeItems));
+    localStorage.setItem('stock_orders', JSON.stringify(orders || []));
+    localStorage.setItem('stock_customers', JSON.stringify(customers || []));
+    localStorage.setItem('stock_transactions', JSON.stringify(transactions || []));
+    localStorage.setItem('stock_items', JSON.stringify(items || []));
+    localStorage.setItem('stock_mainCat', JSON.stringify(mainCategories || []));
+    localStorage.setItem('stock_subCat', JSON.stringify(subCategories || []));
+    localStorage.setItem('stock_rawMaterials', JSON.stringify(rawMaterials || []));
+    localStorage.setItem('stock_storeItems', JSON.stringify(storeItems || []));
+    localStorage.setItem('stock_usedOrders', JSON.stringify(Array.from(usedCompletedOrders || [])));
+    localStorage.setItem('stock_company', JSON.stringify(companySettings));
+    localStorage.setItem('stock_users', JSON.stringify(users || []));
+    if (currentUser) {
+        localStorage.setItem('stock_currentUser', JSON.stringify(currentUser));
+    }
 }
 
 function saveAll() {
     saveData();
-    localStorage.setItem('stock_company', JSON.stringify(companySettings));
 }
 
 // Call init on load
@@ -328,47 +352,6 @@ function handleLogoUpload(event) {
 
 
 
-function loadLocalData() {
-    try {
-        let savedOrders = localStorage.getItem('stock_orders');
-        if (savedOrders) orders = JSON.parse(savedOrders);
-        let savedCustomers = localStorage.getItem('stock_customers');
-        if (savedCustomers) customers = JSON.parse(savedCustomers);
-        let savedTransactions = localStorage.getItem('stock_transactions');
-        if (savedTransactions) transactions = JSON.parse(savedTransactions);
-        let savedItems = localStorage.getItem('stock_items');
-        if (savedItems) items = JSON.parse(savedItems);
-        let savedMainCat = localStorage.getItem('stock_mainCat');
-        if (savedMainCat) mainCategories = JSON.parse(savedMainCat);
-        let savedSubCat = localStorage.getItem('stock_subCat');
-        if (savedSubCat) subCategories = JSON.parse(savedSubCat);
-        let savedUsedOrders = localStorage.getItem('stock_usedOrders');
-        if (savedUsedOrders) {
-            try {
-                usedCompletedOrders = new Set(JSON.parse(savedUsedOrders));
-            } catch (e) { }
-        }
-    } catch (e) { }
-}
-
-function saveData() {
-    localStorage.setItem('stock_orders', JSON.stringify(orders || []));
-    localStorage.setItem('stock_customers', JSON.stringify(customers || []));
-    localStorage.setItem('stock_transactions', JSON.stringify(transactions || []));
-    localStorage.setItem('stock_items', JSON.stringify(items || []));
-    localStorage.setItem('stock_mainCat', JSON.stringify(mainCategories || []));
-    localStorage.setItem('stock_subCat', JSON.stringify(subCategories || []));
-    localStorage.setItem('stock_usedOrders', JSON.stringify(Array.from(usedCompletedOrders || [])));
-    localStorage.setItem('stock_company', JSON.stringify(companySettings));
-    localStorage.setItem('stock_users', JSON.stringify(users || []));
-    if (currentUser) {
-        localStorage.setItem('stock_currentUser', JSON.stringify(currentUser));
-    }
-}
-
-function saveAll() {
-    saveData();
-}
 
 // Function to re-sequence all codes to fill gaps and maintain order
 function resequenceCodes() {
@@ -436,8 +419,8 @@ function switchModule(module) {
 
     // Hide all main panels and tabs
     document.getElementById('finishGoodTabs').style.display = 'none';
+    document.getElementById('rawMaterialsTabs').style.display = 'none';
     document.getElementById('settingsPanel').style.display = 'none';
-    document.getElementById('rawMaterialsPanel').style.display = 'none';
     document.getElementById('storePanel').style.display = 'none';
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
 

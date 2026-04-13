@@ -78,15 +78,16 @@
                 <?php include 'views/lowstockreport.php'; ?>
 
                 <!-- Raw Materials Module Views -->
-                <div id="rm_dashboard" class="tab-content"></div>
-                <div id="rm_in" class="tab-content"></div>
-                <div id="rm_out" class="tab-content"></div>
-                <div id="rm_formulas" class="tab-content"></div>
-                <div id="rm_inventory" class="tab-content"></div>
-                <div id="rm_balance" class="tab-content"></div>
-                <div id="rm_audit" class="tab-content"></div>
-                <div id="rm_reports" class="tab-content"></div>
-                <div id="rm_consumption" class="tab-content"></div>
+                <!-- Raw Materials Module Views -->
+                <div id="rm_dashboard" class="tab-content"><?php include 'views/rm_dashboard.php'; ?></div>
+                <div id="rm_in" class="tab-content"><?php include 'views/rm_in.php'; ?></div>
+                <div id="rm_out" class="tab-content"><?php include 'views/rm_out.php'; ?></div>
+                <div id="rm_formulas" class="tab-content"><?php include 'views/rm_formulas.php'; ?></div>
+                <div id="rm_inventory" class="tab-content"><?php include 'views/rm_inventory.php'; ?></div>
+                <div id="rm_balance" class="tab-content"><?php include 'views/rm_balance.php'; ?></div>
+                <div id="rm_audit" class="tab-content"><?php include 'views/rm_audit.php'; ?></div>
+                <div id="rm_reports" class="tab-content"><?php include 'views/rm_reports.php'; ?></div>
+                <div id="rm_consumption" class="tab-content"><?php include 'views/rm_consumption.php'; ?></div>
 
                 <div id="storePanel" style="display: none; padding: 2rem; text-align: center;">
                     <div style="font-size: 4rem; margin-bottom: 1rem;">🏬</div>
