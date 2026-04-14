@@ -2292,6 +2292,10 @@ async function refreshArchivedReportsList() {
     try {
         const response = await fetch('api/sync.php?action=get_all');
         const result = await response.json();
+        if (result.status === 'success') {
+            archivedReports = result.data.archivedReports || [];
+            const tbody = document.getElementById('archivedReportsBody');
+            
             const fgRows = archivedReports.filter(r => (r.report_type || 'FG') === 'FG').map(r => `
                 <tr>
                     <td style="padding: 1.2rem; font-weight: 600; color: var(--gray-800);">${r.title}</td>
