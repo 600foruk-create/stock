@@ -2422,50 +2422,6 @@ function renderArchivedContent(data, type = 'FG') {
 
     document.getElementById('archivedReportContent').innerHTML = html;
 }
-        });
-    });
-
-    // Let's just calculate based on the data provided in the snapshot for now
-    data.forEach(group => {
-        let bSysPcs = 0, bGdPcs = 0;
-        group.items.forEach(item => {
-            bSysPcs += parseInt(item.systemQty) || 0;
-            bGdPcs += parseInt(item.godownQty) || 0;
-        });
-        gSysPcs += bSysPcs;
-        gGdPcs += bGdPcs;
-        
-        // Append brand sub-total in modal
-        html += `
-            <div style="background: var(--gray-100); padding: 0.8rem; margin-top:-2rem; margin-bottom: 2rem; border: 1px solid var(--gray-200); border-top: none; font-weight: bold; display: flex; justify-content: space-between;">
-                <span>${group.brandName} Total:</span>
-                <span>System: ${bSysPcs} | Godown: ${bGdPcs} | Diff: ${bGdPcs - bSysPcs}</span>
-            </div>
-        `;
-    });
-
-    html += `
-        <div style="margin-top: 2rem; background: var(--gray-800); color: white; padding: 1.5rem; border-radius: 8px;">
-            <h3 style="margin: 0 0 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 0.5rem;">Report Grand Total</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; font-size: 1.2rem;">
-                <div>
-                    <label style="display: block; font-size: 0.8rem; opacity: 0.7;">System Total</label>
-                    <strong>${gSysPcs} Pcs</strong>
-                </div>
-                <div>
-                    <label style="display: block; font-size: 0.8rem; opacity: 0.7;">Godown Total</label>
-                    <strong style="color: var(--sky-400);">${gGdPcs} Pcs</strong>
-                </div>
-                <div>
-                    <label style="display: block; font-size: 0.8rem; opacity: 0.7;">Net Difference</label>
-                    <strong style="color: ${gGdPcs - gSysPcs >= 0 ? '#4ade80' : '#f87171'};">${(gGdPcs - gSysPcs > 0 ? '+' : '') + (gGdPcs - gSysPcs)} Pcs</strong>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.getElementById('archivedReportContent').innerHTML = html;
-}
 
 function closeReportViewer() {
     document.getElementById('reportViewerModal').style.display = 'none';
