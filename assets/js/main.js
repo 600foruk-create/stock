@@ -5123,6 +5123,7 @@ function refreshRMDashboard() {
     const totalItems = rmItems.length;
     let lowStockCount = 0;
     let totalBags = 0;
+    let totalWeight = 0;
     
     let summaryHtml = '';
     let alertsHtml = '';
@@ -5140,22 +5141,32 @@ function refreshRMDashboard() {
 
         const isLow = stock <= actualThresholdKg;
         
+        totalWeight += stock;
+        
         if (kgPerBag > 0) {
             totalBags += stock / kgPerBag;
         }
 
-        // Inventory Summary Cards
-        const bagsText = kgPerBag > 0 ? `<div style="font-size: 0.8rem; color: var(--primary); font-weight: 700;">${(stock / kgPerBag).toFixed(1)} Bags</div>` : '';
+        // Inventory Summary Cards - Consistent sizing for KG and Bags
+        const bagsVal = kgPerBag > 0 ? (stock / kgPerBag).toFixed(1) : '---';
+        const bagsDisplay = kgPerBag > 0 ? `
+            <div style="font-weight: 800; color: var(--primary); font-size: 1.15rem;">
+                ${bagsVal} <span style="font-size: 0.75rem; color: var(--gray-400); font-weight:600;">Bags</span>
+            </div>` : '';
         
         summaryHtml += `
-            <div style="background: white; border: 1px solid var(--gray-100); padding: 12px 15px; border-radius: 12px; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: 0.2s; border-left: 4px solid var(--sky-400);">
+            <div style="background: white; border: 1px solid var(--gray-100); padding: 12px 18px; border-radius: 12px; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.03); transition: 0.2s; border-left: 5px solid var(--sky-400);">
                 <div>
-                    <div style="font-weight: 700; color: var(--gray-800); font-size: 1rem;">${item.name}</div>
-                    <div style="font-size: 0.8rem; color: var(--gray-500); margin-top: 2px;">Item Code: ${item.code}</div>
+                    <div style="font-weight: 700; color: var(--gray-800); font-size: 1.05rem;">${item.name}</div>
+                    <div style="font-size: 0.8rem; color: var(--gray-500); margin-top: 3px; font-family: monospace;">${item.code}</div>
                 </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: 800; color: var(--sky-700); font-size: 1.1rem;">${stock.toLocaleString()} <span style="font-size: 0.7rem; color: var(--gray-400);">${item.unit}</span></div>
-                    ${bagsText}
+                <div style="display: flex; gap: 2rem; align-items: center; text-align: right;">
+                    <div style="min-width: 100px;">
+                        <div style="font-weight: 800; color: var(--sky-700); font-size: 1.15rem;">
+                            ${stock.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} <span style="font-size: 0.75rem; color: var(--gray-400); font-weight:600;">${item.unit}</span>
+                        </div>
+                        ${bagsDisplay}
+                    </div>
                 </div>
             </div>`;
 
@@ -5178,6 +5189,7 @@ function refreshRMDashboard() {
     if (document.getElementById('rmTotalItems')) document.getElementById('rmTotalItems').innerText = totalItems;
     if (document.getElementById('rmLowStockCount')) document.getElementById('rmLowStockCount').innerText = lowStockCount;
     if (document.getElementById('rmTotalBags')) document.getElementById('rmTotalBags').innerText = Math.floor(totalBags).toLocaleString();
+    if (document.getElementById('rmTotalWeightKg')) document.getElementById('rmTotalWeightKg').innerText = totalWeight.toLocaleString(undefined, {maximumFractionDigits: 1}) + ' KG';
     
     if (document.getElementById('rmInventorySummary')) document.getElementById('rmInventorySummary').innerHTML = summaryHtml;
     if (document.getElementById('rmLowStockAlerts')) document.getElementById('rmLowStockAlerts').innerHTML = alertsHtml;
