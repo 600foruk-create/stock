@@ -21,9 +21,10 @@
                 <tr>
                     <th style="padding-left:1.5rem;">Material Name / Code</th>
                     <th style="text-align:center;">System Stock</th>
-                    <th style="text-align:center; width:180px;">Physical Stock</th>
+                    <th style="text-align:center; width:150px;">Physical Stock</th>
                     <th style="text-align:center;">Difference</th>
-                    <th style="padding-right:1.5rem; text-align:center;">Status</th>
+                    <th style="text-align:center;">Status</th>
+                    <th style="padding-right:1.5rem; text-align:center;">Action</th>
                 </tr>
             </thead>
             <tbody id="rmAuditTable">

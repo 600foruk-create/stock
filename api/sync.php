@@ -24,8 +24,17 @@ try {
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     date DATETIME NOT NULL,
                     title VARCHAR(255) NOT NULL,
-                    data LONGTEXT NOT NULL
+                    data LONGTEXT NOT NULL,
+                    report_type VARCHAR(20) DEFAULT 'FG'
                 )");
+
+                // AUTO-REPAIR: Add report_type column if missing
+                try {
+                    $cols = $conn->query("SHOW COLUMNS FROM audit_reports_archive")->fetchAll(PDO::FETCH_COLUMN);
+                    if (!in_array('report_type', $cols)) {
+                        $conn->exec("ALTER TABLE audit_reports_archive ADD COLUMN report_type VARCHAR(20) DEFAULT 'FG'");
+                    }
+                } catch(Exception $e) {}
 
                 // AUTO-REPAIR: Item Low Stock Limit
                 $itemCols = $conn->query("SHOW COLUMNS FROM items")->fetchAll(PDO::FETCH_COLUMN);
@@ -64,7 +73,7 @@ try {
                 'rmTransactions' => $conn->query("SELECT * FROM rm_transactions ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
                 'storeItems' => $conn->query("SELECT id, name, description, stock FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
                 'latestAudit' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id)")->fetchAll(PDO::FETCH_ASSOC),
-                'archivedReports' => $conn->query("SELECT id, date, title FROM audit_reports_archive ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
+                'archivedReports' => $conn->query("SELECT id, date, title, report_type FROM audit_reports_archive ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
             ];
             
             // Add order items to orders
@@ -195,10 +204,11 @@ try {
 
         elseif ($action === 'archive_report') {
             $title = $input['title'] ?? 'Audit Report';
+            $type = $input['report_type'] ?? 'FG';
             $data = json_encode($input['data']);
             $date = date('Y-m-d H:i:s');
-            $stmt = $conn->prepare("INSERT INTO audit_reports_archive (date, title, data) VALUES (?, ?, ?)");
-            $stmt->execute([$date, $title, $data]);
+            $stmt = $conn->prepare("INSERT INTO audit_reports_archive (date, title, data, report_type) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$date, $title, $data, $type]);
             echo json_encode(['status' => 'success', 'id' => $conn->lastInsertId()]);
         }
 

@@ -2268,7 +2268,8 @@ async function archiveCurrentAudit() {
             method: 'POST',
             body: JSON.stringify({
                 title: reportTitle,
-                data: snapshotData
+                data: snapshotData,
+                report_type: 'FG'
             })
         });
         const result = await response.json();
@@ -2291,32 +2292,31 @@ async function refreshArchivedReportsList() {
     try {
         const response = await fetch('api/sync.php?action=get_all');
         const result = await response.json();
-        if (result.status === 'success') {
-            archivedReports = result.data.archivedReports || [];
-            const tbody = document.getElementById('archivedReportsBody');
-            if (!tbody) return;
-
-            if (archivedReports.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 3rem; color: var(--gray-400);"><div style="font-size: 3rem; margin-bottom: 1rem;">📂</div>No archived reports found.</td></tr>`;
-                return;
-            }
-
-            let rows = '';
-            archivedReports.forEach(r => {
-                rows += `<tr>
+            const fgRows = archivedReports.filter(r => (r.report_type || 'FG') === 'FG').map(r => `
+                <tr>
                     <td style="padding: 1.2rem; font-weight: 600; color: var(--gray-800);">${r.title}</td>
                     <td style="padding: 1.2rem; color: var(--gray-500);">${new Date(r.date).toLocaleString()}</td>
                     <td style="padding: 1.2rem; display: flex; gap: 0.5rem; justify-content: center;">
                         <button class="report-action-btn" onclick="viewArchivedReport(${r.id})">👁️ View</button>
                         <button class="report-action-btn delete" onclick="deleteArchivedReport(${r.id})">🗑️ Delete</button>
                     </td>
-                </tr>`;
-            });
-            tbody.innerHTML = rows;
+                </tr>`).join('');
+            
+            const rmRows = archivedReports.filter(r => r.report_type === 'RM').map(r => `
+                <tr>
+                    <td style="padding: 1.2rem; font-weight: 600; color: var(--gray-800);">${r.title}</td>
+                    <td style="padding: 1.2rem; color: var(--gray-500);">${new Date(r.date).toLocaleString()}</td>
+                    <td style="padding: 1.2rem; display: flex; gap: 0.5rem; justify-content: center;">
+                        <button class="report-action-btn" onclick="viewArchivedReport(${r.id})">👁️ View</button>
+                        <button class="report-action-btn delete" onclick="deleteArchivedReport(${r.id})">🗑️ Delete</button>
+                    </td>
+                </tr>`).join('');
+
+            if (tbody) tbody.innerHTML = fgRows || `<tr><td colspan="3" style="text-align: center; padding: 3rem; color: var(--gray-400);">No Finish Good reports found.</td></tr>`;
             
             // Also populate RM Reports Table if it exists
             const rmTable = document.getElementById('rmReportsTable');
-            if (rmTable) rmTable.innerHTML = rows;
+            if (rmTable) rmTable.innerHTML = rmRows || `<tr><td colspan="4" style="text-align: center; padding: 3rem; color: var(--gray-400);">No Raw Material reports found.</td></tr>`;
         }
     } catch (e) { console.error(e); }
 }
@@ -6204,6 +6204,9 @@ function refreshRMAudit() {
                     ${status}
                 </span>
             </td>
+            <td style="text-align: center; padding-right: 1.5rem;">
+                <button class="btn btn-sm" onclick="adjustSingleRMItem(${item.id})" style="background: var(--sky-100); color: var(--sky-700); font-weight: 700; border: none; padding: 0.3rem 0.8rem; border-radius: 6px; font-size: 0.75rem;">Adjust</button>
+            </td>
         `;
         tbody.appendChild(row);
     });
@@ -6267,7 +6270,8 @@ async function archiveRMAuditReport() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             title: `RM Monthly Audit - ${new Date().toLocaleDateString()}`,
-            data: snapshot
+            data: snapshot,
+            report_type: 'RM'
         })
     });
     
@@ -6279,6 +6283,8 @@ async function archiveRMAuditReport() {
 }
 
 async function autoAdjustRMAll() {
+    if (!verifyAdminAction()) return;
+
     const adjustments = [];
     for (const item of rmItems) {
         const sys = parseFloat(item.stock) || 0;
@@ -6290,7 +6296,7 @@ async function autoAdjustRMAll() {
                 rm_item_id: item.id,
                 quantity: Math.abs(diff),
                 type: diff > 0 ? 'IN' : 'OUT',
-                notes: 'Audit Adjustment'
+                notes: 'Audit Adjustment (Bulk)'
             });
         }
     }
@@ -6310,9 +6316,60 @@ async function autoAdjustRMAll() {
 
     const res = await response.json();
     if (res.status === 'success') {
-        showToast('Stock Adjusted Successfully!', 'success');
+        showToast('Bulk Stock Adjustments Completed!', 'success');
         initApp(); // Refresh data and UI
     }
+}
+
+async function adjustSingleRMItem(itemId) {
+    const item = rmItems.find(i => i.id == itemId);
+    if (!item) return;
+
+    const sys = parseFloat(item.stock) || 0;
+    const phys = rmPhysicalStockMap[itemId] || 0;
+    const diff = phys - sys;
+
+    if (Math.abs(diff) < 0.0001) {
+        showToast('Item stock is already balanced.', 'info');
+        return;
+    }
+
+    if (!verifyAdminAction()) return;
+
+    if (!confirm(`Adjust ${item.name} stock level to match physical count (${phys})?`)) return;
+
+    const adjustment = {
+        rm_item_id: item.id,
+        quantity: Math.abs(diff),
+        type: diff > 0 ? 'IN' : 'OUT',
+        notes: 'Audit Adjustment (Single)'
+    };
+
+    const response = await fetch('api/sync.php?action=save_rm_transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transaction: adjustment })
+    });
+
+    const res = await response.json();
+    if (res.status === 'success') {
+        showToast(`${item.name} Adjusted!`, 'success');
+        initApp(); // Refresh
+    }
+}
+
+function verifyAdminAction() {
+    const code = prompt("Security Check: Enter Admin Password to authorize this adjustment:");
+    if (code === null) return false;
+    
+    // Find admin user or use default
+    const adminUser = users.find(u => u.role === 'Admin');
+    const validCode = adminUser ? adminUser.password : 'admin123';
+    
+    if (code === validCode) return true;
+    
+    alert("❌ Invalid password! Authorization failed.");
+    return false;
 }
 
 function printRMAudit() {
