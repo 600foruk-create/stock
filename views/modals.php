@@ -401,8 +401,19 @@
                 <input type="number" id="rmItemStock" step="0.001" class="form-control" value="0">
             </div>
             <div class="form-group">
+                <label>KG per Bag (Multiplier)</label>
+                <input type="number" id="rmItemKgPerBag" step="0.001" class="form-control" value="0" placeholder="e.g., 25.000">
+                <small style="color: var(--gray-500);">Set to 25 or 50 for bags, 0 for loose items.</small>
+            </div>
+            <div class="form-group">
                 <label>Low Stock Threshold</label>
-                <input type="number" id="rmItemThreshold" step="0.001" class="form-control" value="0">
+                <div class="input-group" style="display:flex; gap:0.5rem;">
+                    <input type="number" id="rmItemThreshold" step="0.001" class="form-control" value="0" style="flex:2;">
+                    <select id="rmItemThresholdUnit" class="form-control" style="flex:1;">
+                        <option value="KG">KG</option>
+                        <option value="Bags">Bags</option>
+                    </select>
+                </div>
             </div>
             <button class="btn btn-success" onclick="saveRMItem()" style="width:100%;">Save RM Item</button>
         </div>

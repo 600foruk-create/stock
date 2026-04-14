@@ -1,9 +1,13 @@
 <div class="rm-dashboard">
     <!-- Top Stats Grid: 2 Columns -->
-    <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
         <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 1.2rem; border-left: 5px solid var(--sky-500); box-shadow: var(--shadow-sm);">
             <div class="stat-label" style="color: var(--gray-500); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">Total RM Types</div>
             <div class="stat-value" id="rmTotalItems" style="font-size: 2.5rem; font-weight: 800; color: var(--gray-800); margin-top: 0.5rem;">0</div>
+        </div>
+        <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 1.2rem; border-left: 5px solid var(--primary); box-shadow: var(--shadow-sm);">
+            <div class="stat-label" style="color: var(--gray-500); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">Total Bags in Stock</div>
+            <div class="stat-value" id="rmTotalBags" style="font-size: 2.5rem; font-weight: 800; color: var(--primary); margin-top: 0.5rem;">0</div>
         </div>
         <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 1.2rem; border-left: 5px solid var(--error); box-shadow: var(--shadow-sm);">
             <div class="stat-label" style="color: var(--gray-500); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">Low Stock Alarms</div>

@@ -46,6 +46,14 @@ try {
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_main_categories (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL)");
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_sub_categories (id INT AUTO_INCREMENT PRIMARY KEY, main_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL)");
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_items (id INT AUTO_INCREMENT PRIMARY KEY, sub_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL, unit VARCHAR(50), stock DECIMAL(15,3) DEFAULT 0, threshold DECIMAL(15,3) DEFAULT 0)");
+                
+                // AUTO-REPAIR: Bags & Units for RM
+                try {
+                    $rmCols = $conn->query("SHOW COLUMNS FROM rm_items")->fetchAll(PDO::FETCH_COLUMN);
+                    if (!in_array('kg_per_bag', $rmCols)) $conn->exec("ALTER TABLE rm_items ADD COLUMN kg_per_bag DECIMAL(15,3) DEFAULT 0");
+                    if (!in_array('threshold_unit', $rmCols)) $conn->exec("ALTER TABLE rm_items ADD COLUMN threshold_unit VARCHAR(20) DEFAULT 'KG'");
+                } catch(Exception $e) {}
+
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_units (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(50) UNIQUE)");
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_formulas (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL)");
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_formula_items (id INT AUTO_INCREMENT PRIMARY KEY, formula_id INT NOT NULL, rm_item_id INT NOT NULL, quantity DECIMAL(15,3) NOT NULL, FOREIGN KEY (formula_id) REFERENCES rm_formulas(id) ON DELETE CASCADE)");
@@ -66,7 +74,7 @@ try {
                 'rawMaterials' => $conn->query("SELECT id, name, category, unit, stock, threshold FROM raw_materials")->fetchAll(PDO::FETCH_ASSOC), // Legacy support
                 'rmMainCategories' => $conn->query("SELECT id, name, code FROM rm_main_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'rmSubCategories' => $conn->query("SELECT id, main_id AS mainId, name, code FROM rm_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
-                'rmItems' => $conn->query("SELECT id, sub_id AS subId, name, code, unit, stock, threshold FROM rm_items")->fetchAll(PDO::FETCH_ASSOC),
+                'rmItems' => $conn->query("SELECT id, sub_id AS subId, name, code, unit, stock, threshold, kg_per_bag AS kgPerBag, threshold_unit AS thresholdUnit FROM rm_items")->fetchAll(PDO::FETCH_ASSOC),
                 'rmUnits' => $conn->query("SELECT id, name FROM rm_units")->fetchAll(PDO::FETCH_ASSOC),
                 'rmFormulas' => $conn->query("SELECT * FROM rm_formulas")->fetchAll(PDO::FETCH_ASSOC),
                 'rmFormulaItems' => $conn->query("SELECT * FROM rm_formula_items")->fetchAll(PDO::FETCH_ASSOC),

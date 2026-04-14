@@ -9,8 +9,16 @@
             </div>
             
             <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Quantity (Purchase Amount)</label>
-                <input type="number" id="rmInQty" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem;" placeholder="0.00">
+                <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Quantity Received</label>
+                <div class="input-group" style="display:flex; gap:0.5rem; align-items:center;">
+                    <input type="number" id="rmInQty" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem; flex:2;" placeholder="0.00" oninput="updateRMConversionHint('IN')">
+                    <select id="rmInUnitSelect" class="form-control" style="flex:1; padding: 0.6rem; font-size: 0.9rem;" onchange="updateRMConversionHint('IN')">
+                        <option value="KG">KG</option>
+                        <option value="Bags">Bags</option>
+                        <option value="Grams">Grams</option>
+                    </select>
+                </div>
+                <small id="rmInConversionHint" style="color:var(--sky-600); font-weight:600; margin-top:0.2rem; display:block; height:1rem;"></small>
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">

@@ -33,7 +33,16 @@
 
             <div class="form-group" style="margin-bottom: 0;">
                 <label id="rmOutQtyLabel" style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Quantity</label>
-                <input type="number" id="rmOutQty" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem; border: 2px solid #94a3b8; background: white;" placeholder="1" value="1">
+                <div class="input-group" style="display:flex; gap:0.5rem; align-items:center;">
+                    <input type="number" id="rmOutQty" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem; border: 2px solid #94a3b8; background: white; flex:2;" placeholder="1" value="1" oninput="updateRMConversionHint('OUT')">
+                    <select id="rmOutUnitSelect" class="form-control" style="flex:1; padding: 0.6rem; font-size: 0.9rem;" onchange="updateRMConversionHint('OUT')">
+                        <option value="KG">KG</option>
+                        <option value="Bags">Bags</option>
+                        <option value="Grams">Grams</option>
+                        <option value="Multiplier" style="display:none;">Batches</option>
+                    </select>
+                </div>
+                <small id="rmOutConversionHint" style="color:var(--sky-600); font-weight:600; margin-top:0.2rem; display:block; height:1rem;"></small>
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">

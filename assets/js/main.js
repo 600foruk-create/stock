@@ -5122,6 +5122,7 @@ function refreshRMDashboard() {
     console.log('StockFlow: Refreshing RM Dashboard...');
     const totalItems = rmItems.length;
     let lowStockCount = 0;
+    let totalBags = 0;
     
     let summaryHtml = '';
     let alertsHtml = '';
@@ -5129,9 +5130,23 @@ function refreshRMDashboard() {
     rmItems.forEach(item => {
         const stock = parseFloat(item.stock) || 0;
         const threshold = parseFloat(item.threshold) || 0;
-        const isLow = stock <= threshold;
+        const thresholdUnit = item.thresholdUnit || 'KG';
+        const kgPerBag = parseFloat(item.kgPerBag) || 0;
         
+        let actualThresholdKg = threshold;
+        if (thresholdUnit === 'Bags' && kgPerBag > 0) {
+            actualThresholdKg = threshold * kgPerBag;
+        }
+
+        const isLow = stock <= actualThresholdKg;
+        
+        if (kgPerBag > 0) {
+            totalBags += stock / kgPerBag;
+        }
+
         // Inventory Summary Cards
+        const bagsText = kgPerBag > 0 ? `<div style="font-size: 0.8rem; color: var(--primary); font-weight: 700;">${(stock / kgPerBag).toFixed(1)} Bags</div>` : '';
+        
         summaryHtml += `
             <div style="background: white; border: 1px solid var(--gray-100); padding: 12px 15px; border-radius: 12px; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: 0.2s; border-left: 4px solid var(--sky-400);">
                 <div>
@@ -5139,8 +5154,8 @@ function refreshRMDashboard() {
                     <div style="font-size: 0.8rem; color: var(--gray-500); margin-top: 2px;">Item Code: ${item.code}</div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-weight: 800; color: var(--sky-700); font-size: 1.1rem;">${stock.toLocaleString()}</div>
-                    <div style="font-size: 0.75rem; font-weight: 600; color: var(--gray-400); text-transform: uppercase;">${item.unit}</div>
+                    <div style="font-weight: 800; color: var(--sky-700); font-size: 1.1rem;">${stock.toLocaleString()} <span style="font-size: 0.7rem; color: var(--gray-400);">${item.unit}</span></div>
+                    ${bagsText}
                 </div>
             </div>`;
 
@@ -5150,7 +5165,7 @@ function refreshRMDashboard() {
                 <div style="background: #fff5f5; border: 1px solid #feb2b2; padding: 10px 15px; border-radius: 10px; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <div style="font-weight: 700; color: #c53030; font-size: 0.95rem;">${item.name}</div>
-                        <div style="font-size: 0.8rem; color: #9b2c2c; opacity: 0.8;">Current: ${stock} / Min: ${threshold}</div>
+                        <div style="font-size: 0.8rem; color: #9b2c2c; opacity: 0.8;">Current: ${stock} / Min: ${threshold} ${thresholdUnit}</div>
                     </div>
                     <div style="background: #fc8181; color: white; padding: 4px 10px; border-radius: 50px; font-weight: 800; font-size: 0.8rem;">REORDER</div>
                 </div>`;
@@ -5162,10 +5177,7 @@ function refreshRMDashboard() {
 
     if (document.getElementById('rmTotalItems')) document.getElementById('rmTotalItems').innerText = totalItems;
     if (document.getElementById('rmLowStockCount')) document.getElementById('rmLowStockCount').innerText = lowStockCount;
-    
-    if (document.getElementById('rmStockValuation')) {
-        document.getElementById('rmStockValuation').parentElement.style.display = 'none';
-    }
+    if (document.getElementById('rmTotalBags')) document.getElementById('rmTotalBags').innerText = Math.floor(totalBags).toLocaleString();
     
     if (document.getElementById('rmInventorySummary')) document.getElementById('rmInventorySummary').innerHTML = summaryHtml;
     if (document.getElementById('rmLowStockAlerts')) document.getElementById('rmLowStockAlerts').innerHTML = alertsHtml;
@@ -5422,6 +5434,8 @@ function showAddRMItemModal(subId) {
     
     document.getElementById('rmItemStock').value = 0;
     document.getElementById('rmItemThreshold').value = 0;
+    document.getElementById('rmItemKgPerBag').value = 0;
+    document.getElementById('rmItemThresholdUnit').value = 'KG';
     document.getElementById('rmItemModalTitle').innerText = '➕ Add RM Item';
     document.getElementById('addRMItemModal').style.display = 'block';
 }
@@ -5436,13 +5450,15 @@ async function saveRMItem() {
     const unit = document.getElementById('rmItemUnit').value;
     const stock = document.getElementById('rmItemStock').value;
     const threshold = document.getElementById('rmItemThreshold').value;
+    const kgPerBag = document.getElementById('rmItemKgPerBag').value;
+    const thresholdUnit = document.getElementById('rmItemThresholdUnit').value;
 
     if (!name || !code || !unit) { alert('Please fill all required fields'); return; }
 
     const response = await fetch('api/sync.php?action=save_rm_item', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ item: { id, subId, name, code, unit, stock, threshold } })
+        body: JSON.stringify({ item: { id, subId, name, code, unit, stock, threshold, kg_per_bag: kgPerBag, threshold_unit: thresholdUnit } })
     });
     const result = await response.json();
     if (result.status === 'success') {
@@ -5553,6 +5569,8 @@ async function editRMItem(id) {
     
     document.getElementById('rmItemStock').value = item.stock;
     document.getElementById('rmItemThreshold').value = item.threshold;
+    document.getElementById('rmItemKgPerBag').value = item.kgPerBag || 0;
+    document.getElementById('rmItemThresholdUnit').value = item.thresholdUnit || 'KG';
     document.getElementById('rmItemModalTitle').innerText = '✏️ Edit RM Item';
     document.getElementById('addRMItemModal').style.display = 'block';
 }
@@ -5932,11 +5950,24 @@ async function saveRMTransaction(type) {
 
     if (isNaN(multiplier) || multiplier <= 0) { alert('Enter a valid quantity'); return; }
 
+    let actualKg = multiplier;
     if (mode === 'SINGLE') {
         const itemId = type === 'IN' ? document.getElementById('rmInSelect').value : document.getElementById('rmOutSelect').value;
-        if (!itemId) { alert('Select a material'); return; }
+        const unitSelectId = type === 'IN' ? 'rmInUnitSelect' : 'rmOutUnitSelect';
+        const selectedUnit = document.getElementById(unitSelectId).value;
         
-        await recordSingleRMTransaction(itemId, multiplier, type, notes);
+        if (!itemId) { alert('Select a material'); return; }
+        const item = rmItems.find(i => i.id == itemId);
+        
+        if (selectedUnit === 'Bags') {
+            const kgPerBag = parseFloat(item.kgPerBag) || 0;
+            if (kgPerBag <= 0) { alert('Please set "KG per Bag" for this item in Inventory before using Bags.'); return; }
+            actualKg = multiplier * kgPerBag;
+        } else if (selectedUnit === 'Grams') {
+            actualKg = multiplier / 1000;
+        }
+        
+        await recordSingleRMTransaction(itemId, actualKg, type, notes);
     } else {
         // Formula Mode
         const formulaId = document.getElementById('rmOutFormulaSelect').value;
@@ -5984,6 +6015,79 @@ async function saveRMTransaction(type) {
         const preview = document.getElementById('formulaPreview');
         if (preview) preview.innerHTML = '';
     }
+    
+    // Clear hints
+    if (document.getElementById('rmInConversionHint')) document.getElementById('rmInConversionHint').innerText = '';
+    if (document.getElementById('rmOutConversionHint')) document.getElementById('rmOutConversionHint').innerText = '';
+}
+
+/**
+ * Real-time conversion hint logic
+ */
+function updateRMConversionHint(type) {
+    const qtyInput = document.getElementById(`rm${type === 'IN' ? 'In' : 'Out'}Qty`);
+    const selectId = `rm${type === 'IN' ? 'In' : 'Out'}Select`;
+    const unitSelectId = `rm${type === 'IN' ? 'In' : 'Out'}UnitSelect`;
+    const hintId = `rm${type === 'IN' ? 'In' : 'Out'}ConversionHint`;
+    
+    const qty = parseFloat(qtyInput.value);
+    const itemId = document.getElementById(selectId).value;
+    const unitSelect = document.getElementById(unitSelectId);
+    const unit = unitSelect ? unitSelect.value : 'KG';
+    const hintEl = document.getElementById(hintId);
+    
+    if (!hintEl) return;
+    if (isNaN(qty) || !itemId || unit === 'KG' || unit === 'Multiplier') { hintEl.innerText = ''; return; }
+    
+    const item = rmItems.find(i => i.id == itemId);
+    if (!item) { hintEl.innerText = ''; return; }
+
+    if (unit === 'Bags') {
+        const kgPerBag = parseFloat(item.kgPerBag) || 0;
+        if (kgPerBag > 0) {
+            hintEl.innerText = `(= ${(qty * kgPerBag).toFixed(2)} KG)`;
+        } else {
+            hintEl.innerText = '(Set KG/Bag in Inventory first)';
+        }
+    } else if (unit === 'Grams') {
+        hintEl.innerText = `(= ${(qty / 1000).toFixed(3)} KG)`;
+    }
+}
+
+/**
+ * Enhanced RM Out Mode Toggle
+ */
+function setRMOutMode(mode) {
+    document.querySelectorAll('input[name="rmOutMode"]').forEach(radio => {
+        if (radio.value === mode) radio.checked = true;
+    });
+    
+    // UI toggles
+    if (document.getElementById('rmOutSingleGroup')) document.getElementById('rmOutSingleGroup').style.display = (mode === 'SINGLE') ? 'block' : 'none';
+    if (document.getElementById('rmOutFormulaGroup')) document.getElementById('rmOutFormulaGroup').style.display = (mode === 'FORMULA') ? 'block' : 'none';
+    if (document.getElementById('rmFormulaIngredientsEditor')) document.getElementById('rmFormulaIngredientsEditor').style.display = (mode === 'FORMULA') ? 'block' : 'none';
+    if (document.getElementById('formulaPreview')) document.getElementById('formulaPreview').style.display = (mode === 'FORMULA') ? 'block' : 'none';
+    
+    document.querySelectorAll('.mode-toggle-btn').forEach(btn => btn.classList.remove('active'));
+    if (document.getElementById(`modeBtn_${mode}`)) document.getElementById(`modeBtn_${mode}`).classList.add('active');
+
+    // Unit toggle
+    const unitSelect = document.getElementById('rmOutUnitSelect');
+    if (unitSelect) {
+        const batchesOpt = [...unitSelect.options].find(o => o.value === 'Multiplier');
+        if (mode === 'FORMULA') {
+            unitSelect.value = 'Multiplier';
+            if (batchesOpt) batchesOpt.style.display = 'block';
+            [...unitSelect.options].forEach(o => { if(o.value !== 'Multiplier') o.style.display = 'none'; });
+            if (document.getElementById('rmOutQtyLabel')) document.getElementById('rmOutQtyLabel').innerText = 'Number of Batches';
+        } else {
+            unitSelect.value = 'KG';
+            if (batchesOpt) batchesOpt.style.display = 'none';
+            [...unitSelect.options].forEach(o => { if(o.value !== 'Multiplier') o.style.display = 'block'; });
+            if (document.getElementById('rmOutQtyLabel')) document.getElementById('rmOutQtyLabel').innerText = 'Quantity';
+        }
+    }
+    updateRMConversionHint('OUT');
 }
 
 // ==================== RM IN LOGIC ====================
