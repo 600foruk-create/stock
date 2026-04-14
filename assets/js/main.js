@@ -2334,55 +2334,94 @@ async function viewArchivedReport(id) {
             currentArchivedReport.snapshot = JSON.parse(result.report.data);
             
             document.getElementById('reportViewerTitle').textContent = currentArchivedReport.title;
-            renderArchivedContent(currentArchivedReport.snapshot);
+            renderArchivedContent(currentArchivedReport.snapshot, currentArchivedReport.report_type);
             document.getElementById('reportViewerModal').style.display = 'block';
         }
-    } catch (e) { alert("Failed to load report details."); }
+    } catch (e) { 
+        console.error(e);
+        alert("Failed to load report details."); 
+    }
 }
 
-function renderArchivedContent(data) {
+function renderArchivedContent(data, type = 'FG') {
     let html = '';
-    data.forEach(group => {
-        html += `<div class="audit-group" style="margin-bottom: 2rem;">
-            <div class="audit-brand-header" style="background: var(--sky-600); color: white; padding: 0.8rem 1.2rem; border-radius: 8px 8px 0 0; font-weight: 600;">
-                ${group.brandName}
-            </div>
+    
+    if (type === 'RM') {
+        html = `
             <table class="audit-table" style="width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--gray-200);">
                 <thead>
                     <tr style="background: var(--gray-50);">
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Material Name</th>
                         <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Code</th>
-                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Size</th>
-                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">System Qty</th>
-                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Godown Qty</th>
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">System Stock</th>
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Physical Stock</th>
                         <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Difference</th>
                     </tr>
                 </thead>
                 <tbody>`;
-        group.items.forEach(item => {
-            const diffClass = item.diff > 0 ? 'diff-plus' : (item.diff < 0 ? 'diff-minus' : '');
-            const diffText = item.diff > 0 ? `+${item.diff}` : item.diff;
+        data.forEach(item => {
+            const diff = parseFloat(item.difference) || 0;
+            const diffClass = diff > 0 ? 'diff-plus' : (diff < 0 ? 'diff-minus' : '');
+            const diffText = diff > 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2);
             html += `<tr>
-                <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;">${item.productCode}</td>
-                <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;">${item.size}</td>
-                <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;">${item.systemQty}</td>
-                <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;"><strong>${item.godownQty}</strong></td>
+                <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: left; font-weight:600;">${item.name}</td>
+                <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center; color:var(--gray-500); font-family:monospace;">${item.code}</td>
+                <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;">${parseFloat(item.system).toFixed(2)} ${item.unit}</td>
+                <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;"><strong>${parseFloat(item.physical).toFixed(2)}</strong> ${item.unit}</td>
                 <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;" class="${diffClass}">${diffText}</td>
             </tr>`;
         });
-        html += `</tbody></table></div>`;
-    });
+        html += `</tbody></table>`;
+    } else {
+        // Finish Goods Clustered View
+        data.forEach(group => {
+            html += `<div class="audit-group" style="margin-bottom: 2rem;">
+                <div class="audit-brand-header" style="background: var(--sky-600); color: white; padding: 0.8rem 1.2rem; border-radius: 8px 8px 0 0; font-weight: 600;">
+                    ${group.brandName}
+                </div>
+                <table class="audit-table" style="width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--gray-200);">
+                    <thead>
+                        <tr style="background: var(--gray-50);">
+                            <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Code</th>
+                            <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Size</th>
+                            <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">System Qty</th>
+                            <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Godown Qty</th>
+                            <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Difference</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            (group.items || []).forEach(item => {
+                const diffClass = item.diff > 0 ? 'diff-plus' : (item.diff < 0 ? 'diff-minus' : '');
+                const diffText = item.diff > 0 ? `+${item.diff}` : item.diff;
+                html += `<tr>
+                    <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;">${item.productCode}</td>
+                    <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;">${item.size}</td>
+                    <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;">${item.systemQty}</td>
+                    <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;"><strong>${item.godownQty}</strong></td>
+                    <td style="padding: 0.6rem; border: 1px solid var(--gray-200); text-align: center;" class="${diffClass}">${diffText}</td>
+                </tr>`;
+            });
+            html += `</tbody></table></div>`;
+        });
 
-    // Add Totals for Archived Report
-    let gSysPcs = 0, gSysKg = 0;
-    let gGdPcs = 0, gGdKg = 0;
-    
-    data.forEach(group => {
-        group.items.forEach(item => {
-            gSysPcs += parseInt(item.systemQty) || 0;
-            // Need to derive weight if not stored, but usually archived items have systemKg? 
-            // Wait, snapshot items have: productCode, size, systemQty, godownQty, diff
-            // I'll calculate KG from the current items list if possible, or assume it's stored.
-            // Actually, I'll update archiveCurrentAudit to store systemKg too.
+        // Totals for FG only
+        let gSysPcs = 0, gGdPcs = 0;
+        data.forEach(group => {
+            (group.items || []).forEach(item => {
+                gSysPcs += parseInt(item.systemQty) || 0;
+                gGdPcs += parseInt(item.godownQty) || 0;
+            });
+        });
+
+        html += `<div style="background: var(--gray-100); padding: 1rem; border-radius: 8px; display: flex; gap: 2rem; font-weight: 700;">
+            <span>Total System: ${gSysPcs.toLocaleString()} Pcs</span>
+            <span>Total Godown: ${gGdPcs.toLocaleString()} Pcs</span>
+            <span>Net Variance: ${(gGdPcs - gSysPcs).toLocaleString()} Pcs</span>
+        </div>`;
+    }
+
+    document.getElementById('archivedReportContent').innerHTML = html;
+}
         });
     });
 
