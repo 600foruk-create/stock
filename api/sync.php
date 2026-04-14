@@ -540,11 +540,11 @@ try {
         elseif ($action === 'save_rm_item') {
             $i = $input['item'];
             if (isset($i['id']) && !empty($i['id'])) {
-                $stmt = $conn->prepare("UPDATE rm_items SET sub_id = ?, name = ?, code = ?, unit = ?, stock = ?, threshold = ? WHERE id = ?");
-                $stmt->execute([$i['subId'], $i['name'], $i['code'], $i['unit'], $i['stock'], $i['threshold'], $i['id']]);
+                $stmt = $conn->prepare("UPDATE rm_items SET sub_id = ?, name = ?, code = ?, unit = ?, stock = ?, threshold = ?, kg_per_bag = ?, threshold_unit = ? WHERE id = ?");
+                $stmt->execute([$i['subId'], $i['name'], $i['code'], $i['unit'], $i['stock'], $i['threshold'], $i['kg_per_bag'], $i['threshold_unit'], $i['id']]);
             } else {
-                $stmt = $conn->prepare("INSERT INTO rm_items (sub_id, name, code, unit, stock, threshold) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$i['subId'], $i['name'], $i['code'], $i['unit'], $i['stock'], $i['threshold']]);
+                $stmt = $conn->prepare("INSERT INTO rm_items (sub_id, name, code, unit, stock, threshold, kg_per_bag, threshold_unit) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$i['subId'], $i['name'], $i['code'], $i['unit'], $i['stock'], $i['threshold'], $i['kg_per_bag'], $i['threshold_unit']]);
                 $i['id'] = $conn->lastInsertId();
             }
             echo json_encode(['status' => 'success', 'id' => $i['id']]);

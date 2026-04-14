@@ -398,7 +398,14 @@
             </div>
             <div class="form-group">
                 <label>Opening Stock</label>
-                <input type="number" id="rmItemStock" step="0.001" class="form-control" value="0">
+                <div class="input-group" style="display:flex; gap:0.5rem;">
+                    <input type="number" id="rmItemStock" step="0.001" class="form-control" value="0" style="flex:2;">
+                    <select id="rmItemStockUnit" class="form-control" style="flex:1;">
+                        <option value="Bags" selected>Bags</option>
+                        <option value="KG">KG</option>
+                        <option value="Grams">Grams</option>
+                    </select>
+                </div>
             </div>
             <div class="form-group">
                 <label>KG per Bag (Multiplier)</label>
@@ -410,8 +417,8 @@
                 <div class="input-group" style="display:flex; gap:0.5rem;">
                     <input type="number" id="rmItemThreshold" step="0.001" class="form-control" value="0" style="flex:2;">
                     <select id="rmItemThresholdUnit" class="form-control" style="flex:1;">
+                        <option value="Bags" selected>Bags</option>
                         <option value="KG">KG</option>
-                        <option value="Bags">Bags</option>
                     </select>
                 </div>
             </div>

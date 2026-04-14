@@ -5431,11 +5431,12 @@ function showAddRMItemModal(subId) {
         opt.innerText = u.name;
         unitSelect.appendChild(opt);
     });
-    
+    if (document.getElementById('rmItemStockUnit')) document.getElementById('rmItemStockUnit').value = 'Bags';
+    if (document.getElementById('rmItemThresholdUnit')) document.getElementById('rmItemThresholdUnit').value = 'Bags';
+
     document.getElementById('rmItemStock').value = 0;
     document.getElementById('rmItemThreshold').value = 0;
     document.getElementById('rmItemKgPerBag').value = 0;
-    document.getElementById('rmItemThresholdUnit').value = 'KG';
     document.getElementById('rmItemModalTitle').innerText = '➕ Add RM Item';
     document.getElementById('addRMItemModal').style.display = 'block';
 }
@@ -5448,17 +5449,29 @@ async function saveRMItem() {
     const name = document.getElementById('rmItemName').value;
     const code = document.getElementById('rmItemCode').value;
     const unit = document.getElementById('rmItemUnit').value;
-    const stock = document.getElementById('rmItemStock').value;
+    const stockVal = parseFloat(document.getElementById('rmItemStock').value) || 0;
+    const stockUnit = document.getElementById('rmItemStockUnit') ? document.getElementById('rmItemStockUnit').value : 'KG';
     const threshold = document.getElementById('rmItemThreshold').value;
-    const kgPerBag = document.getElementById('rmItemKgPerBag').value;
+    const kgPerBag = parseFloat(document.getElementById('rmItemKgPerBag').value) || 0;
     const thresholdUnit = document.getElementById('rmItemThresholdUnit').value;
 
     if (!name || !code || !unit) { alert('Please fill all required fields'); return; }
 
+    // Convert Opening Stock to KG if needed
+    let actualStockKg = stockVal;
+    if (stockUnit === 'Bags' && kgPerBag > 0) {
+        actualStockKg = stockVal * kgPerBag;
+    } else if (stockUnit === 'Grams') {
+        actualStockKg = stockVal / 1000;
+    } else if (stockUnit === 'Bags' && kgPerBag <= 0 && stockVal > 0) {
+        alert('Please set "KG per Bag" multiplier to use Bags for stock.');
+        return;
+    }
+
     const response = await fetch('api/sync.php?action=save_rm_item', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ item: { id, subId, name, code, unit, stock, threshold, kg_per_bag: kgPerBag, threshold_unit: thresholdUnit } })
+        body: JSON.stringify({ item: { id, subId, name, code, unit, stock: actualStockKg, threshold, kg_per_bag: kgPerBag, threshold_unit: thresholdUnit } })
     });
     const result = await response.json();
     if (result.status === 'success') {
@@ -5568,9 +5581,10 @@ async function editRMItem(id) {
     });
     
     document.getElementById('rmItemStock').value = item.stock;
+    if (document.getElementById('rmItemStockUnit')) document.getElementById('rmItemStockUnit').value = 'KG'; // Always show KG when editing existing
     document.getElementById('rmItemThreshold').value = item.threshold;
     document.getElementById('rmItemKgPerBag').value = item.kgPerBag || 0;
-    document.getElementById('rmItemThresholdUnit').value = item.thresholdUnit || 'KG';
+    document.getElementById('rmItemThresholdUnit').value = item.thresholdUnit || 'Bags';
     document.getElementById('rmItemModalTitle').innerText = '✏️ Edit RM Item';
     document.getElementById('addRMItemModal').style.display = 'block';
 }
@@ -6246,6 +6260,8 @@ function refreshRMInventoryBalance() {
 
     sortedItems.forEach(item => {
         const currentStock = parseFloat(item.stock) || 0;
+        const kgPerBag = parseFloat(item.kgPerBag) || 0;
+        const bags = kgPerBag > 0 ? (currentStock / kgPerBag).toFixed(1) : '---';
 
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -6253,8 +6269,11 @@ function refreshRMInventoryBalance() {
                 <div style="font-weight: 700; color: var(--gray-800); font-size: 1.05rem;">${item.name}</div>
                 <div style="font-size: 0.8rem; color: var(--gray-500); font-family: monospace; background: #f1f5f9; display: inline-block; padding: 2px 8px; border-radius: 4px; margin-top: 4px;">${item.code}</div>
             </td>
+            <td style="text-align: right; padding-right: 1rem; font-weight: 700; font-size: 1.1rem; color: var(--primary);">
+                ${bags} <span style="font-size: 0.8rem; color: var(--gray-400);">Bags</span>
+            </td>
             <td style="text-align: right; padding-right: 2rem; font-weight: 800; font-size: 1.25rem; color: var(--sky-700);">
-                <div style="background: var(--sky-50); padding: 0.5rem 1.2rem; border-radius: 10px; border: 1.5px solid var(--sky-100); display: inline-block; min-width: 150px;">
+                <div style="background: var(--sky-50); padding: 0.5rem 1.2rem; border-radius: 10px; border: 1.5px solid var(--sky-100); display: inline-block; min-width: 140px;">
                     ${currentStock.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span style="font-size: 0.9rem; color: var(--gray-500); font-weight: 600;">${item.unit}</span>
                 </div>
             </td>

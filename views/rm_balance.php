@@ -20,7 +20,8 @@
             <thead>
                 <tr>
                     <th style="padding-left: 1.5rem;">Material Name / Code</th>
-                    <th style="width: 300px; text-align: right; padding-right: 2rem;">Current Balance</th>
+                    <th style="width: 150px; text-align: right; padding-right: 1rem;">Bags</th>
+                    <th style="width: 250px; text-align: right; padding-right: 2rem;">Current Balance (KG)</th>
                 </tr>
             </thead>
             <tbody id="rmBalanceTable">
