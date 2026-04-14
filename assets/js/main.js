@@ -5188,7 +5188,6 @@ function refreshRMDashboard() {
 
     if (document.getElementById('rmTotalItems')) document.getElementById('rmTotalItems').innerText = totalItems;
     if (document.getElementById('rmLowStockCount')) document.getElementById('rmLowStockCount').innerText = lowStockCount;
-    if (document.getElementById('rmTotalBags')) document.getElementById('rmTotalBags').innerText = Math.floor(totalBags).toLocaleString();
     if (document.getElementById('rmTotalWeightKg')) document.getElementById('rmTotalWeightKg').innerText = totalWeight.toLocaleString(undefined, {maximumFractionDigits: 1}) + ' KG';
     
     if (document.getElementById('rmInventorySummary')) document.getElementById('rmInventorySummary').innerHTML = summaryHtml;
