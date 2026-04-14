@@ -6243,7 +6243,7 @@ function calculateRMAuditDifference(itemId, val) {
 
 async function saveRMAudit() {
     localStorage.setItem('rmPhysicalStockMap', JSON.stringify(rmPhysicalStockMap));
-    showToast('Audit values saved to browser storage.', 'success');
+    alert('✅ Audit values saved to browser storage.');
 }
 
 function resetRMPhysicalStock() {
@@ -6281,7 +6281,7 @@ async function archiveRMAuditReport() {
     
     const res = await response.json();
     if (res.status === 'success') {
-        showToast('Audit Report Archived!', 'success');
+        alert('✅ RM Audit Report Archived!');
         if (typeof refreshArchivedReportsList === 'function') refreshArchivedReportsList();
     }
 }
@@ -6306,7 +6306,7 @@ async function autoAdjustRMAll() {
     }
 
     if (adjustments.length === 0) {
-        showToast('No discrepancies found to adjust.', 'info');
+        alert('ℹ️ No discrepancies found to adjust.');
         return;
     }
 
@@ -6320,7 +6320,7 @@ async function autoAdjustRMAll() {
 
     const res = await response.json();
     if (res.status === 'success') {
-        showToast('Bulk Stock Adjustments Completed!', 'success');
+        alert('✅ Bulk Stock Adjustments Completed!');
         initApp(); // Refresh data and UI
     }
 }
@@ -6334,7 +6334,7 @@ async function adjustSingleRMItem(itemId) {
     const diff = phys - sys;
 
     if (Math.abs(diff) < 0.0001) {
-        showToast('Item stock is already balanced.', 'info');
+        alert('ℹ️ Item stock is already balanced.');
         return;
     }
 
@@ -6357,7 +6357,7 @@ async function adjustSingleRMItem(itemId) {
 
     const res = await response.json();
     if (res.status === 'success') {
-        showToast(`${item.name} Adjusted!`, 'success');
+        alert(`✅ ${item.name} Adjusted!`);
         initApp(); // Refresh
     }
 }
