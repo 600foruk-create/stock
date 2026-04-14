@@ -4569,13 +4569,19 @@ function refreshTransactions() {
     const fromDate = document.getElementById('transDateFrom')?.value;
     const toDate = document.getElementById('transDateTo')?.value;
 
-    // Calculate Today's Production Total (KG) - Always based on full transaction history for current date
-    const todayStr = new Date().toISOString().split('T')[0];
+    // Calculate Production Total (KG) for SELECTED DATE (Daily Production Meter)
+    const metricDateInput = document.getElementById('dailyProdMetricDate');
+    if (metricDateInput && !metricDateInput.value) {
+        // Init with today if empty
+        metricDateInput.value = new Date().toISOString().split('T')[0];
+    }
+    const metricDate = metricDateInput ? metricDateInput.value : new Date().toISOString().split('T')[0];
+    
     let dailyProdOverallKg = 0;
     transactions.forEach(t => {
         if (t.type === 'PRODUCTION') {
             const tDateStr = new Date(t.date).toISOString().split('T')[0];
-            if (tDateStr === todayStr) {
+            if (tDateStr === metricDate) {
                 dailyProdOverallKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.weight) || 0);
             }
         }
