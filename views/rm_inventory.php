@@ -1,6 +1,5 @@
 <div class="rm-inventory">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-        <h2 style="color:var(--sky-600);">📋 Raw Materials Inventory</h2>
+    <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom:1.5rem;">
         <div style="display:flex; gap:0.5rem;">
             <button class="btn btn-primary" onclick="showAddRMMainCategoryModal()">+ Add Main Category</button>
             <button class="btn" style="background: var(--gray-100); color: var(--gray-700);" onclick="showManageRMUnitsModal()">⚙️ Units</button>
