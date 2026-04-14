@@ -21,6 +21,7 @@ let rmFormulaItems = [];
 let storeItems = [];
 let rmTransactions = [];
 let rmExpandedIds = new Set();
+let archivedReports = []; // Global list of archived report metadata
 let rmPhysicalStockMap = JSON.parse(localStorage.getItem('rmPhysicalStockMap') || '{}'); // Persist between refreshes
 
 let auditSession = {}; // Correctly initialized global session
@@ -82,6 +83,7 @@ async function initApp() {
             rmFormulaItems = d.rmFormulaItems || [];
             storeItems = d.storeItems || [];
             rmTransactions = d.rmTransactions || [];
+            archivedReports = d.archivedReports || [];
             
             // Sync Audit Session from DB: restore saved counts if they are not currently being edited
             if (d.latestAudit) {
@@ -2285,12 +2287,11 @@ async function archiveCurrentAudit() {
     }
 }
 
-let archivedReports = []; // Global list of archived report metadata
 let currentArchivedReport = null; // Currently viewed report data
 
 async function refreshArchivedReportsList() {
     try {
-        const response = await fetch('api/sync.php?action=get_all');
+        const response = await fetch(`api/sync.php?action=get_all&v=${Date.now()}`);
         const result = await response.json();
         if (result.status === 'success') {
             archivedReports = result.data.archivedReports || [];
