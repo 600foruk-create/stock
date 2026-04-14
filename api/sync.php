@@ -158,6 +158,29 @@ try {
             }
         }
 
+        elseif ($action === 'bulk_save_rm_transactions') {
+            $transactions = $input['transactions'];
+            $conn->beginTransaction();
+            try {
+                foreach ($transactions as $t) {
+                    $stmt = $conn->prepare("INSERT INTO rm_transactions (rm_item_id, quantity, type, notes) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$t['rm_item_id'], $t['quantity'], $t['type'], $t['notes'] ?? '']);
+                    
+                    if ($t['type'] === 'IN') {
+                        $stmt = $conn->prepare("UPDATE rm_items SET stock = stock + ? WHERE id = ?");
+                    } else {
+                        $stmt = $conn->prepare("UPDATE rm_items SET stock = stock - ? WHERE id = ?");
+                    }
+                    $stmt->execute([$t['quantity'], $t['rm_item_id']]);
+                }
+                $conn->commit();
+                echo json_encode(['status' => 'success']);
+            } catch (Exception $e) {
+                $conn->rollBack();
+                throw $e;
+            }
+        }
+
         elseif ($action === 'save_audit') {
             $auditRecords = $input['records'];
             $conn->beginTransaction();

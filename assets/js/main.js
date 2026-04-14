@@ -21,6 +21,7 @@ let rmFormulaItems = [];
 let storeItems = [];
 let rmTransactions = [];
 let rmExpandedIds = new Set();
+let rmPhysicalStockMap = {}; // State for tracking audit entries
 
 let auditSession = {}; // Correctly initialized global session
 let auditRecords = [];
@@ -6153,5 +6154,159 @@ function refreshRMInventoryBalance() {
         `;
         tbody.appendChild(row);
     });
+}
+
+// --- RM Audit Functions ---
+
+function refreshRMAudit() {
+    const tbody = document.getElementById('rmAuditTable');
+    if (!tbody) return;
+
+    if (!rmItems || rmItems.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--gray-500);">No raw materials found.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '';
+    
+    // Sort items by name
+    const sortedItems = [...rmItems].sort((a, b) => a.name.localeCompare(b.name));
+
+    sortedItems.forEach(item => {
+        const sysStock = parseFloat(item.stock) || 0;
+        const physStock = rmPhysicalStockMap[item.id] !== undefined ? rmPhysicalStockMap[item.id] : 0;
+        const diff = physStock - sysStock;
+        const status = diff === 0 ? 'Balanced' : (diff > 0 ? 'Excess' : 'Shortage');
+        const statusColor = diff === 0 ? 'var(--gray-500)' : (diff > 0 ? 'var(--success)' : 'var(--error)');
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td style="padding: 0.8rem 1.5rem;">
+                <div style="font-weight: 700;">${item.name}</div>
+                <div style="font-size: 0.75rem; color: var(--gray-400); font-family: monospace;">${item.code}</div>
+            </td>
+            <td style="text-align: center; font-weight: 600; color: var(--gray-600);">${sysStock.toFixed(2)} ${item.unit}</td>
+            <td style="text-align: center;">
+                <input type="number" step="0.01" value="${physStock}" 
+                    style="width: 100px; padding: 0.4rem; border: 2px solid var(--gray-200); border-radius: 6px; text-align: center; font-weight: 700;"
+                    oninput="calculateRMAuditDifference(${item.id}, this.value)">
+            </td>
+            <td id="rmAuditDiff_${item.id}" style="text-align: center; font-weight: 700; color: ${statusColor};">
+                ${diff > 0 ? '+' : ''}${diff.toFixed(2)}
+            </td>
+            <td style="text-align: center;">
+                <span id="rmAuditStatus_${item.id}" class="badge" style="background: ${statusColor}; color: white; padding: 4px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 800;">
+                    ${status}
+                </span>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function calculateRMAuditDifference(itemId, val) {
+    const physStock = parseFloat(val) || 0;
+    rmPhysicalStockMap[itemId] = physStock;
+
+    const item = rmItems.find(i => i.id == itemId);
+    const sysStock = item ? parseFloat(item.stock) : 0;
+    const diff = physStock - sysStock;
+    
+    const diffEl = document.getElementById(`rmAuditDiff_${itemId}`);
+    const statusEl = document.getElementById(`rmAuditStatus_${itemId}`);
+    
+    if (diffEl && statusEl) {
+        const status = diff === 0 ? 'Balanced' : (diff > 0 ? 'Excess' : 'Shortage');
+        const statusColor = diff === 0 ? 'var(--gray-500)' : (diff > 0 ? 'var(--success)' : 'var(--error)');
+        
+        diffEl.innerText = (diff > 0 ? '+' : '') + diff.toFixed(2);
+        diffEl.style.color = statusColor;
+        
+        statusEl.innerText = status;
+        statusEl.style.background = statusColor;
+    }
+}
+
+async function saveRMAudit() {
+    showToast('Audit values saved in memory.', 'success');
+}
+
+function resetRMPhysicalStock() {
+    if (!confirm('Are you sure you want to reset all physical stock entries to 0?')) return;
+    rmPhysicalStockMap = {};
+    refreshRMAudit();
+}
+
+async function archiveRMAuditReport() {
+    if (!rmItems || rmItems.length === 0) return;
+    
+    const snapshot = rmItems.map(item => {
+        const sys = parseFloat(item.stock) || 0;
+        const phys = rmPhysicalStockMap[item.id] || 0;
+        return {
+            name: item.name,
+            code: item.code,
+            unit: item.unit,
+            system: sys,
+            physical: phys,
+            difference: phys - sys
+        };
+    });
+
+    const response = await fetch('api/sync.php?action=archive_report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            title: `RM Monthly Audit - ${new Date().toLocaleDateString()}`,
+            data: snapshot
+        })
+    });
+    
+    const res = await response.json();
+    if (res.status === 'success') {
+        showToast('Audit Report Archived!', 'success');
+        if (typeof refreshArchivedReportsList === 'function') refreshArchivedReportsList();
+    }
+}
+
+async function autoAdjustRMAll() {
+    const adjustments = [];
+    for (const item of rmItems) {
+        const sys = parseFloat(item.stock) || 0;
+        const phys = rmPhysicalStockMap[item.id] || 0;
+        const diff = phys - sys;
+        
+        if (Math.abs(diff) > 0.0001) {
+            adjustments.push({
+                rm_item_id: item.id,
+                quantity: Math.abs(diff),
+                type: diff > 0 ? 'IN' : 'OUT',
+                notes: 'Audit Adjustment'
+            });
+        }
+    }
+
+    if (adjustments.length === 0) {
+        showToast('No discrepancies found to adjust.', 'info');
+        return;
+    }
+
+    if (!confirm(`Are you sure? This will create ${adjustments.length} adjustment transactions to match physical stock.`)) return;
+
+    const response = await fetch('api/sync.php?action=bulk_save_rm_transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactions: adjustments })
+    });
+
+    const res = await response.json();
+    if (res.status === 'success') {
+        showToast('Stock Adjusted Successfully!', 'success');
+        initApp(); // Refresh data and UI
+    }
+}
+
+function printRMAudit() {
+    window.print();
 }
 
