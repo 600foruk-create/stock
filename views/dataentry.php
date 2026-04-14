@@ -1,9 +1,17 @@
 <div id="dataEntry" class="tab-content">
-                    <div class="action-buttons">
+                    <div class="action-buttons" style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
                         <button class="btn btn-success" onclick="showProductionEntry()">🏭 Production (IN)</button>
                         <button class="btn btn-primary" onclick="showSaleEntry()">🛒 Sale (OUT)</button>
                         <button class="btn" onclick="showAdjustmentEntry()">⚖️ Adjustment (+/-)</button>
                         <button class="btn" style="background: #eab308; color: white;" onclick="showProductionReportModal()">📊 Production Report</button>
+                        <!-- Daily Production Meter -->
+                        <div id="dailyProdMetric" style="background: white; padding: 0.4rem 1rem; border-radius: 10px; border: 2px solid #eab308; display: flex; align-items: center; gap: 0.8rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-left: auto;">
+                            <div style="font-size: 1.2rem;">🏗️</div>
+                            <div>
+                                <div style="font-size: 0.65rem; font-weight: 800; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Today's Production</div>
+                                <div id="dailyProductionWeight" style="font-size: 1.1rem; font-weight: 800; color: #eab308; line-height: 1.2;">0.0 KG</div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div id="productionForm" style="display: none; background: var(--gray-100); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem;">

@@ -4569,6 +4569,23 @@ function refreshTransactions() {
     const fromDate = document.getElementById('transDateFrom')?.value;
     const toDate = document.getElementById('transDateTo')?.value;
 
+    // Calculate Today's Production Total (KG) - Always based on full transaction history for current date
+    const todayStr = new Date().toISOString().split('T')[0];
+    let dailyProdOverallKg = 0;
+    transactions.forEach(t => {
+        if (t.type === 'PRODUCTION') {
+            const tDateStr = new Date(t.date).toISOString().split('T')[0];
+            if (tDateStr === todayStr) {
+                dailyProdOverallKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.weight) || 0);
+            }
+        }
+    });
+
+    const dailyProdEl = document.getElementById('dailyProductionWeight');
+    if (dailyProdEl) {
+        dailyProdEl.innerText = dailyProdOverallKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
+    }
+
     if (transViewCleared) {
         document.getElementById('transactionsBody').innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--gray-500);">Screen cleared. Use search or dates to find records.</td></tr>';
         return;
