@@ -6275,17 +6275,20 @@ function refreshRMInventoryBalance() {
         const bags = kgPerBag > 0 ? (currentStock / kgPerBag).toFixed(1) : '---';
 
         const row = document.createElement('tr');
+        row.style.borderBottom = '1px solid var(--gray-100)';
         row.innerHTML = `
-            <td style="padding: 1rem 1.5rem;">
+            <td style="padding: 1.2rem 1.5rem;">
                 <div style="font-weight: 700; color: var(--gray-800); font-size: 1.05rem;">${item.name}</div>
-                <div style="font-size: 0.8rem; color: var(--gray-500); font-family: monospace; background: #f1f5f9; display: inline-block; padding: 2px 8px; border-radius: 4px; margin-top: 4px;">${item.code}</div>
+                <div style="font-size: 0.75rem; color: var(--gray-500); font-family: monospace; background: #f1f5f9; display: inline-block; padding: 2px 8px; border-radius: 4px; margin-top: 5px; border: 1px solid var(--gray-200);">${item.code}</div>
             </td>
-            <td style="text-align: right; padding-right: 1rem; font-weight: 700; font-size: 1.1rem; color: var(--primary);">
-                ${bags} <span style="font-size: 0.8rem; color: var(--gray-400);">Bags</span>
+            <td style="text-align: right; padding-right: 1.5rem; vertical-align: middle;">
+                <div style="font-weight: 800; font-size: 1.2rem; color: var(--primary);">
+                    ${bags} <span style="font-size: 0.8rem; color: var(--gray-400); font-weight: 600;">Bags</span>
+                </div>
             </td>
-            <td style="text-align: right; padding-right: 2rem; font-weight: 800; font-size: 1.25rem; color: var(--sky-700);">
-                <div style="background: var(--sky-50); padding: 0.5rem 1.2rem; border-radius: 10px; border: 1.5px solid var(--sky-100); display: inline-block; min-width: 140px;">
-                    ${currentStock.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span style="font-size: 0.9rem; color: var(--gray-500); font-weight: 600;">${item.unit}</span>
+            <td style="text-align: right; padding-right: 2rem; vertical-align: middle;">
+                <div style="font-weight: 800; font-size: 1.25rem; color: var(--sky-700);">
+                    ${currentStock.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} <span style="font-size: 0.8rem; color: var(--gray-400); font-weight: 600;">${item.unit}</span>
                 </div>
             </td>
         `;
