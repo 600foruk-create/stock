@@ -225,7 +225,10 @@ function showTab(tabName) {
         if (tabName === 'rm_in') if (typeof refreshRMTransactions === 'function') refreshRMTransactions('IN');
         if (tabName === 'rm_out') if (typeof refreshRMTransactions === 'function') refreshRMTransactions('OUT');
         if (tabName === 'rm_formulas') if (typeof refreshRMFormulas === 'function') refreshRMFormulas();
-        if (tabName === 'rm_inventory') if (typeof refreshRMInventory === 'function') refreshRMInventory();
+        if (tabName === 'rm_inventory') {
+            if (typeof rmExpandedIds !== 'undefined') rmExpandedIds.clear();
+            if (typeof refreshRMInventory === 'function') refreshRMInventory();
+        }
         if (tabName === 'rm_balance') if (typeof refreshRMInventoryBalance === 'function') refreshRMInventoryBalance();
         if (tabName === 'rm_audit') if (typeof refreshRMAudit === 'function') refreshRMAudit();
         if (tabName === 'rm_reports') if (typeof refreshRMReports === 'function') refreshRMReports();
@@ -5335,7 +5338,14 @@ function showAddRMSubCategoryModal(mainId) {
             break;
         }
     }
-    document.getElementById('rmSubCategoryCode').value = prefix + String(nextNum).padStart(3, '0');
+
+    // Defensive check: Ensure the final code is truly unique
+    let finalCode = prefix + String(nextNum).padStart(3, '0');
+    while (existingCodes.includes(finalCode)) {
+        nextNum++;
+        finalCode = prefix + String(nextNum).padStart(3, '0');
+    }
+    document.getElementById('rmSubCategoryCode').value = finalCode;
     
     document.getElementById('rmSubCategoryModalTitle').innerText = '➕ Add RM Sub-Category';
     document.getElementById('addRMSubCategoryModal').style.display = 'block';
@@ -5387,7 +5397,14 @@ function showAddRMItemModal(subId) {
             break;
         }
     }
-    document.getElementById('rmItemCode').value = prefix + String(nextNum).padStart(4, '0');
+
+    // Defensive check: Ensure the final code is truly unique
+    let finalCode = prefix + String(nextNum).padStart(4, '0');
+    while (existingCodes.includes(finalCode)) {
+        nextNum++;
+        finalCode = prefix + String(nextNum).padStart(4, '0');
+    }
+    document.getElementById('rmItemCode').value = finalCode;
     
     // Units populate
     const unitSelect = document.getElementById('rmItemUnit');
