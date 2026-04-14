@@ -2,29 +2,32 @@
 
     
     <div class="form-card" style="margin-bottom: 2rem; background: transparent; box-shadow: none; border: none; padding: 0;">
-        <div class="settings-grid" style="gap: 0.8rem;">
+        <div class="settings-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: flex-end; background: #f8fafc; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0;">
             <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Select Raw Material</label>
-                <select id="rmInSelect" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem;"></select>
+                <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.5rem; font-size: 0.9rem; display: block;">Select Raw Material</label>
+                <select id="rmInSelect" class="form-control" style="height: 48px; padding: 0.6rem 1rem; font-size: 1rem; border-radius: 8px; border: 2px solid #cbd5e1; width: 100%;"></select>
             </div>
             
             <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Quantity Received</label>
-                <div class="input-group" style="display:flex; gap:0.5rem; align-items:center; max-width: 400px;">
-                    <input type="number" id="rmInQty" class="form-control" style="padding: 0.5rem 0.8rem; font-size: 0.95rem; flex:2;" placeholder="0.00" oninput="updateRMConversionHint('IN')">
-                    <select id="rmInUnitSelect" class="form-control" style="flex:1.2; padding: 0.5rem; font-size: 0.85rem; height: 38px;" onchange="updateRMConversionHint('IN')">
+                <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.5rem; font-size: 0.9rem; display: block;">Quantity Received</label>
+                <div class="input-group" style="display:flex; align-items:stretch; height: 48px; border: 2px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: white;">
+                    <input type="number" id="rmInQty" class="form-control" style="border: none; padding: 0.6rem 1rem; font-size: 1rem; flex:1; height: 100%; border-right: 1px solid #e2e8f0;" placeholder="0.00" oninput="updateRMConversionHint('IN')">
+                    <select id="rmInUnitSelect" class="form-control" style="border: none; width: 100px; padding: 0 0.5rem; font-size: 0.9rem; height: 100%; background: #f1f5f9; cursor: pointer; color: var(--gray-700); font-weight: 600;" onchange="updateRMConversionHint('IN')">
                         <option value="Bags" selected>Bags</option>
                         <option value="KG">KG</option>
                         <option value="Grams">Grams</option>
                     </select>
                 </div>
-                <small id="rmInConversionHint" style="color:var(--sky-600); font-weight:600; margin-top:0.2rem; display:block; height:1rem; font-size: 0.8rem;"></small>
+                <!-- Fixed Height Hint to prevent jumping -->
+                <div style="height: 1.2rem; margin-top: 0.3rem;">
+                    <small id="rmInConversionHint" style="color:var(--sky-600); font-weight:700; font-size: 0.85rem; display:block;"></small>
+                </div>
             </div>
-
-            <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Reference / Supplier Notes</label>
-                <input type="text" id="rmInNotes" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem;" placeholder="Supplier Name, Invoice #, etc.">
-            </div>
+        </div>
+        
+        <div class="form-group" style="margin-top: 1rem;">
+            <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.3rem; font-size: 0.9rem;">Reference / Supplier Notes</label>
+            <input type="text" id="rmInNotes" class="form-control" style="padding: 0.6rem 1rem; font-size: 1rem; height: 48px; border-radius: 8px; border: 2px solid #cbd5e1;" placeholder="Supplier Name, Invoice #, etc.">
         </div>
         
         <div style="margin-top: 2rem; padding-bottom: 10px;">
