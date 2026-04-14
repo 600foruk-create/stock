@@ -21,7 +21,7 @@ let rmFormulaItems = [];
 let storeItems = [];
 let rmTransactions = [];
 let rmExpandedIds = new Set();
-let rmPhysicalStockMap = {}; // State for tracking audit entries
+let rmPhysicalStockMap = JSON.parse(localStorage.getItem('rmPhysicalStockMap') || '{}'); // Persist between refreshes
 
 let auditSession = {}; // Correctly initialized global session
 let auditRecords = [];
@@ -232,7 +232,7 @@ function showTab(tabName) {
         }
         if (tabName === 'rm_balance') if (typeof refreshRMInventoryBalance === 'function') refreshRMInventoryBalance();
         if (tabName === 'rm_audit') if (typeof refreshRMAudit === 'function') refreshRMAudit();
-        if (tabName === 'rm_reports') if (typeof refreshRMReports === 'function') refreshRMReports();
+        if (tabName === 'rm_reports') if (typeof refreshArchivedReportsList === 'function') refreshArchivedReportsList();
         if (tabName === 'rm_consumption') if (typeof refreshRMConsumptionReport === 'function') refreshRMConsumptionReport();
     }
 }
@@ -2313,6 +2313,10 @@ async function refreshArchivedReportsList() {
                 </tr>`;
             });
             tbody.innerHTML = rows;
+            
+            // Also populate RM Reports Table if it exists
+            const rmTable = document.getElementById('rmReportsTable');
+            if (rmTable) rmTable.innerHTML = rows;
         }
     } catch (e) { console.error(e); }
 }
@@ -6176,8 +6180,9 @@ function refreshRMAudit() {
         const sysStock = parseFloat(item.stock) || 0;
         const physStock = rmPhysicalStockMap[item.id] !== undefined ? rmPhysicalStockMap[item.id] : 0;
         const diff = physStock - sysStock;
-        const status = diff === 0 ? 'Balanced' : (diff > 0 ? 'Excess' : 'Shortage');
-        const statusColor = diff === 0 ? 'var(--gray-500)' : (diff > 0 ? 'var(--success)' : 'var(--error)');
+        const isBalanced = Math.abs(diff) < 0.0001;
+        const status = isBalanced ? 'Balanced' : (diff > 0 ? 'Excess' : 'Shortage');
+        const statusColor = isBalanced ? '#64748b' : (diff > 0 ? '#16a34a' : '#dc2626');
 
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -6207,6 +6212,7 @@ function refreshRMAudit() {
 function calculateRMAuditDifference(itemId, val) {
     const physStock = parseFloat(val) || 0;
     rmPhysicalStockMap[itemId] = physStock;
+    localStorage.setItem('rmPhysicalStockMap', JSON.stringify(rmPhysicalStockMap)); // Save to storage
 
     const item = rmItems.find(i => i.id == itemId);
     const sysStock = item ? parseFloat(item.stock) : 0;
@@ -6216,8 +6222,9 @@ function calculateRMAuditDifference(itemId, val) {
     const statusEl = document.getElementById(`rmAuditStatus_${itemId}`);
     
     if (diffEl && statusEl) {
-        const status = diff === 0 ? 'Balanced' : (diff > 0 ? 'Excess' : 'Shortage');
-        const statusColor = diff === 0 ? 'var(--gray-500)' : (diff > 0 ? 'var(--success)' : 'var(--error)');
+        const isBalanced = Math.abs(diff) < 0.0001;
+        const status = isBalanced ? 'Balanced' : (diff > 0 ? 'Excess' : 'Shortage');
+        const statusColor = isBalanced ? '#64748b' : (diff > 0 ? '#16a34a' : '#dc2626');
         
         diffEl.innerText = (diff > 0 ? '+' : '') + diff.toFixed(2);
         diffEl.style.color = statusColor;
@@ -6228,12 +6235,14 @@ function calculateRMAuditDifference(itemId, val) {
 }
 
 async function saveRMAudit() {
-    showToast('Audit values saved in memory.', 'success');
+    localStorage.setItem('rmPhysicalStockMap', JSON.stringify(rmPhysicalStockMap));
+    showToast('Audit values saved to browser storage.', 'success');
 }
 
 function resetRMPhysicalStock() {
     if (!confirm('Are you sure you want to reset all physical stock entries to 0?')) return;
     rmPhysicalStockMap = {};
+    localStorage.removeItem('rmPhysicalStockMap');
     refreshRMAudit();
 }
 

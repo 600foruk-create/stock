@@ -14,8 +14,7 @@
 
     <div class="table-container" id="printableRMAudit">
         <div class="print-only" style="text-align:center; margin-bottom:2rem;">
-            <h2>Monthly Raw Material Audit Report</h2>
-            <p>Date: ${new Date().toLocaleDateString()}</p>
+            <h2 style="font-size: 2rem; color: var(--gray-800); margin-bottom: 0.5rem;">Monthly Raw Material Audit Report</h2>
         </div>
         <table class="data-table">
             <thead>
