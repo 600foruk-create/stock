@@ -6072,37 +6072,84 @@ function refreshRMInventoryBalance() {
     const tbody = document.getElementById('rmBalanceTable');
     if (!tbody) return;
 
+    // Populate Filters if empty (Initial load)
+    const mainFilter = document.getElementById('rmBalanceMainFilter');
+    const subFilter = document.getElementById('rmBalanceSubFilter');
+    const searchVal = document.getElementById('rmBalanceSearch') ? document.getElementById('rmBalanceSearch').value.toLowerCase() : '';
+
+    if (mainFilter && mainFilter.options.length === 0) {
+        mainFilter.innerHTML = '<option value="">All Brands</option>';
+        rmMainCategories.sort((a,b) => a.name.localeCompare(b.name)).forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.innerText = m.name;
+            mainFilter.appendChild(opt);
+        });
+    }
+
+    const selectedMainId = mainFilter ? mainFilter.value : '';
+    
+    // Dependent Sub Filter
+    if (subFilter && (subFilter.dataset.lastMainId !== selectedMainId || subFilter.options.length === 0)) {
+        const currentSelectedSub = subFilter.value;
+        subFilter.innerHTML = '<option value="">All Categories</option>';
+        const filteredSubs = rmSubCategories.filter(s => !selectedMainId || s.mainId == selectedMainId);
+        filteredSubs.sort((a,b) => a.name.localeCompare(b.name)).forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.innerText = s.name;
+            subFilter.appendChild(opt);
+        });
+        subFilter.dataset.lastMainId = selectedMainId;
+        // Try to restore selection if it still exists in the filtered list
+        if (currentSelectedSub) subFilter.value = currentSelectedSub;
+    }
+    
+    const selectedSubId = subFilter ? subFilter.value : '';
+
     if (!rmItems || rmItems.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--gray-500);">No raw materials found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; padding:2rem; color:var(--gray-500);">No raw materials found.</td></tr>';
         return;
     }
 
     tbody.innerHTML = '';
     
-    // Sort items by name for consistent reporting
-    const sortedItems = [...rmItems].sort((a, b) => a.name.localeCompare(b.name));
+    // Advanced Filtering Logic
+    let filteredItems = rmItems.filter(item => {
+        const matchesSearch = !searchVal || item.name.toLowerCase().includes(searchVal) || item.code.toLowerCase().includes(searchVal);
+        
+        let matchesCategory = true;
+        if (selectedSubId) {
+            matchesCategory = item.subId == selectedSubId;
+        } else if (selectedMainId) {
+            const validSubIds = rmSubCategories.filter(s => s.mainId == selectedMainId).map(s => s.id);
+            matchesCategory = validSubIds.includes(Number(item.subId));
+        }
+
+        return matchesSearch && matchesCategory;
+    });
+
+    const sortedItems = [...filteredItems].sort((a, b) => a.name.localeCompare(b.name));
+
+    if (sortedItems.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; padding:2rem; color:var(--gray-500);">No items match your filters.</td></tr>';
+        return;
+    }
 
     sortedItems.forEach(item => {
-        // Calculate flows from transactions
-        const itemTransactions = (typeof rmTransactions !== 'undefined' ? rmTransactions : []).filter(t => t.rm_item_id == item.id);
-        
-        const totalIn = itemTransactions.filter(t => t.type === 'IN').reduce((sum, t) => sum + parseFloat(t.quantity), 0);
-        const totalOut = itemTransactions.filter(t => t.type === 'OUT').reduce((sum, t) => sum + parseFloat(t.quantity), 0);
-        
-        // Base math: Current Stock = Opening + IN - OUT => Opening = Current - IN + OUT
         const currentStock = parseFloat(item.stock) || 0;
-        const openingStock = currentStock - totalIn + totalOut;
 
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td style="font-weight: 600;">
-                <div>${item.name}</div>
-                <div style="font-size: 0.75rem; color: var(--gray-400); font-weight: normal;">${item.code}</div>
+            <td style="padding: 1rem 1.5rem;">
+                <div style="font-weight: 700; color: var(--gray-800); font-size: 1.05rem;">${item.name}</div>
+                <div style="font-size: 0.8rem; color: var(--gray-500); font-family: monospace; background: #f1f5f9; display: inline-block; padding: 2px 8px; border-radius: 4px; margin-top: 4px;">${item.code}</div>
             </td>
-            <td style="color: var(--gray-600);">${openingStock.toFixed(2)} ${item.unit}</td>
-            <td style="color: var(--success); font-weight: 600;">+${totalIn.toFixed(2)}</td>
-            <td style="color: var(--error); font-weight: 600;">-${totalOut.toFixed(2)}</td>
-            <td style="font-weight: 800; font-size: 1.1rem; color: var(--sky-700); background: var(--sky-50);">${currentStock.toFixed(2)} ${item.unit}</td>
+            <td style="text-align: right; padding-right: 2rem; font-weight: 800; font-size: 1.25rem; color: var(--sky-700);">
+                <div style="background: var(--sky-50); padding: 0.5rem 1.2rem; border-radius: 10px; border: 1.5px solid var(--sky-100); display: inline-block; min-width: 150px;">
+                    ${currentStock.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span style="font-size: 0.9rem; color: var(--gray-500); font-weight: 600;">${item.unit}</span>
+                </div>
+            </td>
         `;
         tbody.appendChild(row);
     });
