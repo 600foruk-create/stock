@@ -161,6 +161,7 @@ async function initApp() {
             });
 
             saveData(); // Sync to local backup
+            updateOrderFilterCounts();
         } else {
             console.warn('StockFlow: SQL returned error state:', result.message);
             loadLegacyData();
@@ -3176,7 +3177,22 @@ async function saveNewOrder() {
 let currentOrderFilter = 'all';
 let ordersViewCleared = false;
 
+function updateOrderFilterCounts() {
+    const counts = {
+        all: orders.length,
+        pending: orders.filter(o => (o.status || '').toLowerCase() === 'pending').length,
+        processing: orders.filter(o => (o.status || '').toLowerCase() === 'processing').length,
+        completed: orders.filter(o => (o.status || '').toLowerCase() === 'completed').length
+    };
+
+    if (document.getElementById('count-all')) document.getElementById('count-all').innerText = counts.all;
+    if (document.getElementById('count-pending')) document.getElementById('count-pending').innerText = counts.pending;
+    if (document.getElementById('count-processing')) document.getElementById('count-processing').innerText = counts.processing;
+    if (document.getElementById('count-completed')) document.getElementById('count-completed').innerText = counts.completed;
+}
+
 function refreshOrdersList(filter = null) {
+    updateOrderFilterCounts();
     if (filter !== null) currentOrderFilter = filter;
     let html = '';
     let f = currentOrderFilter.toLowerCase();
