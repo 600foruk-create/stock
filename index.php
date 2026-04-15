@@ -77,35 +77,41 @@
                 </div>
 
                 <!-- Modular Tab Content Includes -->
-                <?php include 'views/dashboard.php'; ?>
-                <?php include 'views/dataentry.php'; ?>
-                <?php include 'views/orders.php'; ?>
-                <?php include 'views/categories.php'; ?>
-                <?php include 'views/reports.php'; ?>
-                <?php include 'views/customers.php'; ?>
-                <?php include 'views/stocklist.php'; ?>
-                <?php include 'views/monthlyaudit.php'; ?>
-                <?php include 'views/lowstockreport.php'; ?>
+                <div id="finishGoodPanel">
+                    <?php include 'views/dashboard.php'; ?>
+                    <?php include 'views/dataentry.php'; ?>
+                    <?php include 'views/orders.php'; ?>
+                    <?php include 'views/categories.php'; ?>
+                    <?php include 'views/reports.php'; ?>
+                    <?php include 'views/customers.php'; ?>
+                    <?php include 'views/stocklist.php'; ?>
+                    <?php include 'views/monthlyaudit.php'; ?>
+                    <?php include 'views/lowstockreport.php'; ?>
+                </div>
 
                 <!-- Raw Materials Module Views -->
-                <div id="rm_dashboard" class="tab-content"><?php include 'views/rm_dashboard.php'; ?></div>
-                <div id="rm_in" class="tab-content"><?php include 'views/rm_in.php'; ?></div>
-                <div id="rm_out" class="tab-content"><?php include 'views/rm_out.php'; ?></div>
-                <div id="rm_formulas" class="tab-content"><?php include 'views/rm_formulas.php'; ?></div>
-                <div id="rm_inventory" class="tab-content"><?php include 'views/rm_inventory.php'; ?></div>
-                <div id="rm_balance" class="tab-content"><?php include 'views/rm_balance.php'; ?></div>
-                <div id="rm_audit" class="tab-content"><?php include 'views/rm_audit.php'; ?></div>
-                <div id="rm_reports" class="tab-content"><?php include 'views/rm_reports.php'; ?></div>
-                <div id="rm_consumption" class="tab-content"><?php include 'views/rm_consumption.php'; ?></div>
+                <div id="rawMaterialsPanel" style="display: none;">
+                    <div id="rm_dashboard" class="tab-content"><?php include 'views/rm_dashboard.php'; ?></div>
+                    <div id="rm_in" class="tab-content"><?php include 'views/rm_in.php'; ?></div>
+                    <div id="rm_out" class="tab-content"><?php include 'views/rm_out.php'; ?></div>
+                    <div id="rm_formulas" class="tab-content"><?php include 'views/rm_formulas.php'; ?></div>
+                    <div id="rm_inventory" class="tab-content"><?php include 'views/rm_inventory.php'; ?></div>
+                    <div id="rm_balance" class="tab-content"><?php include 'views/rm_balance.php'; ?></div>
+                    <div id="rm_audit" class="tab-content"><?php include 'views/rm_audit.php'; ?></div>
+                    <div id="rm_reports" class="tab-content"><?php include 'views/rm_reports.php'; ?></div>
+                    <div id="rm_consumption" class="tab-content"><?php include 'views/rm_consumption.php'; ?></div>
+                </div>
 
                 <!-- Store Module Views -->
-                <div id="store_dashboard" class="tab-content"><?php include 'views/store/dashboard.php'; ?></div>
-                <div id="store_inwards" class="tab-content"><?php include 'views/store/inwards.php'; ?></div>
-                <div id="store_outwards" class="tab-content"><?php include 'views/store/outwards.php'; ?></div>
-                <div id="store_inventory" class="tab-content"><?php include 'views/store/inventory.php'; ?></div>
-                <div id="store_items" class="tab-content"><?php include 'views/store/item_records.php'; ?></div>
-                <div id="store_audit" class="tab-content"><?php include 'views/store/monthly_audit.php'; ?></div>
-                <div id="store_reports" class="tab-content"><?php include 'views/store/reports.php'; ?></div>
+                <div id="storePanel" style="display: none;">
+                    <div id="store_dashboard" class="tab-content"><?php include 'views/store/dashboard.php'; ?></div>
+                    <div id="store_inwards" class="tab-content"><?php include 'views/store/inwards.php'; ?></div>
+                    <div id="store_outwards" class="tab-content"><?php include 'views/store/outwards.php'; ?></div>
+                    <div id="store_inventory" class="tab-content"><?php include 'views/store/inventory.php'; ?></div>
+                    <div id="store_items" class="tab-content"><?php include 'views/store/item_records.php'; ?></div>
+                    <div id="store_audit" class="tab-content"><?php include 'views/store/monthly_audit.php'; ?></div>
+                    <div id="store_reports" class="tab-content"><?php include 'views/store/reports.php'; ?></div>
+                </div>
 
                 <!-- Settings Block -->
                 <div id="settingsPanel" style="display: none;">

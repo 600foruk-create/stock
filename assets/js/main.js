@@ -453,11 +453,17 @@ function switchModule(module) {
     // Hide all main panels and tabs
     document.getElementById('finishGoodTabs').style.display = 'none';
     document.getElementById('rawMaterialsTabs').style.display = 'none';
-    document.getElementById('settingsPanel').style.display = 'none';
+    document.getElementById('storeTabs').style.display = 'none';
+    
+    document.getElementById('finishGoodPanel').style.display = 'none';
+    document.getElementById('rawMaterialsPanel').style.display = 'none';
     document.getElementById('storePanel').style.display = 'none';
+    document.getElementById('settingsPanel').style.display = 'none';
+    
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
 
     if (module === 'finishGood') {
+        document.getElementById('finishGoodPanel').style.display = 'block';
         document.getElementById('finishGoodTabs').style.display = 'flex';
         let activeTab = document.querySelector('.nav-tab.active');
         if (activeTab) {
@@ -479,6 +485,7 @@ function switchModule(module) {
         refreshUsersList();
         refreshBrandLowStockSettings();
     } else if (module === 'rawMaterials') {
+        document.getElementById('rawMaterialsPanel').style.display = 'block';
         document.getElementById('rawMaterialsTabs').style.display = 'flex';
         const activeTabBtn = document.querySelector('#rawMaterialsTabs .nav-tab.active');
         if (activeTabBtn) {
