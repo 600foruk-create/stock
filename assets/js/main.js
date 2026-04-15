@@ -195,6 +195,7 @@ async function initApp() {
         refreshRMInFormControls();
         refreshRMOutFormControls();
         refreshRMInventoryBalance();
+        refreshRMConsumptionReport();
     }
 }
 
@@ -6113,6 +6114,96 @@ function exportRMOutToExcel() {
 }
 
 // Process RM Transaction
+function refreshRMConsumptionReport() {
+    // 1. Calculate Latest FG Production (Inbound)
+    let latestFGDateObj = null;
+    let latestFGDateStr = null;
+    let fgTotalKg = 0;
+
+    transactions.forEach(t => {
+        if (t.type === 'IN') {
+            const tDate = new Date(t.date);
+            if (!isNaN(tDate.getTime())) {
+                if (!latestFGDateObj || tDate > latestFGDateObj) {
+                    latestFGDateObj = tDate;
+                    latestFGDateStr = tDate.toDateString();
+                }
+            }
+        }
+    });
+
+    if (latestFGDateStr) {
+        transactions.forEach(t => {
+            if (t.type === 'IN' && new Date(t.date).toDateString() === latestFGDateStr) {
+                fgTotalKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.itemWeight) || 0);
+            }
+        });
+    }
+
+    // 2. Calculate Latest RM Formula Issuance (Outbound)
+    let latestRMDateObj = null;
+    let latestRMDateStr = null;
+    let rmTotalKg = 0;
+
+    rmTransactions.forEach(t => {
+        if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:')) {
+            const tDate = new Date(t.date);
+            if (!isNaN(tDate.getTime())) {
+                if (!latestRMDateObj || tDate > latestRMDateObj) {
+                    latestRMDateObj = tDate;
+                    latestRMDateStr = tDate.toDateString();
+                }
+            }
+        }
+    });
+
+    if (latestRMDateStr) {
+        rmTransactions.forEach(t => {
+            if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:') && new Date(t.date).toDateString() === latestRMDateStr) {
+                rmTotalKg += (parseFloat(t.quantity) || 0);
+            }
+        });
+    }
+
+    // 3. Update UI Elements
+    const fgDateEl = document.getElementById('wipFGDate');
+    const fgWeightEl = document.getElementById('wipFGWeight');
+    const rmDateEl = document.getElementById('wipRMDate');
+    const rmWeightEl = document.getElementById('wipRMWeight');
+    const gapEl = document.getElementById('wipGapTotal');
+
+    if (fgDateEl && fgWeightEl) {
+        if (latestFGDateObj) {
+            const day = String(latestFGDateObj.getDate()).padStart(2, '0');
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            fgDateEl.innerText = `${day}-${monthNames[latestFGDateObj.getMonth()]}-${latestFGDateObj.getFullYear()}`;
+            fgWeightEl.innerText = fgTotalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
+        } else {
+            fgDateEl.innerText = '--';
+            fgWeightEl.innerText = '0.0 KG';
+        }
+    }
+
+    if (rmDateEl && rmWeightEl) {
+        if (latestRMDateObj) {
+            const day = String(latestRMDateObj.getDate()).padStart(2, '0');
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            rmDateEl.innerText = `${day}-${monthNames[latestRMDateObj.getMonth()]}-${latestRMDateObj.getFullYear()}`;
+            rmWeightEl.innerText = rmTotalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
+        } else {
+            rmDateEl.innerText = '--';
+            rmWeightEl.innerText = '0.0 KG';
+        }
+    }
+
+    if (gapEl) {
+        const gap = rmTotalKg - fgTotalKg;
+        gapEl.innerText = gap.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
+        // Optional: color code if production is behind consumption
+        gapEl.style.color = gap > 0 ? '#ffffff' : '#fecaca'; 
+    }
+}
+
 async function saveRMTransaction(type) {
     const mode = type === 'OUT' ? (document.querySelector('input[name="rmOutMode"]:checked')?.value || 'SINGLE') : 'SINGLE';
     const notes = type === 'IN' ? document.getElementById('rmInNotes').value : document.getElementById('rmOutNotes').value;
