@@ -4612,16 +4612,28 @@ function refreshTransactions() {
 
     // Calculate Production Total (KG) for SELECTED DATE (Daily Production Meter)
     const metricDateInput = document.getElementById('dailyProdMetricDate');
+    
+    // SMART DEFAULT: If no date is selected, find the ABSOLUTE LATEST production date in history
     if (metricDateInput && !metricDateInput.value) {
-        // Init with today if empty
-        metricDateInput.value = new Date().toISOString().split('T')[0];
+        let latestDate = null;
+        transactions.forEach(t => {
+            if (t.type === 'PRODUCTION') {
+                const pureDate = t.date.split(' ')[0]; // Extract YYYY-MM-DD from 'YYYY-MM-DD HH:MM:SS'
+                if (!latestDate || pureDate > latestDate) latestDate = pureDate;
+            }
+        });
+        
+        // If we found a latest production date, use it; otherwise fallback to today
+        metricDateInput.value = latestDate || new Date().toISOString().split('T')[0];
     }
-    const metricDate = metricDateInput ? metricDateInput.value : new Date().toISOString().split('T')[0];
+    
+    const metricDate = metricDateInput ? metricDateInput.value : '';
     
     let dailyProdOverallKg = 0;
     transactions.forEach(t => {
         if (t.type === 'PRODUCTION') {
-            const tDateStr = new Date(t.date).toISOString().split('T')[0];
+            // Robust date extraction: use string split to avoid UTC shifting
+            const tDateStr = t.date.split(' ')[0]; 
             if (tDateStr === metricDate) {
                 dailyProdOverallKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.weight) || 0);
             }
