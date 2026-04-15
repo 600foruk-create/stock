@@ -6166,41 +6166,30 @@ function refreshRMConsumptionReport() {
     }
 
     // 3. Update UI Elements
-    const fgDateEl = document.getElementById('wipFGDate');
     const fgWeightEl = document.getElementById('wipFGWeight');
-    const rmDateEl = document.getElementById('wipRMDate');
     const rmWeightEl = document.getElementById('wipRMWeight');
     const gapEl = document.getElementById('wipGapTotal');
 
-    if (fgDateEl && fgWeightEl) {
-        if (latestFGDateObj) {
-            const day = String(latestFGDateObj.getDate()).padStart(2, '0');
-            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            fgDateEl.innerText = `${day}-${monthNames[latestFGDateObj.getMonth()]}-${latestFGDateObj.getFullYear()}`;
-            fgWeightEl.innerText = fgTotalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
-        } else {
-            fgDateEl.innerText = '--';
-            fgWeightEl.innerText = '0.0 KG';
-        }
+    if (fgWeightEl) {
+        fgWeightEl.innerText = fgTotalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
     }
 
-    if (rmDateEl && rmWeightEl) {
-        if (latestRMDateObj) {
-            const day = String(latestRMDateObj.getDate()).padStart(2, '0');
-            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            rmDateEl.innerText = `${day}-${monthNames[latestRMDateObj.getMonth()]}-${latestRMDateObj.getFullYear()}`;
-            rmWeightEl.innerText = rmTotalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
-        } else {
-            rmDateEl.innerText = '--';
-            rmWeightEl.innerText = '0.0 KG';
-        }
+    if (rmWeightEl) {
+        rmWeightEl.innerText = rmTotalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
     }
 
     if (gapEl) {
         const gap = rmTotalKg - fgTotalKg;
         gapEl.innerText = gap.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
-        // Optional: color code if production is behind consumption
-        gapEl.style.color = gap > 0 ? '#ffffff' : '#fecaca'; 
+        
+        // Fix: Use bold colors for the white background cards
+        if (gap < -0.01) {
+            gapEl.style.color = '#dc2626'; // Strong Red for negative/discrepancy
+        } else if (gap > 0.01) {
+            gapEl.style.color = '#059669'; // Strong Green for positive/in-process
+        } else {
+            gapEl.style.color = 'var(--gray-800)'; // Neutral
+        }
     }
 }
 
