@@ -4614,7 +4614,7 @@ function refreshTransactions() {
     // SMART DISCOVERY: Find the ABSOLUTE LATEST production date in history
     let latestDate = null;
     transactions.forEach(t => {
-        if (t.type === 'PRODUCTION') {
+        if (t.type === 'IN') { // In Finish Goods, 'IN' means Production
             const pureDate = t.date.split(' ')[0]; // Extract YYYY-MM-DD
             if (!latestDate || pureDate > latestDate) latestDate = pureDate;
         }
@@ -4628,7 +4628,7 @@ function refreshTransactions() {
     let dailyProdOverallKg = 0;
     if (latestDate) {
         transactions.forEach(t => {
-            if (t.type === 'PRODUCTION') {
+            if (t.type === 'IN') {
                 const tDateStr = t.date.split(' ')[0]; 
                 if (tDateStr === latestDate) {
                     dailyProdOverallKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.weight) || 0);
