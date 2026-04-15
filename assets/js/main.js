@@ -4647,7 +4647,8 @@ function refreshTransactions() {
             if (t.type === 'IN') {
                 const tDate = new Date(t.date);
                 if (!isNaN(tDate.getTime()) && tDate.toDateString() === latestDateString) {
-                    dailyProdOverallKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.weight) || 0);
+                    // Fix: Use itemWeight (from SQL JOIN) instead of weight
+                    dailyProdOverallKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.itemWeight) || 0);
                 }
             }
         });
