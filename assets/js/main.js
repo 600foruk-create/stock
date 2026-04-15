@@ -4611,26 +4611,42 @@ function refreshTransactions() {
     const toDate = document.getElementById('transDateTo')?.value;
 
     // Calculate Last Recorded Production Total (KG)
-    // SMART DISCOVERY: Find the ABSOLUTE LATEST production date in history
-    let latestDate = null;
+    // SMART DISCOVERY: Find the ABSOLUTE LATEST production date using robust Date objects
+    let latestProdDateObj = null;
+    let latestDateString = null;
+    
     transactions.forEach(t => {
-        if (t.type === 'IN') { // In Finish Goods, 'IN' means Production
-            const pureDate = t.date.split(' ')[0]; // Extract YYYY-MM-DD
-            if (!latestDate || pureDate > latestDate) latestDate = pureDate;
+        if (t.type === 'IN') { 
+            const tDate = new Date(t.date);
+            if (!isNaN(tDate.getTime())) {
+                if (!latestProdDateObj || tDate > latestProdDateObj) {
+                    latestProdDateObj = tDate;
+                    latestDateString = tDate.toDateString(); // "Wed Apr 14 2026" unique per day
+                }
+            }
         }
     });
 
     const lastProdLabel = document.getElementById('lastProdDateLabel');
     if (lastProdLabel) {
-        lastProdLabel.innerText = latestDate ? formatDate(latestDate) : '--';
+        if (latestProdDateObj) {
+            // Display clean date (Day Month Year) without time
+            const day = String(latestProdDateObj.getDate()).padStart(2, '0');
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const monthShort = monthNames[latestProdDateObj.getMonth()];
+            const year = latestProdDateObj.getFullYear();
+            lastProdLabel.innerText = `${day}-${monthShort}-${year}`;
+        } else {
+            lastProdLabel.innerText = '--';
+        }
     }
     
     let dailyProdOverallKg = 0;
-    if (latestDate) {
+    if (latestDateString) {
         transactions.forEach(t => {
             if (t.type === 'IN') {
-                const tDateStr = t.date.split(' ')[0]; 
-                if (tDateStr === latestDate) {
+                const tDate = new Date(t.date);
+                if (!isNaN(tDate.getTime()) && tDate.toDateString() === latestDateString) {
                     dailyProdOverallKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.weight) || 0);
                 }
             }
