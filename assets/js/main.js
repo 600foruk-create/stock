@@ -5982,7 +5982,63 @@ function previewFormulaUsage() {
     if (editor) editor.style.display = 'block';
 }
 
+function updateRMOutMetrics() {
+    const lastDateEl = document.getElementById('rmLastFormulaDate');
+    const weightEl = document.getElementById('rmDailyFormulaWeight');
+    if (!lastDateEl || !weightEl) return;
+
+    // Filter only Formula outputs (tagged in notes)
+    const formulaTrans = rmTransactions.filter(t => 
+        t.type === 'OUT' && t.notes && t.notes.includes('[Formula:')
+    );
+
+    if (formulaTrans.length === 0) {
+        lastDateEl.innerText = '--';
+        weightEl.innerText = '0.0 KG';
+        return;
+    }
+
+    // Find latest date using Date objects
+    let latestDateObj = null;
+    let latestDateString = null;
+
+    formulaTrans.forEach(t => {
+        const tDate = new Date(t.date);
+        if (!isNaN(tDate.getTime())) {
+            if (!latestDateObj || tDate > latestDateObj) {
+                latestDateObj = tDate;
+                latestDateString = tDate.toDateString();
+            }
+        }
+    });
+
+    if (!latestDateObj) {
+        lastDateEl.innerText = '--';
+        weightEl.innerText = '0.0 KG';
+        return;
+    }
+
+    // Display clean date
+    const day = String(latestDateObj.getDate()).padStart(2, '0');
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthShort = monthNames[latestDateObj.getMonth()];
+    const year = latestDateObj.getFullYear();
+    lastDateEl.innerText = `${day}-${monthShort}-${year}`;
+
+    // Sum weight for that specific latest day
+    let totalKg = 0;
+    formulaTrans.forEach(t => {
+        const tDate = new Date(t.date);
+        if (tDate.toDateString() === latestDateString) {
+            totalKg += (parseFloat(t.quantity) || 0);
+        }
+    });
+
+    weightEl.innerText = totalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
+}
+
 function refreshRMOutHistoryTable() {
+    updateRMOutMetrics(); // Update the new meter
     const tbody = document.getElementById('rmOutTable');
     if (!tbody) return;
     

@@ -1,4 +1,21 @@
 <div class="rm-transactions">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;">
+        <h2 style="margin: 0; color: var(--gray-800); display: flex; align-items: center; gap: 10px;">
+            🏗️ Raw Material Issuing
+        </h2>
+        
+        <!-- Formula Issuance Tracker -->
+        <div id="rmFormulaOutMetric" style="background: white; padding: 0.5rem 1.2rem; border-radius: 12px; border: 2px solid var(--sky-500); display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <div style="font-size: 1.4rem; background: var(--sky-100); padding: 8px; border-radius: 8px;">🥣</div>
+            <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 2px;">
+                    <span style="font-size: 0.7rem; font-weight: 800; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px;">Last Formula:</span>
+                    <span id="rmLastFormulaDate" style="font-size: 0.8rem; color: var(--sky-700); font-weight: 700; background: var(--sky-50); padding: 2px 8px; border-radius: 6px; border: 1px solid var(--sky-100);">--</span>
+                </div>
+                <div id="rmDailyFormulaWeight" style="font-size: 1.3rem; font-weight: 900; color: var(--sky-600); line-height: 1.1;">0.0 KG</div>
+            </div>
+        </div>
+    </div>
 
     
     <div class="form-card" style="margin-bottom: 2rem; background: transparent; box-shadow: none; border: none; padding: 0;">
