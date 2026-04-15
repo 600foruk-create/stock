@@ -239,6 +239,17 @@ function showTab(tabName) {
         if (tabName === 'rm_reports') if (typeof refreshArchivedReportsList === 'function') refreshArchivedReportsList();
         if (tabName === 'rm_consumption') if (typeof refreshRMConsumptionReport === 'function') refreshRMConsumptionReport();
     }
+
+    // Store refreshers
+    if (tabName.startsWith('store_')) {
+        if (tabName === 'store_dashboard') if (typeof refreshStoreDashboard === 'function') refreshStoreDashboard();
+        if (tabName === 'store_inwards') if (typeof refreshStoreInwards === 'function') refreshStoreInwards();
+        if (tabName === 'store_outwards') if (typeof refreshStoreOutwards === 'function') refreshStoreOutwards();
+        if (tabName === 'store_inventory') if (typeof refreshStoreInventory === 'function') refreshStoreInventory();
+        if (tabName === 'store_items') if (typeof refreshStoreItems === 'function') refreshStoreItems();
+        if (tabName === 'store_audit') if (typeof refreshStoreAudit === 'function') refreshStoreAudit();
+        if (tabName === 'store_reports') if (typeof refreshStoreReports === 'function') refreshStoreReports();
+    }
 }
 
 
@@ -477,9 +488,25 @@ function switchModule(module) {
             showTab('rm_dashboard');
         }
     } else if (module === 'store') {
-        document.getElementById('storePanel').style.display = 'block';
+        document.getElementById('storeTabs').style.display = 'flex';
+        const activeTabBtn = document.querySelector('#storeTabs .nav-tab.active');
+        if (activeTabBtn) {
+            const onclickArr = activeTabBtn.getAttribute('onclick').match(/'([^']+)'/);
+            showTab(onclickArr ? onclickArr[1] : 'store_dashboard');
+        } else {
+            showTab('store_dashboard');
+        }
     }
 }
+
+// Store Module Refresh Placeholders
+function refreshStoreDashboard() { console.log('Store: Dashboard Refresh placeholder'); }
+function refreshStoreInwards() { console.log('Store: Inwards Refresh placeholder'); }
+function refreshStoreOutwards() { console.log('Store: Outwards Refresh placeholder'); }
+function refreshStoreInventory() { console.log('Store: Inventory Refresh placeholder'); }
+function refreshStoreItems() { console.log('Store: Item Records Refresh placeholder'); }
+function refreshStoreAudit() { console.log('Store: Audit Refresh placeholder'); }
+function refreshStoreReports() { console.log('Store: Reports Refresh placeholder'); }
 
 function togglePassword(fieldId) {
     let password = document.getElementById(fieldId);
