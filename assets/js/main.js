@@ -4610,35 +4610,32 @@ function refreshTransactions() {
     const fromDate = document.getElementById('transDateFrom')?.value;
     const toDate = document.getElementById('transDateTo')?.value;
 
-    // Calculate Production Total (KG) for SELECTED DATE (Daily Production Meter)
-    const metricDateInput = document.getElementById('dailyProdMetricDate');
-    
-    // SMART DEFAULT: If no date is selected, find the ABSOLUTE LATEST production date in history
-    if (metricDateInput && !metricDateInput.value) {
-        let latestDate = null;
-        transactions.forEach(t => {
-            if (t.type === 'PRODUCTION') {
-                const pureDate = t.date.split(' ')[0]; // Extract YYYY-MM-DD from 'YYYY-MM-DD HH:MM:SS'
-                if (!latestDate || pureDate > latestDate) latestDate = pureDate;
-            }
-        });
-        
-        // If we found a latest production date, use it; otherwise fallback to today
-        metricDateInput.value = latestDate || new Date().toISOString().split('T')[0];
-    }
-    
-    const metricDate = metricDateInput ? metricDateInput.value : '';
-    
-    let dailyProdOverallKg = 0;
+    // Calculate Last Recorded Production Total (KG)
+    // SMART DISCOVERY: Find the ABSOLUTE LATEST production date in history
+    let latestDate = null;
     transactions.forEach(t => {
         if (t.type === 'PRODUCTION') {
-            // Robust date extraction: use string split to avoid UTC shifting
-            const tDateStr = t.date.split(' ')[0]; 
-            if (tDateStr === metricDate) {
-                dailyProdOverallKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.weight) || 0);
-            }
+            const pureDate = t.date.split(' ')[0]; // Extract YYYY-MM-DD
+            if (!latestDate || pureDate > latestDate) latestDate = pureDate;
         }
     });
+
+    const lastProdLabel = document.getElementById('lastProdDateLabel');
+    if (lastProdLabel) {
+        lastProdLabel.innerText = latestDate ? formatDate(latestDate) : '--';
+    }
+    
+    let dailyProdOverallKg = 0;
+    if (latestDate) {
+        transactions.forEach(t => {
+            if (t.type === 'PRODUCTION') {
+                const tDateStr = t.date.split(' ')[0]; 
+                if (tDateStr === latestDate) {
+                    dailyProdOverallKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.weight) || 0);
+                }
+            }
+        });
+    }
 
     const dailyProdEl = document.getElementById('dailyProductionWeight');
     if (dailyProdEl) {

@@ -4,13 +4,13 @@
                         <button class="btn btn-primary" onclick="showSaleEntry()">🛒 Sale (OUT)</button>
                         <button class="btn" onclick="showAdjustmentEntry()">⚖️ Adjustment (+/-)</button>
                         <button class="btn" style="background: #eab308; color: white;" onclick="showProductionReportModal()">📊 Production Report</button>
-                        <!-- Date-Selectable Production Meter -->
+                        <!-- Simplified Last Production Tracker -->
                         <div id="dailyProdMetric" style="background: white; padding: 0.4rem 1rem; border-radius: 10px; border: 2px solid #eab308; display: flex; align-items: center; gap: 0.8rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-left: auto;">
                             <div style="font-size: 1.2rem;">🏗️</div>
                             <div>
                                 <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 2px;">
-                                    <span style="font-size: 0.65rem; font-weight: 800; color: var(--gray-500); text-transform: uppercase;">Production Date:</span>
-                                    <input type="date" id="dailyProdMetricDate" onchange="refreshTransactions()" style="font-size: 0.75rem; border: none; background: #fffbeb; color: #92400e; font-weight: 700; border-radius: 4px; padding: 1px 4px; cursor: pointer;">
+                                    <span style="font-size: 0.65rem; font-weight: 800; color: var(--gray-500); text-transform: uppercase;">Last Recorded:</span>
+                                    <span id="lastProdDateLabel" style="font-size: 0.75rem; color: #92400e; font-weight: 700; background: #fffbeb; padding: 1px 6px; border-radius: 4px;">--</span>
                                 </div>
                                 <div id="dailyProductionWeight" style="font-size: 1.1rem; font-weight: 800; color: #eab308; line-height: 1.2;">0.0 KG</div>
                             </div>
