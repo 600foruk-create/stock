@@ -3194,8 +3194,32 @@ function updateOrderFilterCounts() {
 function refreshOrdersList(filter = null) {
     updateOrderFilterCounts();
     if (filter !== null) currentOrderFilter = filter;
-    let html = '';
     let f = currentOrderFilter.toLowerCase();
+
+    // Update Button Styles
+    const filterBtns = {
+        all: document.getElementById('btn-all'),
+        pending: document.getElementById('btn-pending'),
+        processing: document.getElementById('btn-processing'),
+        completed: document.getElementById('btn-completed')
+    };
+
+    Object.keys(filterBtns).forEach(key => {
+        const btn = filterBtns[key];
+        if (btn) {
+            if (key === f) {
+                btn.style.background = 'var(--sky-600)';
+                btn.style.color = 'white';
+                btn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            } else {
+                btn.style.background = 'var(--gray-200)';
+                btn.style.color = 'var(--gray-700)';
+                btn.style.boxShadow = 'none';
+            }
+        }
+    });
+
+    let html = '';
     
     // Get filter values
     const search = (document.getElementById('orderSearch')?.value || '').toLowerCase();
