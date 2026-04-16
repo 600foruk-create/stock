@@ -2,7 +2,6 @@
 let users = [];
 let currentUser = null;
 let currentModule = 'finishGood';
-let usedCompletedOrders = new Set();
 let mainCategories = [];
 let subCategories = [];
 let items = [];
@@ -3040,7 +3039,16 @@ async function saveSale() {
     }
 
     if (errors.length > 0) alert('Errors:\n' + errors.join('\n'));
-    if (selectedOrderId) usedCompletedOrders.add(parseInt(selectedOrderId));
+    if (selectedOrderId) {
+        let order = orders.find(o => o.id == selectedOrderId);
+        if (order) {
+            order.isStockSubtracted = 1;
+            await fetch('api/sync.php?action=save_order', {
+                method: 'POST',
+                body: JSON.stringify({ order: order })
+            });
+        }
+    }
     
     saveData(); refreshTransactions(); refreshDashboard(); refreshStockList(); refreshLowStockReport(); hideAllForms(); refreshCompletedOrderDropdown();
     alert('Process complete.');
@@ -3368,11 +3376,11 @@ function refreshCompletedOrderDropdown() {
     if (!select) return;
     select.innerHTML = '<option value="">-- Select Completed Order --</option>';
     
-    // Filter orders: status must be 'completed', it shouldn't be in usedCompletedOrders, 
+    // Filter orders: status must be 'completed', it shouldn't be processed for stock already, 
     // AND it must have at least one item with unfulfilled quantity (in case it was edited)
     let completedOrders = orders.filter(o => 
         (o.status || '').toLowerCase() === 'completed' && 
-        !usedCompletedOrders.has(o.id) &&
+        !o.isStockSubtracted &&
         (o.items || []).some(item => (item.quantity - (item.fulfilled || 0)) > 0)
     );
     
@@ -3539,25 +3547,32 @@ async function completeOrder(orderId) {
 
     // Update order status on server
     order.status = 'completed';
+    // If ANY item had unfulfilled quantity that we just processed, mark as stock subtracted
+    if (stockDeducted) order.isStockSubtracted = 1;
+
     try {
-        await fetch('api/sync.php?action=save_order', {
+        const response = await fetch('api/sync.php?action=save_order', {
             method: 'POST',
             body: JSON.stringify({ order: order })
         });
+        const result = await response.json();
         
-        // If it was auto-fulfilled during "Complete", mark it as used
-        if (stockDeducted) usedCompletedOrders.add(order.id);
-        
-        saveData();
-        refreshOrdersList();
-        refreshDashboard();
-        refreshStockList();
-        refreshLowStockReport();
-        refreshTransactions();
-        refreshCompletedOrderDropdown(); // Added to update sale select immediately
-        alert(`Order #${orderId} completed successfully!`);
+        if (result.status === 'success') {
+            saveData();
+            refreshOrdersList('completed');
+            refreshDashboard();
+            refreshStockList();
+            refreshLowStockReport();
+            refreshTransactions();
+            refreshCompletedOrderDropdown(); 
+            alert(`Order #${orderId} completed and stock deducted successfully!`);
+        } else {
+            alert('Failed to update order status: ' + result.message);
+        }
     } catch (e) {
-        alert('Order status update failed on server, but stock was deducted.');
+        console.error('Final order save failed', e);
+        alert('Stock was deducted locally, but server update failed. Please refresh.');
+        initApp();
     }
 }
 

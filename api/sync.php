@@ -58,6 +58,13 @@ try {
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_formulas (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL)");
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_formula_items (id INT AUTO_INCREMENT PRIMARY KEY, formula_id INT NOT NULL, rm_item_id INT NOT NULL, quantity DECIMAL(15,3) NOT NULL, FOREIGN KEY (formula_id) REFERENCES rm_formulas(id) ON DELETE CASCADE)");
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_transactions (id INT AUTO_INCREMENT PRIMARY KEY, date DATETIME DEFAULT CURRENT_TIMESTAMP, rm_item_id INT NOT NULL, quantity DECIMAL(15,3) NOT NULL, type ENUM('IN', 'OUT') NOT NULL, notes TEXT, FOREIGN KEY (rm_item_id) REFERENCES rm_items(id))");
+                // AUTO-REPAIR: Order Stock Subtracted Flag
+                try {
+                    $orderCols = $conn->query("SHOW COLUMNS FROM orders")->fetchAll(PDO::FETCH_COLUMN);
+                    if (!in_array('is_stock_subtracted', $orderCols)) {
+                        $conn->exec("ALTER TABLE orders ADD COLUMN is_stock_subtracted INT DEFAULT 0");
+                    }
+                } catch(Exception $e) {}
             } catch (Exception $e) {}
 
             $data = [
@@ -68,7 +75,7 @@ try {
                 'customers' => $conn->query("SELECT id, unique_id AS uniqueId, name, address, mobile, main_id AS mainId, sub_id AS subId FROM customers")->fetchAll(PDO::FETCH_ASSOC),
                 'customerProvinces' => $conn->query("SELECT id, name FROM customer_main_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'customerDistricts' => $conn->query("SELECT id, main_id AS mainId, name FROM customer_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
-                'orders' => $conn->query("SELECT o.id, o.date, o.customer_id AS customerId, o.status, o.total_qty AS totalQty, o.total_kg AS totalKg, c.name AS customerName FROM orders o LEFT JOIN customers c ON o.customer_id = c.id")->fetchAll(PDO::FETCH_ASSOC),
+                'orders' => $conn->query("SELECT o.id, o.date, o.customer_id AS customerId, o.status, o.total_qty AS totalQty, o.total_kg AS totalKg, o.is_stock_subtracted AS isStockSubtracted, c.name AS customerName FROM orders o LEFT JOIN customers c ON o.customer_id = c.id")->fetchAll(PDO::FETCH_ASSOC),
                 'transactions' => $conn->query("SELECT t.id, t.date, t.type, t.main_id AS mainId, t.sub_id AS subId, t.item_id AS itemId, t.quantity, t.customer_id AS customerId, t.notes, mc.name AS mainName, sc.name AS subName, i.name AS itemName, i.weight AS itemWeight, i.length AS itemLength, c.name AS customer FROM transactions t LEFT JOIN main_categories mc ON t.main_id = mc.id LEFT JOIN sub_categories sc ON t.sub_id = sc.id LEFT JOIN items i ON t.item_id = i.id LEFT JOIN customers c ON t.customer_id = c.id ORDER BY t.date DESC")->fetchAll(PDO::FETCH_ASSOC),
                 'settings' => $conn->query("SELECT id, category, `key`, value FROM settings")->fetchAll(PDO::FETCH_ASSOC),
                 'rawMaterials' => $conn->query("SELECT id, name, category, unit, stock, threshold FROM raw_materials")->fetchAll(PDO::FETCH_ASSOC), // Legacy support
@@ -379,16 +386,16 @@ try {
 
                 if (isset($o['id']) && !empty($o['id'])) {
                     // Update existing order
-                    $stmt = $conn->prepare("UPDATE orders SET date = ?, customer_id = ?, status = ?, total_qty = ?, total_kg = ? WHERE id = ?");
-                    $stmt->execute([$dateVal, $o['customerId'], $o['status'], $o['totalQty'] ?? 0, $o['totalKg'] ?? 0, $o['id']]);
+                    $stmt = $conn->prepare("UPDATE orders SET date = ?, customer_id = ?, status = ?, total_qty = ?, total_kg = ?, is_stock_subtracted = ? WHERE id = ?");
+                    $stmt->execute([$dateVal, $o['customerId'], $o['status'], $o['totalQty'] ?? 0, $o['totalKg'] ?? 0, $o['isStockSubtracted'] ?? 0, $o['id']]);
                     $orderId = $o['id'];
                     
                     // Delete existing items for full refresh (simple approach)
                     $conn->prepare("DELETE FROM order_items WHERE order_id = ?")->execute([$orderId]);
                 } else {
                     // Insert new order
-                    $stmt = $conn->prepare("INSERT INTO orders (date, customer_id, status, total_qty, total_kg) VALUES (?, ?, ?, ?, ?)");
-                    $stmt->execute([$dateVal, $o['customerId'], $o['status'] ?? 'Pending', (int)($o['totalQty'] ?? 0), (float)($o['totalKg'] ?? 0)]);
+                    $stmt = $conn->prepare("INSERT INTO orders (date, customer_id, status, total_qty, total_kg, is_stock_subtracted) VALUES (?, ?, ?, ?, ?, ?)");
+                    $stmt->execute([$dateVal, $o['customerId'], $o['status'] ?? 'Pending', (int)($o['totalQty'] ?? 0), (float)($o['totalKg'] ?? 0), $o['isStockSubtracted'] ?? 0]);
                     $orderId = $conn->lastInsertId();
                 }
 
