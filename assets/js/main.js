@@ -5944,7 +5944,15 @@ function toggleRMOutMode() {
 
 function refreshRMOutFormControls() {
     const itemSelect = document.getElementById('rmOutSelect');
+    const formulaSelect = document.getElementById('rmOutFormulaSelect');
+    const editor = document.getElementById('rmFormulaIngredientsEditor');
+    
+    // Check if user is currently editing a formula (editor is visible)
+    const isEditingFormula = editor && editor.style.display !== 'none';
+
+    // 1. Refresh Material Select (always preserve selection)
     if (itemSelect) {
+        const currentItem = itemSelect.value;
         itemSelect.innerHTML = '<option value="">-- Select Material --</option>';
         rmItems.sort((a,b) => a.name.localeCompare(b.name)).forEach(i => {
             const opt = document.createElement('option');
@@ -5952,10 +5960,12 @@ function refreshRMOutFormControls() {
             opt.innerText = `${i.name} (Stock: ${i.stock} ${i.unit})`;
             itemSelect.appendChild(opt);
         });
+        if (currentItem) itemSelect.value = currentItem;
     }
 
-    const formulaSelect = document.getElementById('rmOutFormulaSelect');
-    if (formulaSelect) {
+    // 2. Refresh Formula Select (ONLY if not currently editing/using it)
+    if (formulaSelect && !isEditingFormula) {
+        const currentFormula = formulaSelect.value;
         formulaSelect.innerHTML = '<option value="">-- Select Production Formula --</option>';
         rmFormulas.sort((a,b) => a.name.localeCompare(b.name)).forEach(f => {
             const opt = document.createElement('option');
@@ -5963,6 +5973,7 @@ function refreshRMOutFormControls() {
             opt.innerText = f.name;
             formulaSelect.appendChild(opt);
         });
+        if (currentFormula) formulaSelect.value = currentFormula;
     }
     
     refreshRMOutHistoryTable();
