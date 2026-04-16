@@ -293,8 +293,13 @@ try {
                 $stmt = $conn->prepare("INSERT INTO transactions (date, type, main_id, sub_id, item_id, quantity, customer_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
                 // Frontend uses 'PRODUCTION', 'SALE', 'ADJUSTMENT'
                 $type = $t['type'] === 'PRODUCTION' ? 'IN' : ($t['type'] === 'SALE' ? 'OUT' : 'ADJ');
+                
+                // Normalize date: Remove 'T' from datetime-local/ISO format for MySQL compatibility
+                $dateVal = $t['date'] ?? date('Y-m-d H:i:s');
+                $dateVal = str_replace('T', ' ', $dateVal);
+
                 $stmt->execute([
-                    $t['date'] ?? date('Y-m-d H:i:s'),
+                    $dateVal,
                     $type,
                     $t['mainId'],
                     $t['subId'],

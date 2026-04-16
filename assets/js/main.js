@@ -3491,7 +3491,7 @@ async function completeOrder(orderId) {
     });
 
     if (!canComplete) {
-        alert('Cannot complete order:\n' + stockIssues.join('\n'));
+        alert('Cannot complete order. Some items are out of stock:\n' + stockIssues.join('\n'));
         return;
     }
 
@@ -3506,10 +3506,9 @@ async function completeOrder(orderId) {
         
         let remainingToFulfill = (item.quantity || 0) - (item.fulfilled || 0);
         if (remainingToFulfill > 0) {
-            stockDeducted = true;
             let tData = {
                 type: 'SALE',
-                date: new Date().toISOString().slice(0, 16),
+                date: new Date().toISOString().slice(0, 16).replace('T', ' '), // MySQL Format
                 mainId: invItem.mainId,
                 subId: invItem.subId,
                 itemId: item.itemId,
@@ -3525,22 +3524,17 @@ async function completeOrder(orderId) {
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
+                    stockDeducted = true;
                     invItem.stock = (invItem.stock || 0) - remainingToFulfill;
                     item.fulfilled = (item.fulfilled || 0) + remainingToFulfill;
-                    transactions.unshift({
-                        id: result.id,
-                        ...tData,
-                        mainName: mainCategories.find(m => m.id === invItem.mainId)?.name || '',
-                        subName: subCategories.find(s => s.id === invItem.subId)?.name || '',
-                        productCode: item.productCode,
-                        itemName: invItem.name,
-                        weight: invItem.weight,
-                        length: invItem.length,
-                        customer: order.customerName + ' (Order Fulfillment)'
-                    });
+                } else {
+                    alert(`Fulfillment failed for item ${item.productCode}: ${result.message}`);
+                    return; // Stop the whole process if one item fails
                 }
             } catch (e) {
-                console.error('Fulfillment save failed for item', item.itemId);
+                console.error('Fulfillment save failed', e);
+                alert('Connection error during fulfillment. Process stopped.');
+                return;
             }
         }
     }
@@ -3558,20 +3552,14 @@ async function completeOrder(orderId) {
         const result = await response.json();
         
         if (result.status === 'success') {
-            saveData();
-            refreshOrdersList('completed');
-            refreshDashboard();
-            refreshStockList();
-            refreshLowStockReport();
-            refreshTransactions();
-            refreshCompletedOrderDropdown(); 
-            alert(`Order #${orderId} completed and stock deducted successfully!`);
+            alert(`Order #${orderId} completed successfully! Stock has been deducted.`);
+            initApp(); // Full refresh from server to ensure perfect sync
         } else {
             alert('Failed to update order status: ' + result.message);
         }
     } catch (e) {
         console.error('Final order save failed', e);
-        alert('Stock was deducted locally, but server update failed. Please refresh.');
+        alert('Stock was deducted, but final status update failed. Please refresh.');
         initApp();
     }
 }
