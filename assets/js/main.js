@@ -3506,9 +3506,18 @@ async function completeOrder(orderId) {
         
         let remainingToFulfill = (item.quantity || 0) - (item.fulfilled || 0);
         if (remainingToFulfill > 0) {
+            // Generate Local Date string matching database expected format YYYY-MM-DD HH:MM:S
+            const now = new Date();
+            const localDate = now.getFullYear() + '-' + 
+                String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(now.getDate()).padStart(2, '0') + ' ' + 
+                String(now.getHours()).padStart(2, '0') + ':' + 
+                String(now.getMinutes()).padStart(2, '0') + ':' + 
+                String(now.getSeconds()).padStart(2, '0');
+
             let tData = {
                 type: 'SALE',
-                date: new Date().toISOString().slice(0, 16).replace('T', ' '), // MySQL Format
+                date: localDate,
                 mainId: invItem.mainId,
                 subId: invItem.subId,
                 itemId: item.itemId,
@@ -3553,7 +3562,10 @@ async function completeOrder(orderId) {
         
         if (result.status === 'success') {
             alert(`Order #${orderId} completed successfully! Stock has been deducted.`);
-            initApp(); // Full refresh from server to ensure perfect sync
+            // Add a slight delay before initApp to ensure database commits are ready for fetching
+            setTimeout(() => {
+                initApp();
+            }, 300);
         } else {
             alert('Failed to update order status: ' + result.message);
         }
