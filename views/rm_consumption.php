@@ -1,8 +1,15 @@
 <div class="rm-consumption">
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
         <div>
-            <h2 style="color: var(--sky-600); margin: 0;">🔄 PR vs RM Consumption</h2>
-            <p style="color: var(--gray-500); margin-top: 4px;">Real-time comparison of Production vs Raw Material Usage.</p>
+            <!-- Header removed as requested -->
+        </div>
+        <div style="display: flex; gap: 0.8rem;">
+            <button class="btn btn-primary" onclick="saveRMConsumptionEntry()" style="background: var(--sky-600); border: none; font-weight: 600; padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                📥 Save Daily Entry
+            </button>
+            <button class="btn" onclick="clearRMConsumptionHistory()" style="background: #ef4444; color: white; border: none; font-weight: 600; padding: 0.8rem 1.5rem;">
+                🗑️ Clear History
+            </button>
         </div>
     </div>
 
@@ -33,7 +40,31 @@
         </div>
     </div>
 
-    <div class="table-container" style="display: none;"> <!-- Keep original table hidden or optional for now as requested for specific boxes -->
+    <!-- Daily Records History List -->
+    <div style="background: white; border-radius: 12px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); overflow: hidden;">
+        <div style="padding: 1.2rem; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 1.1rem; color: var(--gray-700);">📋 Consumption History Log</h3>
+        </div>
+        <table class="data-table" style="margin-bottom: 0;">
+            <thead>
+                <tr>
+                    <th style="padding: 1.2rem;">Date & Time</th>
+                    <th style="padding: 1.2rem; text-align: right;">FG Produced (KG)</th>
+                    <th style="padding: 1.2rem; text-align: right;">RM Issued (KG)</th>
+                    <th style="padding: 1.2rem; text-align: right;">Gap / WIP (Net)</th>
+                    <th style="padding: 1.2rem; text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="rmConsumptionHistoryTable">
+                <!-- Data will be injected here -->
+            </tbody>
+            <tfoot id="rmConsumptionHistoryFooter" style="background: var(--gray-50); font-weight: bold;">
+                <!-- Totals will be injected here -->
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="table-container" style="display: none;">
         <table class="data-table">
             <thead>
                 <tr>

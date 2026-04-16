@@ -19,6 +19,7 @@ let rmFormulas = [];
 let rmFormulaItems = [];
 let storeItems = [];
 let rmTransactions = [];
+let rmConsumptionLogs = [];
 let rmExpandedIds = new Set();
 let archivedReports = []; // Global list of archived report metadata
 let rmPhysicalStockMap = JSON.parse(localStorage.getItem('rmPhysicalStockMap') || '{}'); // Persist between refreshes
@@ -83,6 +84,7 @@ async function initApp() {
             storeItems = d.storeItems || [];
             rmTransactions = d.rmTransactions || [];
             archivedReports = d.archivedReports || [];
+            rmConsumptionLogs = d.rmConsumptionLogs || [];
             
             // Sync Audit Session from DB: restore saved counts if they are not currently being edited
             if (d.latestAudit) {
@@ -6168,6 +6170,114 @@ function refreshRMConsumptionReport() {
             gapEl.style.color = 'var(--gray-800)'; // Neutral
         }
     }
+
+    refreshRMConsumptionHistory();
+}
+
+async function saveRMConsumptionEntry() {
+    const fgVal = parseFloat(document.getElementById('wipFGWeight').innerText.replace(/[^0-9.]/g, '')) || 0;
+    const rmVal = parseFloat(document.getElementById('wipRMWeight').innerText.replace(/[^0-9.]/g, '')) || 0;
+    const gapVal = rmVal - fgVal;
+
+    const log = {
+        date: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        fg_weight: fgVal,
+        rm_weight: rmVal,
+        gap: gapVal,
+        notes: ''
+    };
+
+    try {
+        const response = await fetch('api/sync.php?action=save_rm_consumption_log', {
+            method: 'POST',
+            body: JSON.stringify({ log })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            log.id = result.id;
+            rmConsumptionLogs.unshift(log);
+            refreshRMConsumptionHistory();
+            alert('Daily entry saved successfully!');
+        }
+    } catch (e) { console.error('Failed to save log:', e); }
+}
+
+function refreshRMConsumptionHistory() {
+    const tbody = document.getElementById('rmConsumptionHistoryTable');
+    const tfoot = document.getElementById('rmConsumptionHistoryFooter');
+    if (!tbody) return;
+
+    let html = '';
+    let totalFG = 0;
+    let totalRM = 0;
+    let totalGap = 0;
+
+    rmConsumptionLogs.forEach(l => {
+        totalFG += parseFloat(l.fg_weight);
+        totalRM += parseFloat(l.rm_weight);
+        totalGap += parseFloat(l.gap);
+
+        html += `
+            <tr>
+                <td style="padding: 1.2rem;">${formatDate(l.date)}</td>
+                <td style="padding: 1.2rem; text-align: right;">${parseFloat(l.fg_weight).toLocaleString()} KG</td>
+                <td style="padding: 1.2rem; text-align: right;">${parseFloat(l.rm_weight).toLocaleString()} KG</td>
+                <td style="padding: 1.2rem; text-align: right; color: ${l.gap < 0 ? '#dc2626' : '#059669'}; font-weight: bold;">
+                    ${parseFloat(l.gap).toLocaleString()} KG
+                </td>
+                <td style="padding: 1.2rem; text-align: center;">
+                    <button class="btn btn-sm btn-danger" onclick="deleteRMConsumptionEntry(${l.id})">🗑️</button>
+                </td>
+            </tr>`;
+    });
+
+    if (rmConsumptionLogs.length === 0) {
+        html = `<tr><td colspan="5" style="text-align: center; padding: 3rem; color: var(--gray-400);">No history records found.</td></tr>`;
+    }
+
+    tbody.innerHTML = html;
+
+    if (tfoot) {
+        tfoot.innerHTML = `
+            <tr>
+                <td style="padding: 1.2rem;">SUB TOTAL (BALANCE)</td>
+                <td style="padding: 1.2rem; text-align: right;">${totalFG.toLocaleString()} KG</td>
+                <td style="padding: 1.2rem; text-align: right;">${totalRM.toLocaleString()} KG</td>
+                <td style="padding: 1.2rem; text-align: right; color: ${totalGap < 0 ? '#dc2626' : '#059669'};">
+                    ${totalGap.toLocaleString()} KG
+                </td>
+                <td></td>
+            </tr>`;
+    }
+}
+
+async function deleteRMConsumptionEntry(id) {
+    if (!confirm('Are you sure you want to delete this entry?')) return;
+    try {
+        const response = await fetch('api/sync.php?action=delete_rm_consumption_log', {
+            method: 'POST',
+            body: JSON.stringify({ id })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            rmConsumptionLogs = rmConsumptionLogs.filter(l => l.id != id);
+            refreshRMConsumptionHistory();
+        }
+    } catch (e) { console.error('Failed to delete log:', e); }
+}
+
+async function clearRMConsumptionHistory() {
+    if (!confirm('CAUTION: This will delete ALL records from the history list. Proceed?')) return;
+    try {
+        const response = await fetch('api/sync.php?action=clear_rm_consumption_history', {
+            method: 'POST'
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            rmConsumptionLogs = [];
+            refreshRMConsumptionHistory();
+        }
+    } catch (e) { console.error('Failed to clear history:', e); }
 }
 
 async function saveRMTransaction(type) {

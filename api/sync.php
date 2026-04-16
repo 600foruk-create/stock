@@ -65,6 +65,17 @@ try {
                         $conn->exec("ALTER TABLE orders ADD COLUMN is_stock_subtracted INT DEFAULT 0");
                     }
                 } catch(Exception $e) {}
+
+                // NEW: RM Consumption Logs for Daily History
+                $conn->exec("CREATE TABLE IF NOT EXISTS rm_consumption_logs (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    fg_weight DECIMAL(15,3) NOT NULL,
+                    rm_weight DECIMAL(15,3) NOT NULL,
+                    gap DECIMAL(15,3) NOT NULL,
+                    notes TEXT
+                )");
+
             } catch (Exception $e) {}
 
             $data = [
@@ -89,6 +100,7 @@ try {
                 'storeItems' => $conn->query("SELECT id, name, description, stock FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
                 'latestAudit' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id)")->fetchAll(PDO::FETCH_ASSOC),
                 'archivedReports' => $conn->query("SELECT id, date, title, report_type FROM audit_reports_archive ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
+                'rmConsumptionLogs' => $conn->query("SELECT * FROM rm_consumption_logs ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
             ];
             
             // Add order items to orders
@@ -238,6 +250,27 @@ try {
 
         elseif ($action === 'clear_audit') {
             $conn->exec("DELETE FROM audit_records");
+            echo json_encode(['status' => 'success']);
+        }
+
+        elseif ($action === 'save_rm_consumption_log') {
+            $log = $input['log'];
+            $stmt = $conn->prepare("INSERT INTO rm_consumption_logs (date, fg_weight, rm_weight, gap, notes) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$log['date'] ?? date('Y-m-d H:i:s'), $log['fg_weight'], $log['rm_weight'], $log['gap'], $log['notes'] ?? '']);
+            echo json_encode(['status' => 'success', 'id' => $conn->lastInsertId()]);
+        }
+
+        elseif ($action === 'delete_rm_consumption_log') {
+            $id = $input['id'] ?? null;
+            if ($id) {
+                $stmt = $conn->prepare("DELETE FROM rm_consumption_logs WHERE id = ?");
+                $stmt->execute([$id]);
+                echo json_encode(['status' => 'success']);
+            } else { echo json_encode(['status' => 'error', 'message' => 'No ID']); }
+        }
+
+        elseif ($action === 'clear_rm_consumption_history') {
+            $conn->exec("DELETE FROM rm_consumption_logs");
             echo json_encode(['status' => 'success']);
         }
 
