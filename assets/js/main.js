@@ -4645,50 +4645,28 @@ function refreshTransactions() {
     const fromDate = document.getElementById('transDateFrom')?.value;
     const toDate = document.getElementById('transDateTo')?.value;
 
-    // Calculate Last Recorded Production Total (KG)
-    // SMART DISCOVERY: Find the ABSOLUTE LATEST production date using robust Date objects
-    let latestProdDateObj = null;
-    let latestDateString = null;
+    // Calculate Today's Production Total (KG)
+    const todayStr = new Date().toDateString();
+    let dailyProdOverallKg = 0;
     
     transactions.forEach(t => {
         if (t.type === 'IN') { 
             const tDate = new Date(t.date);
-            if (!isNaN(tDate.getTime())) {
-                if (!latestProdDateObj || tDate > latestProdDateObj) {
-                    latestProdDateObj = tDate;
-                    latestDateString = tDate.toDateString(); // "Wed Apr 14 2026" unique per day
-                }
+            if (!isNaN(tDate.getTime()) && tDate.toDateString() === todayStr) {
+                // Fix: Use itemWeight (from SQL JOIN) instead of weight
+                dailyProdOverallKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.itemWeight) || 0);
             }
         }
     });
 
     const lastProdLabel = document.getElementById('lastProdDateLabel');
     if (lastProdLabel) {
-        if (latestProdDateObj) {
-            // Display clean date (Day Month Year) without time
-            const day = String(latestProdDateObj.getDate()).padStart(2, '0');
-            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            const monthShort = monthNames[latestProdDateObj.getMonth()];
-            const year = latestProdDateObj.getFullYear();
-            lastProdLabel.innerText = `${day}-${monthShort}-${year}`;
-        } else {
-            lastProdLabel.innerText = '--';
-        }
+        const today = new Date();
+        const day = String(today.getDate()).padStart(2, '0');
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        lastProdLabel.innerText = `${day}-${monthNames[today.getMonth()]}-${today.getFullYear()}`;
     }
     
-    let dailyProdOverallKg = 0;
-    if (latestDateString) {
-        transactions.forEach(t => {
-            if (t.type === 'IN') {
-                const tDate = new Date(t.date);
-                if (!isNaN(tDate.getTime()) && tDate.toDateString() === latestDateString) {
-                    // Fix: Use itemWeight (from SQL JOIN) instead of weight
-                    dailyProdOverallKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.itemWeight) || 0);
-                }
-            }
-        });
-    }
-
     const dailyProdEl = document.getElementById('dailyProductionWeight');
     if (dailyProdEl) {
         dailyProdEl.innerText = dailyProdOverallKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
@@ -6022,53 +6000,24 @@ function updateRMOutMetrics() {
     const weightEl = document.getElementById('rmDailyFormulaWeight');
     if (!lastDateEl || !weightEl) return;
 
-    // Filter only Formula outputs (tagged in notes)
-    const formulaTrans = rmTransactions.filter(t => 
-        t.type === 'OUT' && t.notes && t.notes.includes('[Formula:')
-    );
+    // Filter only Formula outputs (tagged in notes) for Today
+    const todayStr = new Date().toDateString();
+    let totalKg = 0;
 
-    if (formulaTrans.length === 0) {
-        lastDateEl.innerText = '--';
-        weightEl.innerText = '0.0 KG';
-        return;
-    }
-
-    // Find latest date using Date objects
-    let latestDateObj = null;
-    let latestDateString = null;
-
-    formulaTrans.forEach(t => {
-        const tDate = new Date(t.date);
-        if (!isNaN(tDate.getTime())) {
-            if (!latestDateObj || tDate > latestDateObj) {
-                latestDateObj = tDate;
-                latestDateString = tDate.toDateString();
+    rmTransactions.forEach(t => {
+        if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:')) {
+            const tDate = new Date(t.date);
+            if (!isNaN(tDate.getTime()) && tDate.toDateString() === todayStr) {
+                totalKg += (parseFloat(t.quantity) || 0);
             }
         }
     });
 
-    if (!latestDateObj) {
-        lastDateEl.innerText = '--';
-        weightEl.innerText = '0.0 KG';
-        return;
-    }
-
-    // Display clean date
-    const day = String(latestDateObj.getDate()).padStart(2, '0');
+    // Display Today's date
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const monthShort = monthNames[latestDateObj.getMonth()];
-    const year = latestDateObj.getFullYear();
-    lastDateEl.innerText = `${day}-${monthShort}-${year}`;
-
-    // Sum weight for that specific latest day
-    let totalKg = 0;
-    formulaTrans.forEach(t => {
-        const tDate = new Date(t.date);
-        if (tDate.toDateString() === latestDateString) {
-            totalKg += (parseFloat(t.quantity) || 0);
-        }
-    });
-
+    lastDateEl.innerText = `${day}-${monthNames[today.getMonth()]}-${today.getFullYear()}`;
     weightEl.innerText = totalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
 }
 
@@ -6149,55 +6098,23 @@ function exportRMOutToExcel() {
 
 // Process RM Transaction
 function refreshRMConsumptionReport() {
-    // 1. Calculate Latest FG Production (Inbound)
-    let latestFGDateObj = null;
-    let latestFGDateStr = null;
+    const todayStr = new Date().toDateString();
+    
+    // 1. Calculate Today's FG Production (Inbound)
     let fgTotalKg = 0;
-
     transactions.forEach(t => {
-        if (t.type === 'IN') {
-            const tDate = new Date(t.date);
-            if (!isNaN(tDate.getTime())) {
-                if (!latestFGDateObj || tDate > latestFGDateObj) {
-                    latestFGDateObj = tDate;
-                    latestFGDateStr = tDate.toDateString();
-                }
-            }
+        if (t.type === 'IN' && new Date(t.date).toDateString() === todayStr) {
+            fgTotalKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.itemWeight) || 0);
         }
     });
 
-    if (latestFGDateStr) {
-        transactions.forEach(t => {
-            if (t.type === 'IN' && new Date(t.date).toDateString() === latestFGDateStr) {
-                fgTotalKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.itemWeight) || 0);
-            }
-        });
-    }
-
-    // 2. Calculate Latest RM Formula Issuance (Outbound)
-    let latestRMDateObj = null;
-    let latestRMDateStr = null;
+    // 2. Calculate Today's RM Formula Issuance (Outbound)
     let rmTotalKg = 0;
-
     rmTransactions.forEach(t => {
-        if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:')) {
-            const tDate = new Date(t.date);
-            if (!isNaN(tDate.getTime())) {
-                if (!latestRMDateObj || tDate > latestRMDateObj) {
-                    latestRMDateObj = tDate;
-                    latestRMDateStr = tDate.toDateString();
-                }
-            }
+        if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:') && new Date(t.date).toDateString() === todayStr) {
+            rmTotalKg += (parseFloat(t.quantity) || 0);
         }
     });
-
-    if (latestRMDateStr) {
-        rmTransactions.forEach(t => {
-            if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:') && new Date(t.date).toDateString() === latestRMDateStr) {
-                rmTotalKg += (parseFloat(t.quantity) || 0);
-            }
-        });
-    }
 
     // 3. Update UI Elements
     const fgWeightEl = document.getElementById('wipFGWeight');
