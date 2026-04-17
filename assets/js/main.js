@@ -6278,8 +6278,17 @@ function refreshRMConsumptionHistory() {
 
 function populateRMHistoryYearFilter() {
     const yearSelect = document.getElementById('rmHistoryYearFilter');
+    const monthSelect = document.getElementById('rmHistoryMonthFilter');
     if (!yearSelect) return;
     
+    // Default to current month/year on first load
+    const now = new Date();
+    let wasEmpty = false;
+    if (monthSelect && !monthSelect.value) {
+        monthSelect.value = now.getMonth() + 1;
+        wasEmpty = true;
+    }
+
     const currentVal = yearSelect.value;
     const years = [...new Set(rmConsumptionLogs.map(l => new Date(l.date).getFullYear()))].sort((a,b) => b - a);
     
@@ -6288,7 +6297,16 @@ function populateRMHistoryYearFilter() {
         html += `<option value="${y}">${y}</option>`;
     });
     yearSelect.innerHTML = html;
-    if (currentVal) yearSelect.value = currentVal;
+
+    if (currentVal) {
+        yearSelect.value = currentVal;
+    } else if (years.includes(now.getFullYear())) {
+        yearSelect.value = now.getFullYear();
+        wasEmpty = true;
+    }
+
+    // If we defaulted from empty to current month/year, refresh the table
+    if (wasEmpty) refreshRMConsumptionHistory();
 }
 
 async function deleteRMConsumptionEntry(id) {
