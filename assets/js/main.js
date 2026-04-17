@@ -17,6 +17,7 @@ let rmItems = [];
 let rmUnits = [];
 let rmFormulas = [];
 let rmFormulaItems = [];
+let storeItems = [];
 let stMainCategories = [];
 let stSubCategories = [];
 let stItems = [];
@@ -849,7 +850,7 @@ async function deleteStItem(id) {
 function refreshStoreDashboard() { console.log('Store: Dashboard Refresh placeholder'); }
 function refreshStoreInwards() { console.log('Store: Inwards Refresh placeholder'); }
 function refreshStoreOutwards() { console.log('Store: Outwards Refresh placeholder'); }
-// refreshStoreInventory is implemented above
+function refreshStoreInventory() { console.log('Store: Inventory Refresh placeholder'); }
 function refreshStoreItems() { console.log('Store: Item Records Refresh placeholder'); }
 function refreshStoreAudit() { console.log('Store: Audit Refresh placeholder'); }
 function refreshStoreReports() { console.log('Store: Reports Refresh placeholder'); }
