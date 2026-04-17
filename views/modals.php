@@ -551,20 +551,20 @@
     <div id="storeSubModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="storeSubModalTitle">➕ Add Store Size</h3>
+                <h3 id="storeSubModalTitle">➕ Add Store Sub-Category</h3>
                 <span class="close-modal" onclick="document.getElementById('storeSubModal').style.display='none'">&times;</span>
             </div>
             <input type="hidden" id="editStoreSubId">
             <input type="hidden" id="storeSubMainId">
             <div class="form-group">
-                <label>Sub-Category / Size Name</label>
-                <input type="text" id="storeSubName" class="form-control" placeholder="e.g., 2 Inch">
+                <label>Sub-Category Name</label>
+                <input type="text" id="storeSubName" class="form-control" placeholder="e.g., PVC Sub-Category">
             </div>
             <div class="form-group">
                 <label>Auto-Generated Code</label>
                 <input type="text" id="storeSubCode" class="form-control" readonly placeholder="Auto-gen">
             </div>
-            <button class="btn btn-success" onclick="saveStoreSub()" style="width:100%;">Save Size</button>
+            <button class="btn btn-success" onclick="saveStoreSub()" style="width:100%;">Save Sub-Category</button>
         </div>
     </div>
 

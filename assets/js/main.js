@@ -590,13 +590,13 @@ function refreshStoreInventory() {
                             <span class="sub-stats">${subItems.length} Items</span>
                         </div>
                         <div class="sub-actions">
-                            <button class="btn-icon btn-icon-sm" onclick="editStoreSub(${sub.id}); event.stopPropagation();" title="Edit Size">✏️</button>
-                            <button class="btn-icon btn-icon-sm" onclick="deleteStoreSub(${sub.id}); event.stopPropagation();" title="Delete Size">🗑️</button>
+                            <button class="btn-icon btn-icon-sm" onclick="editStoreSub(${sub.id}); event.stopPropagation();" title="Edit Sub-Category">✏️</button>
+                            <button class="btn-icon btn-icon-sm" onclick="deleteStoreSub(${sub.id}); event.stopPropagation();" title="Delete Sub-Category">🗑️</button>
                             <button class="add-btn add-btn-sm" onclick="showAddStoreItem(${sub.id}); event.stopPropagation();">+ Add Item</button>
                         </div>
                     </div>
                     <div class="items-container">
-                        ${itemsHtml || '<div style="color: var(--gray-500); text-align: center; padding: 1rem;">No items in this size</div>'}
+                        ${itemsHtml || '<div style="color: var(--gray-500); text-align: center; padding: 1rem;">No items in this sub-category</div>'}
                     </div>
                 </div>
             `;
@@ -617,7 +617,7 @@ function refreshStoreInventory() {
                     </div>
                 </div>
                 <div class="sub-category-container">
-                    ${subsHtml || '<div style="color: var(--gray-500); text-align: center; padding: 2rem;">No sizes added yet.</div>'}
+                    ${subsHtml || '<div style="color: var(--gray-500); text-align: center; padding: 2rem;">No sub-categories added yet.</div>'}
                 </div>
             </div>
         `;
@@ -708,7 +708,7 @@ async function deleteStoreMain(id) {
 
 // Sub CRUD
 function showAddStoreSub(mainId) {
-    document.getElementById('storeSubModalTitle').textContent = '➕ Add Store Size';
+    document.getElementById('storeSubModalTitle').textContent = '➕ Add Store Sub-Category';
     document.getElementById('editStoreSubId').value = '';
     document.getElementById('storeSubName').value = '';
     document.getElementById('storeSubMainId').value = mainId;
@@ -766,7 +766,7 @@ async function saveStoreSub() {
 function editStoreSub(id) {
     let s = storeSubCategories.find(s => s.id == id);
     if (s) {
-        document.getElementById('storeSubModalTitle').textContent = '✏️ Edit Store Size';
+        document.getElementById('storeSubModalTitle').textContent = '✏️ Edit Store Sub-Category';
         document.getElementById('editStoreSubId').value = s.id;
         document.getElementById('storeSubMainId').value = s.mainId;
         document.getElementById('storeSubName').value = s.name;
