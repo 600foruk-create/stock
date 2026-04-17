@@ -197,6 +197,7 @@ async function initApp() {
         refreshRMOutFormControls();
         refreshRMInventoryBalance();
         refreshRMConsumptionReport();
+        populateRMHistoryYearFilter();
     }
 }
 
@@ -2966,6 +2967,9 @@ async function saveProduction() {
 
     if (errors.length > 0) alert('Errors:\n' + errors.join('\n'));
     saveData(); refreshTransactions(); refreshDashboard(); refreshStockList(); refreshLowStockReport(); hideAllForms();
+    // Auto-save consumption snapshot
+    autoSaveRMConsumption();
+
     alert('Process complete.');
 }
 
@@ -6175,8 +6179,17 @@ function refreshRMConsumptionReport() {
 }
 
 async function saveRMConsumptionEntry() {
+    await autoSaveRMConsumption();
+    alert('Daily entry saved successfully!');
+}
+
+async function autoSaveRMConsumption() {
     const fgVal = parseFloat(document.getElementById('wipFGWeight').innerText.replace(/[^0-9.]/g, '')) || 0;
     const rmVal = parseFloat(document.getElementById('wipRMWeight').innerText.replace(/[^0-9.]/g, '')) || 0;
+    
+    // Don't auto-save if both are zero (initial state)
+    if (fgVal === 0 && rmVal === 0) return;
+
     const gapVal = rmVal - fgVal;
 
     const log = {
@@ -6184,7 +6197,7 @@ async function saveRMConsumptionEntry() {
         fg_weight: fgVal,
         rm_weight: rmVal,
         gap: gapVal,
-        notes: ''
+        notes: '[Auto-Saved]'
     };
 
     try {
@@ -6196,10 +6209,10 @@ async function saveRMConsumptionEntry() {
         if (result.status === 'success') {
             log.id = result.id;
             rmConsumptionLogs.unshift(log);
+            populateRMHistoryYearFilter(); // Update year filter list if new year appears
             refreshRMConsumptionHistory();
-            alert('Daily entry saved successfully!');
         }
-    } catch (e) { console.error('Failed to save log:', e); }
+    } catch (e) { console.error('Failed to auto-save log:', e); }
 }
 
 function refreshRMConsumptionHistory() {
@@ -6207,12 +6220,24 @@ function refreshRMConsumptionHistory() {
     const tfoot = document.getElementById('rmConsumptionHistoryFooter');
     if (!tbody) return;
 
+    const monthF = document.getElementById('rmHistoryMonthFilter')?.value;
+    const yearF = document.getElementById('rmHistoryYearFilter')?.value;
+
+    let filteredLogs = rmConsumptionLogs.filter(l => {
+        const d = new Date(l.date);
+        const m = d.getMonth() + 1;
+        const y = d.getFullYear();
+        const matchesMonth = !monthF || monthF == m;
+        const matchesYear = !yearF || yearF == y;
+        return matchesMonth && matchesYear;
+    });
+
     let html = '';
     let totalFG = 0;
     let totalRM = 0;
     let totalGap = 0;
 
-    rmConsumptionLogs.forEach(l => {
+    filteredLogs.forEach(l => {
         totalFG += parseFloat(l.fg_weight);
         totalRM += parseFloat(l.rm_weight);
         totalGap += parseFloat(l.gap);
@@ -6231,8 +6256,8 @@ function refreshRMConsumptionHistory() {
             </tr>`;
     });
 
-    if (rmConsumptionLogs.length === 0) {
-        html = `<tr><td colspan="5" style="text-align: center; padding: 3rem; color: var(--gray-400);">No history records found.</td></tr>`;
+    if (filteredLogs.length === 0) {
+        html = `<tr><td colspan="5" style="text-align: center; padding: 3rem; color: var(--gray-400);">No history records found for selected filters.</td></tr>`;
     }
 
     tbody.innerHTML = html;
@@ -6240,7 +6265,7 @@ function refreshRMConsumptionHistory() {
     if (tfoot) {
         tfoot.innerHTML = `
             <tr>
-                <td style="padding: 1.2rem;">SUB TOTAL (BALANCE)</td>
+                <td style="padding: 1.2rem;">SUB TOTAL (FILTERED)</td>
                 <td style="padding: 1.2rem; text-align: right;">${totalFG.toLocaleString()} KG</td>
                 <td style="padding: 1.2rem; text-align: right;">${totalRM.toLocaleString()} KG</td>
                 <td style="padding: 1.2rem; text-align: right; color: ${totalGap < 0 ? '#dc2626' : '#059669'};">
@@ -6249,6 +6274,21 @@ function refreshRMConsumptionHistory() {
                 <td></td>
             </tr>`;
     }
+}
+
+function populateRMHistoryYearFilter() {
+    const yearSelect = document.getElementById('rmHistoryYearFilter');
+    if (!yearSelect) return;
+    
+    const currentVal = yearSelect.value;
+    const years = [...new Set(rmConsumptionLogs.map(l => new Date(l.date).getFullYear()))].sort((a,b) => b - a);
+    
+    let html = '<option value="">All Years</option>';
+    years.forEach(y => {
+        html += `<option value="${y}">${y}</option>`;
+    });
+    yearSelect.innerHTML = html;
+    if (currentVal) yearSelect.value = currentVal;
 }
 
 async function deleteRMConsumptionEntry(id) {
@@ -6357,6 +6397,9 @@ async function saveRMTransaction(type) {
     // Clear hints
     if (document.getElementById('rmInConversionHint')) document.getElementById('rmInConversionHint').innerText = '';
     if (document.getElementById('rmOutConversionHint')) document.getElementById('rmOutConversionHint').innerText = '';
+
+    // Auto-save consumption snapshot after RM transaction
+    autoSaveRMConsumption();
 }
 
 /**
