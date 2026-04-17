@@ -6274,7 +6274,11 @@ function refreshRMConsumptionHistory() {
                 <td></td>
             </tr>`;
     }
+
+    // Update the Total WIP Summary Card & Breakdown whenever history is refreshed
+    updateTotalWIPSummary();
 }
+
 
 function populateRMHistoryYearFilter() {
     const yearSelect = document.getElementById('rmHistoryYearFilter');
@@ -6419,6 +6423,84 @@ async function saveRMTransaction(type) {
     // Auto-save consumption snapshot after RM transaction
     autoSaveRMConsumption();
 }
+
+/**
+ * Calculates and updates the Grand Total WIP card and the Monthly Breakdown panel.
+ */
+function updateTotalWIPSummary() {
+    const totalEl = document.getElementById('grandTotalWIP');
+    const listEl = document.getElementById('wipMonthlyList');
+    if (!totalEl || !listEl) return;
+
+    let grandTotal = 0;
+    const monthlyData = {}; // Key: "Month Year", Value: Sum of Gap
+
+    // Process all logs (not just filtered ones)
+    rmConsumptionLogs.forEach(l => {
+        const gap = parseFloat(l.gap) || 0;
+        grandTotal += gap;
+
+        const d = new Date(l.date);
+        const monthYear = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+        
+        if (!monthlyData[monthYear]) monthlyData[monthYear] = 0;
+        monthlyData[monthYear] += gap;
+    });
+
+    // Update Grand Total Card
+    totalEl.innerText = grandTotal.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
+    totalEl.style.color = grandTotal < 0 ? '#dc2626' : (grandTotal > 0 ? '#059669' : 'var(--gray-800)');
+
+    // Update Monthly Breakdown List
+    let listHtml = '';
+    const sortedMonths = Object.keys(monthlyData).sort((a, b) => new Date(b) - new Date(a)); // Newest first
+
+    sortedMonths.forEach(month => {
+        const val = monthlyData[month];
+        listHtml += `
+            <div style="background: white; padding: 1rem; border-radius: 10px; border: 1px solid var(--gray-100); box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <div style="font-size: 0.75rem; color: var(--gray-400); font-weight: 700; text-transform: uppercase; margin-bottom: 0.3rem;">${month}</div>
+                <div style="font-size: 1.05rem; font-weight: 800; color: ${val < 0 ? '#dc2626' : (val > 0 ? '#059669' : 'var(--gray-800)')};">
+                    ${val.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} KG
+                </div>
+            </div>
+        `;
+    });
+
+    if (sortedMonths.length === 0) {
+        listHtml = '<div style="grid-column: 1/-1; text-align: center; padding: 1rem; color: var(--gray-400);">No monthly data available.</div>';
+    }
+
+    listEl.innerHTML = listHtml;
+}
+
+/**
+ * Toggles the visibility of the monthly breakdown panel.
+ */
+function toggleWIPBreakdown() {
+    const panel = document.getElementById('wipBreakdownPanel');
+    const arrow = document.getElementById('wipCardArrow');
+    const card = document.getElementById('totalWIPCard');
+    
+    if (!panel) return;
+
+    if (panel.style.display === 'none' || !panel.style.display) {
+        panel.style.display = 'block';
+        if (arrow) arrow.style.transform = 'rotate(180deg)';
+        if (card) {
+            card.style.borderColor = 'var(--sky-500)';
+            card.style.background = 'var(--sky-50)';
+        }
+    } else {
+        panel.style.display = 'none';
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+        if (card) {
+            card.style.borderColor = 'var(--sky-200)';
+            card.style.background = 'white';
+        }
+    }
+}
+
 
 /**
  * Real-time conversion hint logic
