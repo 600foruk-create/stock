@@ -23,6 +23,10 @@ let rmConsumptionLogs = [];
 let rmExpandedIds = new Set();
 let archivedReports = []; // Global list of archived report metadata
 let rmPhysicalStockMap = JSON.parse(localStorage.getItem('rmPhysicalStockMap') || '{}'); // Persist between refreshes
+let storeMainCategories = [];
+let storeSubCategories = [];
+let storeItemsList = [];
+let storeExpandedIds = new Set();
 
 let auditSession = {}; // Correctly initialized global session
 let auditRecords = [];
@@ -85,6 +89,9 @@ async function initApp() {
             rmTransactions = d.rmTransactions || [];
             archivedReports = d.archivedReports || [];
             rmConsumptionLogs = d.rmConsumptionLogs || [];
+            storeMainCategories = d.storeMainCategories || [];
+            storeSubCategories = d.storeSubCategories || [];
+            storeItemsList = d.storeItems || [];
             
             // Sync Audit Session from DB: restore saved counts if they are not currently being edited
             if (d.latestAudit) {
@@ -246,7 +253,10 @@ function showTab(tabName) {
         if (tabName === 'store_dashboard') if (typeof refreshStoreDashboard === 'function') refreshStoreDashboard();
         if (tabName === 'store_inwards') if (typeof refreshStoreInwards === 'function') refreshStoreInwards();
         if (tabName === 'store_outwards') if (typeof refreshStoreOutwards === 'function') refreshStoreOutwards();
-        if (tabName === 'store_inventory') if (typeof refreshStoreInventory === 'function') refreshStoreInventory();
+        if (tabName === 'store_inventory') {
+            storeExpandedIds.clear();
+            refreshStoreInventory();
+        }
         if (tabName === 'store_items') if (typeof refreshStoreItems === 'function') refreshStoreItems();
         if (tabName === 'store_audit') if (typeof refreshStoreAudit === 'function') refreshStoreAudit();
         if (tabName === 'store_reports') if (typeof refreshStoreReports === 'function') refreshStoreReports();
@@ -507,11 +517,344 @@ function switchModule(module) {
     }
 }
 
-// Store Module Refresh Placeholders
+// ==================== STORE MODULE ====================
 function refreshStoreDashboard() { console.log('Store: Dashboard Refresh placeholder'); }
 function refreshStoreInwards() { console.log('Store: Inwards Refresh placeholder'); }
 function refreshStoreOutwards() { console.log('Store: Outwards Refresh placeholder'); }
-function refreshStoreInventory() { console.log('Store: Inventory Refresh placeholder'); }
+
+function refreshStoreInventory() {
+    console.log('Store: Refreshing Inventory Tree...');
+    const container = document.getElementById('storeInventoryList');
+    if (!container) return;
+
+    let html = '';
+    if (storeMainCategories.length === 0) {
+        html = '<div style="text-align:center; padding:2rem; color:var(--gray-500);">No categories added yet. Click "+ Add Main Brand" to start.</div>';
+        container.innerHTML = html;
+        return;
+    }
+
+    // Sort by code sequence
+    const sortedMains = [...storeMainCategories].sort((a, b) => a.code.localeCompare(b.code));
+
+    sortedMains.forEach(main => {
+        let mainSubs = storeSubCategories.filter(s => s.mainId == main.id);
+        let mainItems = storeItemsList.filter(i => {
+            let sub = storeSubCategories.find(s => s.id == i.subId);
+            return sub && sub.mainId == main.id;
+        });
+
+        const isMainExpanded = storeExpandedIds.has(`main_${main.id}`);
+
+        let subsHtml = '';
+        mainSubs.sort((a, b) => a.code.localeCompare(b.code)).forEach(sub => {
+            let subItems = storeItemsList.filter(i => i.subId == sub.id);
+            const isSubExpanded = storeExpandedIds.has(`sub_${sub.id}`);
+
+            let itemsHtml = '';
+            subItems.sort((a, b) => a.code.localeCompare(b.code)).forEach(item => {
+                itemsHtml += `
+                    <div class="item-row" style="background:white; margin-bottom:0.5rem; border-radius:0.5rem; padding:0.8rem;">
+                        <div class="item-info">
+                            <span class="item-name-badge" style="background:var(--blue-500); font-family:monospace;">${item.code}</span>
+                            <span style="font-weight:600; font-size:1.1rem; margin-left:0.5rem;">${item.name}</span>
+                            <div style="font-size:0.85rem; color:var(--gray-500); margin-top:0.3rem;">
+                                ${item.description || 'No description'} | 📦 Stock: <strong>${item.stock}</strong>
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-icon btn-icon-sm" onclick="editStoreItem(${item.id})" title="Edit Item">✏️</button>
+                            <button class="btn-icon btn-icon-sm" onclick="deleteStoreItem(${item.id})" title="Delete Item">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            subsHtml += `
+                <div class="sub-category ${isSubExpanded ? 'expanded' : ''}" id="storeSub_${sub.id}">
+                    <div class="sub-header" onclick="toggleStoreSubCategory(${sub.id})">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="item-name-badge" style="background:var(--gray-400); font-family:monospace;">${sub.code}</span>
+                            <span class="sub-name">📁 ${sub.name}</span>
+                            <span class="sub-stats">${subItems.length} Items</span>
+                        </div>
+                        <div class="sub-actions">
+                            <button class="btn-icon btn-icon-sm" onclick="editStoreSub(${sub.id}); event.stopPropagation();" title="Edit Size">✏️</button>
+                            <button class="btn-icon btn-icon-sm" onclick="deleteStoreSub(${sub.id}); event.stopPropagation();" title="Delete Size">🗑️</button>
+                            <button class="add-btn add-btn-sm" onclick="showAddStoreItem(${sub.id}); event.stopPropagation();">+ Add Item</button>
+                        </div>
+                    </div>
+                    <div class="items-container">
+                        ${itemsHtml || '<div style="color: var(--gray-500); text-align: center; padding: 1rem;">No items in this size</div>'}
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+            <div class="main-category ${isMainExpanded ? 'expanded' : ''}" id="storeMain_${main.id}">
+                <div class="category-header" onclick="toggleStoreMainCategory(${main.id})">
+                    <div class="category-title">
+                        <span class="item-name-badge" style="background:var(--indigo-600); font-family:monospace;">${main.code}</span>
+                        <span class="category-name">🏭 ${main.name}</span>
+                        <span class="category-stats">${mainItems.length} Total Items</span>
+                    </div>
+                    <div class="category-actions">
+                        <button class="btn-icon" onclick="editStoreMain(${main.id}); event.stopPropagation();" title="Edit Brand">✏️</button>
+                        <button class="btn-icon" onclick="deleteStoreMain(${main.id}); event.stopPropagation();" title="Delete Brand">🗑️</button>
+                        <button class="add-btn" onclick="showAddStoreSub(${main.id}); event.stopPropagation();">+ Add Size</button>
+                    </div>
+                </div>
+                <div class="sub-category-container">
+                    ${subsHtml || '<div style="color: var(--gray-500); text-align: center; padding: 2rem;">No sizes added yet.</div>'}
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function toggleStoreMainCategory(id) {
+    const key = `main_${id}`;
+    if (storeExpandedIds.has(key)) storeExpandedIds.delete(key);
+    else storeExpandedIds.add(key);
+    document.getElementById(`storeMain_${id}`).classList.toggle('expanded');
+}
+
+function toggleStoreSubCategory(id) {
+    const key = `sub_${id}`;
+    if (storeExpandedIds.has(key)) storeExpandedIds.delete(key);
+    else storeExpandedIds.add(key);
+    document.getElementById(`storeSub_${id}`).classList.toggle('expanded');
+}
+
+// Store CRUD Functions
+function showAddStoreMain() {
+    document.getElementById('storeMainModalTitle').textContent = '➕ Add Store Main Brand';
+    document.getElementById('editStoreMainId').value = '';
+    document.getElementById('storeMainName').value = '';
+    document.getElementById('storeMainCode').value = '';
+    document.getElementById('storeMainModal').style.display = 'block';
+}
+
+async function saveStoreMain() {
+    let id = document.getElementById('editStoreMainId').value;
+    let name = document.getElementById('storeMainName').value.trim();
+    let code = document.getElementById('storeMainCode').value.trim();
+
+    if (!name || !code) { alert('Name and Code are required.'); return; }
+
+    const data = { main: { name, code } };
+    if (id) data.main.id = id;
+
+    try {
+        const response = await fetch('api/sync.php?action=save_store_main', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        const res = await response.json();
+        if (res.status === 'success') {
+            if (id) {
+                let idx = storeMainCategories.findIndex(m => m.id == id);
+                storeMainCategories[idx] = { id, name, code };
+            } else {
+                storeMainCategories.push({ id: res.id, name, code });
+            }
+            refreshStoreInventory();
+            document.getElementById('storeMainModal').style.display = 'none';
+        } else { alert(res.message); }
+    } catch(e) { alert('Server error'); }
+}
+
+function editStoreMain(id) {
+    let m = storeMainCategories.find(m => m.id == id);
+    if (m) {
+        document.getElementById('storeMainModalTitle').textContent = '✏️ Edit Store Main Brand';
+        document.getElementById('editStoreMainId').value = m.id;
+        document.getElementById('storeMainName').value = m.name;
+        document.getElementById('storeMainCode').value = m.code;
+        document.getElementById('storeMainModal').style.display = 'block';
+    }
+}
+
+async function deleteStoreMain(id) {
+    if (!confirm('Are you sure? This will fail if sub-categories exist.')) return;
+    try {
+        const resp = await fetch('api/sync.php?action=delete_store_main', {
+            method: 'POST',
+            body: JSON.stringify({ id })
+        });
+        const res = await resp.json();
+        if (res.status === 'success') {
+            storeMainCategories = storeMainCategories.filter(m => m.id != id);
+            refreshStoreInventory();
+        } else { alert(res.message); }
+    } catch(e) { alert('Server error'); }
+}
+
+// Sub CRUD
+function showAddStoreSub(mainId) {
+    document.getElementById('storeSubModalTitle').textContent = '➕ Add Store Size';
+    document.getElementById('editStoreSubId').value = '';
+    document.getElementById('storeSubName').value = '';
+    document.getElementById('storeSubMainId').value = mainId;
+    
+    // Auto-generate code
+    let main = storeMainCategories.find(m => m.id == mainId);
+    let existingCodes = storeSubCategories.filter(s => s.mainId == mainId).map(s => s.code);
+    let nextCode = generateNextSequentialCode(main.code, existingCodes, 3);
+    document.getElementById('storeSubCode').value = nextCode;
+
+    document.getElementById('storeSubModal').style.display = 'block';
+}
+
+function generateNextSequentialCode(parentCode, existingCodes, digits) {
+    let usedNums = existingCodes.map(c => parseInt(c.slice(parentCode.length)) || 0).sort((a,b) => a-b);
+    let nextNum = 1;
+    for (let num of usedNums) {
+        if (num === nextNum) nextNum++;
+        else if (num > nextNum) break;
+    }
+    return parentCode + String(nextNum).padStart(digits, '0');
+}
+
+async function saveStoreSub() {
+    let id = document.getElementById('editStoreSubId').value;
+    let mainId = document.getElementById('storeSubMainId').value;
+    let name = document.getElementById('storeSubName').value.trim();
+    let code = document.getElementById('storeSubCode').value.trim();
+
+    if (!name) { alert('Name is required.'); return; }
+
+    const data = { sub: { mainId, name, code } };
+    if (id) data.sub.id = id;
+
+    try {
+        const response = await fetch('api/sync.php?action=save_store_sub', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        const res = await response.json();
+        if (res.status === 'success') {
+            if (id) {
+                let idx = storeSubCategories.findIndex(s => s.id == id);
+                storeSubCategories[idx].name = name;
+            } else {
+                storeSubCategories.push({ id: res.id, mainId, name, code });
+            }
+            refreshStoreInventory();
+            document.getElementById('storeSubModal').style.display = 'none';
+        } else { alert(res.message); }
+    } catch(e) { alert('Server error'); }
+}
+
+function editStoreSub(id) {
+    let s = storeSubCategories.find(s => s.id == id);
+    if (s) {
+        document.getElementById('storeSubModalTitle').textContent = '✏️ Edit Store Size';
+        document.getElementById('editStoreSubId').value = s.id;
+        document.getElementById('storeSubMainId').value = s.mainId;
+        document.getElementById('storeSubName').value = s.name;
+        document.getElementById('storeSubCode').value = s.code; // Display only
+        document.getElementById('storeSubModal').style.display = 'block';
+    }
+}
+
+async function deleteStoreSub(id) {
+    if (!confirm('Are you sure? This will fail if items exist.')) return;
+    try {
+        const resp = await fetch('api/sync.php?action=delete_store_sub', {
+            method: 'POST',
+            body: JSON.stringify({ id })
+        });
+        const res = await resp.json();
+        if (res.status === 'success') {
+            storeSubCategories = storeSubCategories.filter(s => s.id != id);
+            refreshStoreInventory();
+        } else { alert(res.message); }
+    } catch(e) { alert('Server error'); }
+}
+
+// Item CRUD
+function showAddStoreItem(subId) {
+    document.getElementById('storeItemModalTitle').textContent = '➕ Add Store Item';
+    document.getElementById('editStoreItemId').value = '';
+    document.getElementById('storeItemSubId').value = subId;
+    document.getElementById('storeItemName').value = '';
+    document.getElementById('storeItemDescription').value = '';
+    document.getElementById('storeItemStock').value = 0;
+
+    // Auto-generate code
+    let sub = storeSubCategories.find(s => s.id == subId);
+    let existingCodes = storeItemsList.filter(i => i.subId == subId).map(i => i.code);
+    let nextCode = generateNextSequentialCode(sub.code, existingCodes, 4);
+    document.getElementById('storeItemCode').value = nextCode;
+
+    document.getElementById('storeItemModal').style.display = 'block';
+}
+
+async function saveStoreItem() {
+    let id = document.getElementById('editStoreItemId').value;
+    let subId = document.getElementById('storeItemSubId').value;
+    let name = document.getElementById('storeItemName').value.trim();
+    let code = document.getElementById('storeItemCode').value.trim();
+    let description = document.getElementById('storeItemDescription').value;
+    let stock = document.getElementById('storeItemStock').value;
+
+    if (!name) { alert('Name is required.'); return; }
+
+    const data = { item: { subId, name, code, description, stock } };
+    if (id) data.item.id = id;
+
+    try {
+        const response = await fetch('api/sync.php?action=save_store_item', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        const res = await response.json();
+        if (res.status === 'success') {
+            if (id) {
+                let idx = storeItemsList.findIndex(i => i.id == id);
+                storeItemsList[idx] = { id, subId, name, code, description, stock };
+            } else {
+                storeItemsList.push({ id: res.id, subId, name, code, description, stock });
+            }
+            refreshStoreInventory();
+            document.getElementById('storeItemModal').style.display = 'none';
+        } else { alert(res.message); }
+    } catch(e) { alert('Server error'); }
+}
+
+function editStoreItem(id) {
+    let i = storeItemsList.find(i => i.id == id);
+    if (i) {
+        document.getElementById('storeItemModalTitle').textContent = '✏️ Edit Store Item';
+        document.getElementById('editStoreItemId').value = i.id;
+        document.getElementById('storeItemSubId').value = i.subId;
+        document.getElementById('storeItemName').value = i.name;
+        document.getElementById('storeItemCode').value = i.code;
+        document.getElementById('storeItemDescription').value = i.description || '';
+        document.getElementById('storeItemStock').value = i.stock || 0;
+        document.getElementById('storeItemModal').style.display = 'block';
+    }
+}
+
+async function deleteStoreItem(id) {
+    if (!confirm('Are you sure?')) return;
+    try {
+        const resp = await fetch('api/sync.php?action=delete_store_item', {
+            method: 'POST',
+            body: JSON.stringify({ id })
+        });
+        const res = await resp.json();
+        if (res.status === 'success') {
+            storeItemsList = storeItemsList.filter(i => i.id != id);
+            refreshStoreInventory();
+        } else { alert(res.message); }
+    } catch(e) { alert('Server error'); }
+}
+
 function refreshStoreItems() { console.log('Store: Item Records Refresh placeholder'); }
 function refreshStoreAudit() { console.log('Store: Audit Refresh placeholder'); }
 function refreshStoreReports() { console.log('Store: Reports Refresh placeholder'); }

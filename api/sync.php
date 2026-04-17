@@ -66,15 +66,10 @@ try {
                     }
                 } catch(Exception $e) {}
 
-                // NEW: RM Consumption Logs for Daily History
-                $conn->exec("CREATE TABLE IF NOT EXISTS rm_consumption_logs (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    date DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    fg_weight DECIMAL(15,3) NOT NULL,
-                    rm_weight DECIMAL(15,3) NOT NULL,
-                    gap DECIMAL(15,3) NOT NULL,
-                    notes TEXT
-                )");
+                // NEW: Store Hierarchy Tables
+                $conn->exec("CREATE TABLE IF NOT EXISTS store_main_categories (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL UNIQUE)");
+                $conn->exec("CREATE TABLE IF NOT EXISTS store_sub_categories (id INT AUTO_INCREMENT PRIMARY KEY, main_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL UNIQUE, FOREIGN KEY (main_id) REFERENCES store_main_categories(id) ON DELETE CASCADE)");
+                $conn->exec("CREATE TABLE IF NOT EXISTS store_items (id INT AUTO_INCREMENT PRIMARY KEY, sub_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL UNIQUE, description TEXT, stock DECIMAL(15,3) DEFAULT 0, FOREIGN KEY (sub_id) REFERENCES store_sub_categories(id) ON DELETE CASCADE)");
 
             } catch (Exception $e) {}
 
@@ -97,10 +92,10 @@ try {
                 'rmFormulas' => $conn->query("SELECT * FROM rm_formulas")->fetchAll(PDO::FETCH_ASSOC),
                 'rmFormulaItems' => $conn->query("SELECT * FROM rm_formula_items")->fetchAll(PDO::FETCH_ASSOC),
                 'rmTransactions' => $conn->query("SELECT * FROM rm_transactions ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
-                'storeItems' => $conn->query("SELECT id, name, description, stock FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
-                'latestAudit' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id)")->fetchAll(PDO::FETCH_ASSOC),
-                'archivedReports' => $conn->query("SELECT id, date, title, report_type FROM audit_reports_archive ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
                 'rmConsumptionLogs' => $conn->query("SELECT * FROM rm_consumption_logs ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
+                'storeMainCategories' => $conn->query("SELECT * FROM store_main_categories")->fetchAll(PDO::FETCH_ASSOC),
+                'storeSubCategories' => $conn->query("SELECT * FROM store_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
+                'storeItems' => $conn->query("SELECT * FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
             ];
             
             // Add order items to orders
@@ -529,17 +524,75 @@ try {
             echo json_encode(['status' => 'success', 'id' => $rm['id']]);
         }
 
-        elseif ($action === 'save_store_item') {
-            $si = $input['item'];
-            if (isset($si['id']) && !empty($si['id'])) {
-                $stmt = $conn->prepare("UPDATE store_items SET name = ?, description = ?, stock = ? WHERE id = ?");
-                $stmt->execute([$si['name'], $si['description'] ?? '', $si['stock'] ?? 0, $si['id']]);
+        elseif ($action === 'save_store_main') {
+            $m = $input['main'];
+            if (isset($m['id']) && !empty($m['id'])) {
+                $stmt = $conn->prepare("UPDATE store_main_categories SET name = ?, code = ? WHERE id = ?");
+                $stmt->execute([$m['name'], $m['code'], $m['id']]);
             } else {
-                $stmt = $conn->prepare("INSERT INTO store_items (name, description, stock) VALUES (?, ?, ?)");
-                $stmt->execute([$si['name'], $si['description'] ?? '', $si['stock'] ?? 0]);
-                $si['id'] = $conn->lastInsertId();
+                $stmt = $conn->prepare("INSERT INTO store_main_categories (name, code) VALUES (?, ?)");
+                $stmt->execute([$m['name'], $m['code']]);
+                $m['id'] = $conn->lastInsertId();
             }
-            echo json_encode(['status' => 'success', 'id' => $si['id']]);
+            echo json_encode(['status' => 'success', 'id' => $m['id']]);
+        }
+
+        elseif ($action === 'delete_store_main') {
+            $id = $input['id'];
+            // Check for children
+            $check = $conn->prepare("SELECT COUNT(*) FROM store_sub_categories WHERE main_id = ?");
+            $check->execute([$id]);
+            if ($check->fetchColumn() > 0) {
+                echo json_encode(['status' => 'error', 'message' => 'Cannot delete: Sub-categories exist']);
+            } else {
+                $conn->prepare("DELETE FROM store_main_categories WHERE id = ?")->execute([$id]);
+                echo json_encode(['status' => 'success']);
+            }
+        }
+
+        elseif ($action === 'save_store_sub') {
+            $s = $input['sub'];
+            if (isset($s['id']) && !empty($s['id'])) {
+                $stmt = $conn->prepare("UPDATE store_sub_categories SET name = ?, code = ? WHERE id = ?");
+                $stmt->execute([$s['name'], $s['code'], $s['id']]);
+            } else {
+                $stmt = $conn->prepare("INSERT INTO store_sub_categories (main_id, name, code) VALUES (?, ?, ?)");
+                $stmt->execute([$s['mainId'], $s['name'], $s['code']]);
+                $s['id'] = $conn->lastInsertId();
+            }
+            echo json_encode(['status' => 'success', 'id' => $s['id']]);
+        }
+
+        elseif ($action === 'delete_store_sub') {
+            $id = $input['id'];
+            // Check for children
+            $check = $conn->prepare("SELECT COUNT(*) FROM store_items WHERE sub_id = ?");
+            $check->execute([$id]);
+            if ($check->fetchColumn() > 0) {
+                echo json_encode(['status' => 'error', 'message' => 'Cannot delete: Items exist']);
+            } else {
+                $conn->prepare("DELETE FROM store_sub_categories WHERE id = ?")->execute([$id]);
+                echo json_encode(['status' => 'success']);
+            }
+        }
+
+        elseif ($action === 'save_store_item') {
+            $i = $input['item'];
+            if (isset($i['id']) && !empty($i['id'])) {
+                $stmt = $conn->prepare("UPDATE store_items SET name = ?, code = ?, description = ?, stock = ? WHERE id = ?");
+                $stmt->execute([$i['name'], $i['code'], $i['description'] ?? '', $i['stock'] ?? 0, $i['id']]);
+            } else {
+                $stmt = $conn->prepare("INSERT INTO store_items (sub_id, name, code, description, stock) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$i['subId'], $i['name'], $i['code'], $i['description'] ?? '', $i['stock'] ?? 0]);
+                $i['id'] = $conn->lastInsertId();
+            }
+            echo json_encode(['status' => 'success', 'id' => $i['id']]);
+        }
+
+        elseif ($action === 'delete_store_item') {
+            $id = $input['id'];
+            $conn->prepare("DELETE FROM store_items WHERE id = ?")->execute([$id]);
+            echo json_encode(['status' => 'success']);
         }
 
         // --- NEW RAW MATERIALS ACTIONS ---
