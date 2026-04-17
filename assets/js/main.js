@@ -282,6 +282,12 @@ function loadLocalData() {
         if (savedRM) rawMaterials = JSON.parse(savedRM);
         let savedStore = localStorage.getItem('stock_storeItems');
         if (savedStore) storeItems = JSON.parse(savedStore);
+        let savedStoreMain = localStorage.getItem('stock_storeMainCategories');
+        if (savedStoreMain) storeMainCategories = JSON.parse(savedStoreMain);
+        let savedStoreSub = localStorage.getItem('stock_storeSubCategories');
+        if (savedStoreSub) storeSubCategories = JSON.parse(savedStoreSub);
+        let savedStoreItemsList = localStorage.getItem('stock_storeItemsList');
+        if (savedStoreItemsList) storeItemsList = JSON.parse(savedStoreItemsList);
         let savedRMTrans = localStorage.getItem('stock_rmTransactions');
         if (savedRMTrans) rmTransactions = JSON.parse(savedRMTrans);
         let savedCompany = localStorage.getItem('stock_company');
@@ -316,6 +322,10 @@ function saveData() {
     if (currentUser) {
         localStorage.setItem('stock_currentUser', JSON.stringify(currentUser));
     }
+    // Store Hierarchy
+    localStorage.setItem('stock_storeMainCategories', JSON.stringify(storeMainCategories || []));
+    localStorage.setItem('stock_storeSubCategories', JSON.stringify(storeSubCategories || []));
+    localStorage.setItem('stock_storeItemsList', JSON.stringify(storeItemsList || []));
 }
 
 function saveAll() {
@@ -506,6 +516,7 @@ function switchModule(module) {
             showTab('rm_dashboard');
         }
     } else if (module === 'store') {
+        document.getElementById('storePanel').style.display = 'block';
         document.getElementById('storeTabs').style.display = 'flex';
         const activeTabBtn = document.querySelector('#storeTabs .nav-tab.active');
         if (activeTabBtn) {
@@ -662,6 +673,7 @@ async function saveStoreMain() {
                 storeMainCategories.push({ id: res.id, name, code });
             }
             refreshStoreInventory();
+            saveData();
             document.getElementById('storeMainModal').style.display = 'none';
         } else { alert(res.message); }
     } catch(e) { alert('Server error'); }
@@ -689,6 +701,7 @@ async function deleteStoreMain(id) {
         if (res.status === 'success') {
             storeMainCategories = storeMainCategories.filter(m => m.id != id);
             refreshStoreInventory();
+            saveData();
         } else { alert(res.message); }
     } catch(e) { alert('Server error'); }
 }
@@ -744,6 +757,7 @@ async function saveStoreSub() {
                 storeSubCategories.push({ id: res.id, mainId, name, code });
             }
             refreshStoreInventory();
+            saveData();
             document.getElementById('storeSubModal').style.display = 'none';
         } else { alert(res.message); }
     } catch(e) { alert('Server error'); }
@@ -772,6 +786,7 @@ async function deleteStoreSub(id) {
         if (res.status === 'success') {
             storeSubCategories = storeSubCategories.filter(s => s.id != id);
             refreshStoreInventory();
+            saveData();
         } else { alert(res.message); }
     } catch(e) { alert('Server error'); }
 }
@@ -821,6 +836,7 @@ async function saveStoreItem() {
                 storeItemsList.push({ id: res.id, subId, name, code, description, stock });
             }
             refreshStoreInventory();
+            saveData();
             document.getElementById('storeItemModal').style.display = 'none';
         } else { alert(res.message); }
     } catch(e) { alert('Server error'); }
@@ -851,6 +867,7 @@ async function deleteStoreItem(id) {
         if (res.status === 'success') {
             storeItemsList = storeItemsList.filter(i => i.id != id);
             refreshStoreInventory();
+            saveData();
         } else { alert(res.message); }
     } catch(e) { alert('Server error'); }
 }

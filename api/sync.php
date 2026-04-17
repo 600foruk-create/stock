@@ -93,9 +93,9 @@ try {
                 'rmFormulaItems' => $conn->query("SELECT * FROM rm_formula_items")->fetchAll(PDO::FETCH_ASSOC),
                 'rmTransactions' => $conn->query("SELECT * FROM rm_transactions ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
                 'rmConsumptionLogs' => $conn->query("SELECT * FROM rm_consumption_logs ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
-                'storeMainCategories' => $conn->query("SELECT * FROM store_main_categories")->fetchAll(PDO::FETCH_ASSOC),
-                'storeSubCategories' => $conn->query("SELECT * FROM store_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
-                'storeItems' => $conn->query("SELECT * FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
+                'storeMainCategories' => $conn->query("SELECT id, name, code FROM store_main_categories")->fetchAll(PDO::FETCH_ASSOC),
+                'storeSubCategories' => $conn->query("SELECT id, main_id AS mainId, name, code FROM store_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
+                'storeItems' => $conn->query("SELECT id, sub_id AS subId, name, code, description, stock FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
             ];
             
             // Add order items to orders
