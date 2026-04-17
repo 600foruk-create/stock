@@ -578,8 +578,10 @@ function refreshStoreInventory() {
                         <div class="item-info">
                             <span class="item-name-badge" style="background:var(--blue-500); font-family:monospace;">${item.code}</span>
                             <span style="font-weight:600; font-size:1.1rem; margin-left:0.5rem;">${item.name}</span>
+                            ${parseFloat(item.stock) <= parseFloat(item.lowStockLimit || 0) ? '<span style="background:#fef2f2; color:#ef4444; font-size:0.75rem; padding:0.2rem 0.5rem; border-radius:4px; margin-left:1rem; border:1px solid #fee2e2;">⚠️ Low Stock</span>' : ''}
                             <div style="font-size:0.85rem; color:var(--gray-500); margin-top:0.3rem;">
-                                ${item.description || 'No description'} | 📦 Stock: <strong>${item.stock}</strong>
+                                ${item.description || 'No description'} | 📦 Stock: <strong style="${parseFloat(item.stock) <= parseFloat(item.lowStockLimit || 0) ? 'color:#ef4444;' : ''}">${item.stock}</strong>
+                                ${item.lowStockLimit > 0 ? `| 📉 Limit: ${item.lowStockLimit}` : ''}
                             </div>
                         </div>
                         <div class="item-actions">
@@ -808,6 +810,7 @@ function showAddStoreItem(subId) {
     document.getElementById('storeItemName').value = '';
     document.getElementById('storeItemDescription').value = '';
     document.getElementById('storeItemStock').value = 0;
+    document.getElementById('storeItemLowLimit').value = 0;
 
     // Auto-generate code
     let sub = storeSubCategories.find(s => s.id == subId);
@@ -825,10 +828,11 @@ async function saveStoreItem() {
     let code = document.getElementById('storeItemCode').value.trim();
     let description = document.getElementById('storeItemDescription').value;
     let stock = document.getElementById('storeItemStock').value;
+    let lowStockLimit = document.getElementById('storeItemLowLimit').value;
 
     if (!name) { alert('Name is required.'); return; }
 
-    const data = { item: { subId, name, code, description, stock } };
+    const data = { item: { subId, name, code, description, stock, lowStockLimit } };
     if (id) data.item.id = id;
 
     try {
@@ -840,9 +844,9 @@ async function saveStoreItem() {
         if (res.status === 'success') {
             if (id) {
                 let idx = storeItemsList.findIndex(i => i.id == id);
-                storeItemsList[idx] = { id, subId, name, code, description, stock };
+                storeItemsList[idx] = { id, subId, name, code, description, stock, lowStockLimit };
             } else {
-                storeItemsList.push({ id: res.id, subId, name, code, description, stock });
+                storeItemsList.push({ id: res.id, subId, name, code, description, stock, lowStockLimit });
             }
             refreshStoreInventory();
             saveData();
@@ -861,6 +865,7 @@ function editStoreItem(id) {
         document.getElementById('storeItemCode').value = i.code;
         document.getElementById('storeItemDescription').value = i.description || '';
         document.getElementById('storeItemStock').value = i.stock || 0;
+        document.getElementById('storeItemLowLimit').value = i.lowStockLimit || 0;
         document.getElementById('storeItemModal').style.display = 'block';
     }
 }

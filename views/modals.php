@@ -588,9 +588,15 @@
                 <label>Description</label>
                 <textarea id="storeItemDescription" class="form-control" rows="2"></textarea>
             </div>
-            <div class="form-group">
-                <label>Opening Stock</label>
-                <input type="number" id="storeItemStock" class="form-control" value="0">
+            <div class="form-group row" style="display:flex; gap:1rem;">
+                <div style="flex:1;">
+                    <label>Opening Stock</label>
+                    <input type="number" id="storeItemStock" class="form-control" value="0">
+                </div>
+                <div style="flex:1;">
+                    <label>Low Stock Limit</label>
+                    <input type="number" id="storeItemLowLimit" class="form-control" value="0">
+                </div>
             </div>
             <button class="btn btn-success" onclick="saveStoreItem()" style="width:100%;">Save Item</button>
         </div>
