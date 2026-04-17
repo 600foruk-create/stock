@@ -532,7 +532,7 @@
     <div id="storeMainModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="storeMainModalTitle">➕ Add Store Main Brand</h3>
+                <h3 id="storeMainModalTitle">? Add Store Main Brand</h3>
                 <span class="close-modal" onclick="document.getElementById('storeMainModal').style.display='none'">&times;</span>
             </div>
             <input type="hidden" id="editStoreMainId">
@@ -551,27 +551,27 @@
     <div id="storeSubModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="storeSubModalTitle">➕ Add Store Sub-Category</h3>
+                <h3 id="storeSubModalTitle">? Add Store Size</h3>
                 <span class="close-modal" onclick="document.getElementById('storeSubModal').style.display='none'">&times;</span>
             </div>
             <input type="hidden" id="editStoreSubId">
             <input type="hidden" id="storeSubMainId">
             <div class="form-group">
-                <label>Sub-Category Name</label>
-                <input type="text" id="storeSubName" class="form-control" placeholder="e.g., PVC Sub-Category">
+                <label>Sub-Category / Size Name</label>
+                <input type="text" id="storeSubName" class="form-control" placeholder="e.g., 2 Inch">
             </div>
             <div class="form-group">
                 <label>Auto-Generated Code</label>
                 <input type="text" id="storeSubCode" class="form-control" readonly placeholder="Auto-gen">
             </div>
-            <button class="btn btn-success" onclick="saveStoreSub()" style="width:100%;">Save Sub-Category</button>
+            <button class="btn btn-success" onclick="saveStoreSub()" style="width:100%;">Save Size</button>
         </div>
     </div>
 
     <div id="storeItemModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="storeItemModalTitle">➕ Add Store Item</h3>
+                <h3 id="storeItemModalTitle">? Add Store Item</h3>
                 <span class="close-modal" onclick="document.getElementById('storeItemModal').style.display='none'">&times;</span>
             </div>
             <input type="hidden" id="editStoreItemId">
@@ -588,15 +588,9 @@
                 <label>Description</label>
                 <textarea id="storeItemDescription" class="form-control" rows="2"></textarea>
             </div>
-            <div class="form-group row" style="display:flex; gap:1rem;">
-                <div style="flex:1;">
-                    <label>Opening Stock</label>
-                    <input type="number" id="storeItemStock" class="form-control" value="0">
-                </div>
-                <div style="flex:1;">
-                    <label>Low Stock Limit</label>
-                    <input type="number" id="storeItemLowLimit" class="form-control" value="0">
-                </div>
+            <div class="form-group">
+                <label>Opening Stock</label>
+                <input type="number" id="storeItemStock" class="form-control" value="0">
             </div>
             <button class="btn btn-success" onclick="saveStoreItem()" style="width:100%;">Save Item</button>
         </div>
