@@ -17,7 +17,11 @@ let rmItems = [];
 let rmUnits = [];
 let rmFormulas = [];
 let rmFormulaItems = [];
-let storeItems = [];
+let rmPhysicalStockMap = JSON.parse(localStorage.getItem('rmPhysicalStockMap') || '{}'); // Persist between refreshes
+let stMainCategories = [];
+let stSubCategories = [];
+let stItems = [];
+let stExpandedIds = new Set();
 let rmTransactions = [];
 let rmConsumptionLogs = [];
 let rmExpandedIds = new Set();
@@ -85,6 +89,9 @@ async function initApp() {
             rmTransactions = d.rmTransactions || [];
             archivedReports = d.archivedReports || [];
             rmConsumptionLogs = d.rmConsumptionLogs || [];
+            stMainCategories = d.stMainCategories || [];
+            stSubCategories = d.stSubCategories || [];
+            stItems = d.stItems || [];
             
             // Sync Audit Session from DB: restore saved counts if they are not currently being edited
             if (d.latestAudit) {
@@ -246,7 +253,10 @@ function showTab(tabName) {
         if (tabName === 'store_dashboard') if (typeof refreshStoreDashboard === 'function') refreshStoreDashboard();
         if (tabName === 'store_inwards') if (typeof refreshStoreInwards === 'function') refreshStoreInwards();
         if (tabName === 'store_outwards') if (typeof refreshStoreOutwards === 'function') refreshStoreOutwards();
-        if (tabName === 'store_inventory') if (typeof refreshStoreInventory === 'function') refreshStoreInventory();
+        if (tabName === 'store_inventory') {
+            stExpandedIds.clear();
+            refreshStoreInventory();
+        }
         if (tabName === 'store_items') if (typeof refreshStoreItems === 'function') refreshStoreItems();
         if (tabName === 'store_audit') if (typeof refreshStoreAudit === 'function') refreshStoreAudit();
         if (tabName === 'store_reports') if (typeof refreshStoreReports === 'function') refreshStoreReports();
@@ -303,6 +313,9 @@ function saveData() {
     localStorage.setItem('stock_usedOrders', JSON.stringify(Array.from(usedCompletedOrders || [])));
     localStorage.setItem('stock_company', JSON.stringify(companySettings));
     localStorage.setItem('stock_users', JSON.stringify(users || []));
+    localStorage.setItem('stock_stMain', JSON.stringify(stMainCategories || []));
+    localStorage.setItem('stock_stSub', JSON.stringify(stSubCategories || []));
+    localStorage.setItem('stock_stItems', JSON.stringify(stItems || []));
     if (currentUser) {
         localStorage.setItem('stock_currentUser', JSON.stringify(currentUser));
     }
@@ -507,7 +520,333 @@ function switchModule(module) {
     }
 }
 
-// Store Module Refresh Placeholders
+function refreshStoreInventory() {
+    let container = document.getElementById('storeInventoryContainer');
+    if (!container) return;
+    
+    let html = '';
+    if (stMainCategories.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--gray-500);">No categories found. Click "Add Main Category" to start.</div>';
+        return;
+    }
+
+    stMainCategories.forEach(main => {
+        let subs = stSubCategories.filter(s => s.mainId == main.id);
+        let subHtml = '';
+        
+        subs.forEach(sub => {
+            let sItems = stItems.filter(i => i.subId == sub.id);
+            let itemRows = '';
+            
+            sItems.forEach(item => {
+                let isLow = item.lowStockLimit !== null && item.stock <= item.lowStockLimit;
+                itemRows += `
+                    <div class="item-row ${isLow ? 'low-stock-warning' : ''}" style="background:white; margin-bottom:0.5rem; border-radius:0.5rem; padding:0.8rem; border-left: 4px solid ${isLow ? 'var(--orange-500)' : 'var(--blue-500)'}">
+                        <div class="item-info">
+                            <span class="item-name-badge" style="background:var(--blue-500);">${item.code}</span>
+                            <span style="font-weight:600; font-size:1.1rem; margin-left:0.5rem;">${item.name}</span>
+                            <div style="font-size:0.85rem; color:var(--gray-500); margin-top:0.3rem;">
+                                📦 Stock: <strong>${item.stock}</strong> | 📉 Limit: ${item.lowStockLimit || 'N/A'} | 🏠 Opening: ${item.openingStock || 0}
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-icon btn-icon-sm" onclick="editStItem(${item.id})" title="Edit Item">✏️</button>
+                            <button class="btn-icon btn-icon-sm" onclick="deleteStItem(${item.id})" title="Delete Item">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            subHtml += `
+                <div class="sub-category" id="stSub_${sub.id}">
+                    <div class="sub-header" onclick="toggleStCategory('stSub_${sub.id}')">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="sub-name">📁 ${sub.name} <small style="color:var(--gray-400); font-weight:normal;">(${sub.code})</small></span>
+                            <span class="sub-stats">${sItems.length} Items</span>
+                        </div>
+                        <div class="sub-actions">
+                            <button class="btn-icon btn-icon-sm" onclick="editStSub(${sub.id}); event.stopPropagation();" title="Edit Sub">✏️</button>
+                            <button class="btn-icon btn-icon-sm" onclick="deleteStSub(${sub.id}); event.stopPropagation();" title="Delete Sub">🗑️</button>
+                            <button class="add-btn add-btn-sm" onclick="showAddStItemModal(${sub.id}); event.stopPropagation();">+ Add Item</button>
+                        </div>
+                    </div>
+                    <div class="items-container">
+                        ${itemRows || '<div style="color: var(--gray-500); text-align: center; padding: 1rem;">No items in this sub-category</div>'}
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+            <div class="main-category" id="stMain_${main.id}">
+                <div class="category-header" onclick="toggleStCategory('stMain_${main.id}')">
+                    <div class="category-title">
+                        <span class="color-dot" style="background: var(--blue-600);"></span>
+                        <span class="category-name">📁 ${main.name} <small style="color:var(--gray-400); font-weight:normal;">(${main.code})</small></span>
+                        <span class="category-stats">${subs.length} Sub Categories</span>
+                    </div>
+                    <div class="category-actions">
+                        <button class="btn-icon" onclick="editStMain(${main.id}); event.stopPropagation();" title="Edit Main">✏️</button>
+                        <button class="btn-icon" onclick="deleteStMain(${main.id}); event.stopPropagation();" title="Delete Main">🗑️</button>
+                        <button class="add-btn" onclick="showAddStSubModal(${main.id}); event.stopPropagation();">+ Add Sub</button>
+                    </div>
+                </div>
+                <div class="sub-category-container">
+                    ${subHtml || '<div style="color: var(--gray-500); text-align: center; padding: 2rem;">No sub-categories yet.</div>'}
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+
+    stExpandedIds.forEach(id => {
+        let el = document.getElementById(id);
+        if (el) el.classList.add('expanded');
+    });
+}
+
+function toggleStCategory(id) {
+    let el = document.getElementById(id);
+    if (!el) return;
+    if (el.classList.contains('expanded')) {
+        el.classList.remove('expanded');
+        stExpandedIds.delete(id);
+    } else {
+        el.classList.add('expanded');
+        stExpandedIds.add(id);
+    }
+}
+
+// Store CRUD Handlers
+function showAddStMainModal() {
+    document.getElementById('stMainModalTitle').textContent = '➕ Add Main Category';
+    document.getElementById('editStMainId').value = '';
+    document.getElementById('stMainName').value = '';
+    document.getElementById('stMainCode').value = '';
+    document.getElementById('stMainModal').style.display = 'block';
+}
+
+async function saveStMain() {
+    let id = document.getElementById('editStMainId').value;
+    let name = document.getElementById('stMainName').value.trim();
+    let code = document.getElementById('stMainCode').value.trim();
+    if (!name || !code) { alert('Enter Name and Code'); return; }
+
+    try {
+        const response = await fetch('api/sync.php?action=save_st_main', {
+            method: 'POST',
+            body: JSON.stringify({ main: { id, name, code } })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            if (id) {
+                let m = stMainCategories.find(x => x.id == id);
+                if (m) { m.name = name; m.code = code; }
+            } else {
+                stMainCategories.push({ id: result.id, name, code });
+            }
+            refreshStoreInventory();
+            document.getElementById('stMainModal').style.display = 'none';
+        } else { alert(result.message); }
+    } catch (e) { alert('Sync Failed'); }
+}
+
+function editStMain(id) {
+    let m = stMainCategories.find(x => x.id == id);
+    if (!m) return;
+    document.getElementById('stMainModalTitle').textContent = '✏️ Edit Main Category';
+    document.getElementById('editStMainId').value = m.id;
+    document.getElementById('stMainName').value = m.name;
+    document.getElementById('stMainCode').value = m.code;
+    document.getElementById('stMainModal').style.display = 'block';
+}
+
+async function deleteStMain(id) {
+    if (!confirm('Are you sure you want to delete this Main Category?')) return;
+    try {
+        const response = await fetch('api/sync.php?action=delete_st_main', {
+            method: 'POST',
+            body: JSON.stringify({ id })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            stMainCategories = stMainCategories.filter(x => x.id != id);
+            refreshStoreInventory();
+        } else { alert(result.message); }
+    } catch (e) { alert('Sync Failed'); }
+}
+
+// Sub Category logic
+function generateStSubCode(mainId) {
+    let parent = stMainCategories.find(m => m.id == mainId);
+    if (!parent) return '';
+    let parentCode = parent.code;
+    let existing = stSubCategories.filter(s => s.mainId == mainId).map(s => s.code);
+    
+    // Find next available sequence number (fill gaps)
+    for (let i = 1; i <= 999; i++) {
+        let trial = parentCode + String(i).padStart(3, '0');
+        if (!existing.includes(trial)) return trial;
+    }
+    return '';
+}
+
+function showAddStSubModal(mainId) {
+    let parent = stMainCategories.find(m => m.id == mainId);
+    if (!parent) return;
+    document.getElementById('stSubModalTitle').textContent = '➕ Add Sub Category';
+    document.getElementById('editStSubId').value = '';
+    document.getElementById('stSubMainId').value = mainId;
+    document.getElementById('stSubParentName').textContent = parent.name;
+    document.getElementById('stSubName').value = '';
+    document.getElementById('stSubCode').value = generateStSubCode(mainId);
+    document.getElementById('stSubModal').style.display = 'block';
+}
+
+async function saveStSub() {
+    let id = document.getElementById('editStSubId').value;
+    let mainId = document.getElementById('stSubMainId').value;
+    let name = document.getElementById('stSubName').value.trim();
+    let code = document.getElementById('stSubCode').value.trim();
+    if (!name || !code) { alert('Enter Name and Code'); return; }
+
+    try {
+        const response = await fetch('api/sync.php?action=save_st_sub', {
+            method: 'POST',
+            body: JSON.stringify({ sub: { id, mainId, name, code } })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            if (id) {
+                let s = stSubCategories.find(x => x.id == id);
+                if (s) { s.name = name; s.code = code; s.mainId = mainId; }
+            } else {
+                stSubCategories.push({ id: result.id, mainId, name, code });
+            }
+            refreshStoreInventory();
+            document.getElementById('stSubModal').style.display = 'none';
+        } else { alert(result.message); }
+    } catch (e) { alert('Sync Failed'); }
+}
+
+function editStSub(id) {
+    let s = stSubCategories.find(x => x.id == id);
+    if (!s) return;
+    let parent = stMainCategories.find(m => m.id == s.mainId);
+    document.getElementById('stSubModalTitle').textContent = '✏️ Edit Sub Category';
+    document.getElementById('editStSubId').value = s.id;
+    document.getElementById('stSubMainId').value = s.mainId;
+    document.getElementById('stSubParentName').textContent = parent ? parent.name : 'Unknown';
+    document.getElementById('stSubName').value = s.name;
+    document.getElementById('stSubCode').value = s.code;
+    document.getElementById('stSubModal').style.display = 'block';
+}
+
+async function deleteStSub(id) {
+    if (!confirm('Are you sure you want to delete this Sub Category?')) return;
+    try {
+        const response = await fetch('api/sync.php?action=delete_st_sub', {
+            method: 'POST',
+            body: JSON.stringify({ id })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            stSubCategories = stSubCategories.filter(x => x.id != id);
+            refreshStoreInventory();
+        } else { alert(result.message); }
+    } catch (e) { alert('Sync Failed'); }
+}
+
+// Item logic
+function generateStItemCode(subId) {
+    let parent = stSubCategories.find(s => s.id == subId);
+    if (!parent) return '';
+    let parentCode = parent.code;
+    let existing = stItems.filter(i => i.subId == subId).map(i => i.code);
+    
+    for (let i = 1; i <= 9999; i++) {
+        let trial = parentCode + String(i).padStart(4, '0');
+        if (!existing.includes(trial)) return trial;
+    }
+    return '';
+}
+
+function showAddStItemModal(subId) {
+    let parent = stSubCategories.find(s => s.id == subId);
+    if (!parent) return;
+    document.getElementById('stItemModalTitle').textContent = '➕ Add Item';
+    document.getElementById('editStItemId').value = '';
+    document.getElementById('stItemSubId').value = subId;
+    document.getElementById('stItemParentName').textContent = parent.name;
+    document.getElementById('stItemName').value = '';
+    document.getElementById('stItemCode').value = generateStItemCode(subId);
+    document.getElementById('stItemOpening').value = '0';
+    document.getElementById('stItemLimit').value = '5';
+    document.getElementById('stItemModal').style.display = 'block';
+}
+
+async function saveStItem() {
+    let id = document.getElementById('editStItemId').value;
+    let subId = document.getElementById('stItemSubId').value;
+    let name = document.getElementById('stItemName').value.trim();
+    let code = document.getElementById('stItemCode').value.trim();
+    let openingStock = parseInt(document.getElementById('stItemOpening').value) || 0;
+    let lowStockLimit = parseInt(document.getElementById('stItemLimit').value) || 0;
+
+    if (!name || !code) { alert('Enter Name and Code'); return; }
+
+    try {
+        const response = await fetch('api/sync.php?action=save_st_item', {
+            method: 'POST',
+            body: JSON.stringify({ item: { id, subId, name, code, openingStock, lowStockLimit } })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            if (id) {
+                let it = stItems.find(x => x.id == id);
+                if (it) { 
+                    it.name = name; it.code = code; it.subId = subId; 
+                    it.openingStock = openingStock; it.lowStockLimit = lowStockLimit;
+                }
+            } else {
+                stItems.push({ id: result.id, subId, name, code, openingStock, lowStockLimit, stock: openingStock });
+            }
+            refreshStoreInventory();
+            document.getElementById('stItemModal').style.display = 'none';
+        } else { alert(result.message); }
+    } catch (e) { alert('Sync Failed'); }
+}
+
+function editStItem(id) {
+    let it = stItems.find(x => x.id == id);
+    if (!it) return;
+    let parent = stSubCategories.find(s => s.id == it.subId);
+    document.getElementById('stItemModalTitle').textContent = '✏️ Edit Item';
+    document.getElementById('editStItemId').value = it.id;
+    document.getElementById('stItemSubId').value = it.subId;
+    document.getElementById('stItemParentName').textContent = parent ? parent.name : 'Unknown';
+    document.getElementById('stItemName').value = it.name;
+    document.getElementById('stItemCode').value = it.code;
+    document.getElementById('stItemOpening').value = it.openingStock || 0;
+    document.getElementById('stItemLimit').value = it.lowStockLimit || 0;
+    document.getElementById('stItemModal').style.display = 'block';
+}
+
+async function deleteStItem(id) {
+    if (!confirm('Are you sure you want to delete this Item?')) return;
+    try {
+        const response = await fetch('api/sync.php?action=delete_st_item', {
+            method: 'POST',
+            body: JSON.stringify({ id })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            stItems = stItems.filter(x => x.id != id);
+            refreshStoreInventory();
+        } else { alert(result.message); }
+    } catch (e) { alert('Sync Failed'); }
+}
+
 function refreshStoreDashboard() { console.log('Store: Dashboard Refresh placeholder'); }
 function refreshStoreInwards() { console.log('Store: Inwards Refresh placeholder'); }
 function refreshStoreOutwards() { console.log('Store: Outwards Refresh placeholder'); }
