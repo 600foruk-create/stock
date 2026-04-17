@@ -8,6 +8,28 @@ $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
 
 try {
+    // HEAVY REPAIR: Store Hierarchy Tables (Must exist for sync and save)
+    try {
+        $siCols = $conn->query("SHOW COLUMNS FROM store_items")->fetchAll(PDO::FETCH_COLUMN);
+        if ($siCols && (!in_array('sub_id', $siCols) || !in_array('low_stock_limit', $siCols))) {
+            $conn->exec("DROP TABLE IF EXISTS store_items");
+        }
+    } catch(Exception $e) {}
+
+    $conn->exec("CREATE TABLE IF NOT EXISTS store_main_categories (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL UNIQUE)");
+    $conn->exec("CREATE TABLE IF NOT EXISTS store_sub_categories (id INT AUTO_INCREMENT PRIMARY KEY, main_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL UNIQUE, FOREIGN KEY (main_id) REFERENCES store_main_categories(id) ON DELETE CASCADE)");
+    $conn->exec("CREATE TABLE IF NOT EXISTS `store_items` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `sub_id` int(11) NOT NULL,
+        `name` varchar(255) NOT NULL,
+        `code` varchar(50) NOT NULL UNIQUE,
+        `description` text DEFAULT NULL,
+        `stock` decimal(15,3) DEFAULT 0,
+        `low_stock_limit` decimal(15,3) DEFAULT 0,
+        PRIMARY KEY (`id`),
+        FOREIGN KEY (`sub_id`) REFERENCES `store_sub_categories`(`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
     if ($method === 'GET') {
         if ($action === 'get_all') {
             // AUTO-REPAIR: Customer Locations Schema
@@ -64,18 +86,6 @@ try {
                     if (!in_array('is_stock_subtracted', $orderCols)) {
                         $conn->exec("ALTER TABLE orders ADD COLUMN is_stock_subtracted INT DEFAULT 0");
                     }
-                } catch(Exception $e) {}
-
-                // NEW: Store Hierarchy Tables
-                $conn->exec("CREATE TABLE IF NOT EXISTS store_main_categories (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL UNIQUE)");
-                $conn->exec("CREATE TABLE IF NOT EXISTS store_sub_categories (id INT AUTO_INCREMENT PRIMARY KEY, main_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL UNIQUE, FOREIGN KEY (main_id) REFERENCES store_main_categories(id) ON DELETE CASCADE)");
-                $conn->exec("CREATE TABLE IF NOT EXISTS store_items (id INT AUTO_INCREMENT PRIMARY KEY, sub_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL UNIQUE, description TEXT, stock DECIMAL(15,3) DEFAULT 0, low_stock_limit DECIMAL(15,3) DEFAULT 0, FOREIGN KEY (sub_id) REFERENCES store_sub_categories(id) ON DELETE CASCADE)");
-
-                // AUTO-REPAIR: Missing columns in Store Items
-                try {
-                    $siCols = $conn->query("SHOW COLUMNS FROM store_items")->fetchAll(PDO::FETCH_COLUMN);
-                    if (!in_array('sub_id', $siCols)) $conn->exec("ALTER TABLE store_items ADD COLUMN sub_id INT NOT NULL AFTER id");
-                    if (!in_array('low_stock_limit', $siCols)) $conn->exec("ALTER TABLE store_items ADD COLUMN low_stock_limit DECIMAL(15,3) DEFAULT 0");
                 } catch(Exception $e) {}
 
             } catch (Exception $e) {}
