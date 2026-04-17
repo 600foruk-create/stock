@@ -605,7 +605,7 @@ try {
 
         elseif ($action === 'delete_rm_item') {
             $id = $input['id'];
-            $conn->prepare("DELETE FROM rm_items WHERE id = ?")->execute([id]);
+            $conn->prepare("DELETE FROM rm_items WHERE id = ?")->execute([$id]);
             echo json_encode(['status' => 'success']);
         }
 
