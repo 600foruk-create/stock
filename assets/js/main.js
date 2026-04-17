@@ -204,6 +204,15 @@ async function initApp() {
         refreshRMOutFormControls();
         refreshRMInventoryBalance();
         refreshRMConsumptionReport();
+
+        // Store Refreshes
+        refreshStoreInventory();
+        refreshStoreDashboard();
+        refreshStoreInwards();
+        refreshStoreOutwards();
+        refreshStoreItems();
+        refreshStoreAudit();
+        refreshStoreReports();
     }
 }
 
@@ -613,7 +622,7 @@ function refreshStoreInventory() {
                     <div class="category-actions">
                         <button class="btn-icon" onclick="editStoreMain(${main.id}); event.stopPropagation();" title="Edit Brand">✏️</button>
                         <button class="btn-icon" onclick="deleteStoreMain(${main.id}); event.stopPropagation();" title="Delete Brand">🗑️</button>
-                        <button class="add-btn" onclick="showAddStoreSub(${main.id}); event.stopPropagation();">+ Add Size</button>
+                        <button class="add-btn" onclick="showAddStoreSub(${main.id}); event.stopPropagation();">+ Add Sub-Category</button>
                     </div>
                 </div>
                 <div class="sub-category-container">
