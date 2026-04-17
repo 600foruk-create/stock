@@ -522,86 +522,9 @@
         background: var(--gray-50);
         border-color: var(--sky-400);
     }
+    .report-action-btn.delete:hover {
         background: #fef2f2;
         border-color: #f87171;
         color: #ef4444;
     }
     </style>
-    <!-- Store Hierarchy Modals -->
-    <div id="stMainModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="stMainModalTitle">➕ Add Main Category</h3>
-                <span class="close-modal" onclick="document.getElementById('stMainModal').style.display='none'">&times;</span>
-            </div>
-            <input type="hidden" id="editStMainId">
-            <div class="form-group">
-                <label>Category Name</label>
-                <input type="text" id="stMainName" class="form-control" placeholder="e.g., Electrical">
-            </div>
-            <div class="form-group">
-                <label>Category Code (Manual, e.g., A-01)</label>
-                <input type="text" id="stMainCode" class="form-control" placeholder="A-01">
-            </div>
-            <button class="btn btn-success" onclick="saveStMain()" style="width:100%;">Save Main Category</button>
-        </div>
-    </div>
-
-    <div id="stSubModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="stSubModalTitle">➕ Add Sub Category</h3>
-                <span class="close-modal" onclick="document.getElementById('stSubModal').style.display='none'">&times;</span>
-            </div>
-            <input type="hidden" id="editStSubId">
-            <input type="hidden" id="stSubMainId">
-            <div class="form-group">
-                <label>Parent Main Category</label>
-                <div id="stSubParentName" style="padding: 0.5rem; background: var(--gray-100); border-radius: 4px; font-weight: bold;"></div>
-            </div>
-            <div class="form-group">
-                <label>Sub Category Name (e.g., Size / Brand)</label>
-                <input type="text" id="stSubName" class="form-control" placeholder="e.g., 2 Inch / Canon">
-            </div>
-            <div class="form-group">
-                <label>Auto-Generated Code</label>
-                <input type="text" id="stSubCode" class="form-control" readonly placeholder="Auto-gen">
-            </div>
-            <button class="btn btn-success" onclick="saveStSub()" style="width:100%;">Save Sub Category</button>
-        </div>
-    </div>
-
-    <div id="stItemModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="stItemModalTitle">➕ Add Store Item</h3>
-                <span class="close-modal" onclick="document.getElementById('stItemModal').style.display='none'">&times;</span>
-            </div>
-            <input type="hidden" id="editStItemId">
-            <input type="hidden" id="stItemSubId">
-            <div class="form-group">
-                <label>Parent Sub Category</label>
-                <div id="stItemParentName" style="padding: 0.5rem; background: var(--gray-100); border-radius: 4px; font-weight: bold;"></div>
-            </div>
-            <div class="form-group">
-                <label>Item Name</label>
-                <input type="text" id="stItemName" class="form-control" placeholder="e.g., PVC Pipe 20ft">
-            </div>
-            <div class="form-group">
-                <label>Auto-Generated Code</label>
-                <input type="text" id="stItemCode" class="form-control" readonly placeholder="Auto-gen">
-            </div>
-            <div class="form-group">
-                <label>Opening Stock</label>
-                <input type="number" id="stItemOpening" class="form-control" value="0">
-            </div>
-            <div class="form-group">
-                <label>Low Stock Limit</label>
-                <input type="number" id="stItemLimit" class="form-control" value="5">
-            </div>
-            <button class="btn btn-success" onclick="saveStItem()" style="width:100%;">Save Item</button>
-        </div>
-    </div>
-()" style="width:100%;">Save Item</button>
-        </div>
-    </div>

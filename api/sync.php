@@ -66,11 +66,6 @@ try {
                     }
                 } catch(Exception $e) {}
 
-                // NEW: Store Hierarchy Tables
-                $conn->exec("CREATE TABLE IF NOT EXISTS st_main_categories (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL)");
-                $conn->exec("CREATE TABLE IF NOT EXISTS st_sub_categories (id INT AUTO_INCREMENT PRIMARY KEY, main_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL)");
-                $conn->exec("CREATE TABLE IF NOT EXISTS st_items (id INT AUTO_INCREMENT PRIMARY KEY, sub_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL, opening_stock INT DEFAULT 0, low_stock_limit INT DEFAULT NULL, stock INT DEFAULT 0)");
-
                 // NEW: RM Consumption Logs for Daily History
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_consumption_logs (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -103,9 +98,6 @@ try {
                 'rmFormulaItems' => $conn->query("SELECT * FROM rm_formula_items")->fetchAll(PDO::FETCH_ASSOC),
                 'rmTransactions' => $conn->query("SELECT * FROM rm_transactions ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
                 'storeItems' => $conn->query("SELECT id, name, description, stock FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
-                'stMainCategories' => $conn->query("SELECT id, name, code FROM st_main_categories")->fetchAll(PDO::FETCH_ASSOC),
-                'stSubCategories' => $conn->query("SELECT id, main_id AS mainId, name, code FROM st_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
-                'stItems' => $conn->query("SELECT id, sub_id AS subId, name, code, opening_stock AS openingStock, low_stock_limit AS lowStockLimit, stock FROM st_items")->fetchAll(PDO::FETCH_ASSOC),
                 'latestAudit' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id)")->fetchAll(PDO::FETCH_ASSOC),
                 'archivedReports' => $conn->query("SELECT id, date, title, report_type FROM audit_reports_archive ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
                 'rmConsumptionLogs' => $conn->query("SELECT * FROM rm_consumption_logs ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
@@ -606,80 +598,6 @@ try {
         elseif ($action === 'delete_rm_item') {
             $id = $input['id'];
             $conn->prepare("DELETE FROM rm_items WHERE id = ?")->execute([$id]);
-            echo json_encode(['status' => 'success']);
-        }
-
-        // --- STORE HIERARCHY ACTIONS ---
-        elseif ($action === 'save_st_main') {
-            $m = $input['main'];
-            if (isset($m['id']) && !empty($m['id'])) {
-                $stmt = $conn->prepare("UPDATE st_main_categories SET name = ?, code = ? WHERE id = ?");
-                $stmt->execute([$m['name'], $m['code'], $m['id']]);
-            } else {
-                $stmt = $conn->prepare("INSERT INTO st_main_categories (name, code) VALUES (?, ?)");
-                $stmt->execute([$m['name'], $m['code']]);
-                $m['id'] = $conn->lastInsertId();
-            }
-            echo json_encode(['status' => 'success', 'id' => $m['id']]);
-        }
-
-        elseif ($action === 'delete_st_main') {
-            $id = $input['id'];
-            // Protection: Check if has children
-            $count = $conn->prepare("SELECT COUNT(*) FROM st_sub_categories WHERE main_id = ?");
-            $count->execute([$id]);
-            if ($count->fetchColumn() > 0) {
-                echo json_encode(['status' => 'error', 'message' => 'Cannot delete because it has Sub Categories']);
-            } else {
-                $conn->prepare("DELETE FROM st_main_categories WHERE id = ?")->execute([$id]);
-                echo json_encode(['status' => 'success']);
-            }
-        }
-
-        elseif ($action === 'save_st_sub') {
-            $s = $input['sub'];
-            if (isset($s['id']) && !empty($s['id'])) {
-                $stmt = $conn->prepare("UPDATE st_sub_categories SET main_id = ?, name = ?, code = ? WHERE id = ?");
-                $stmt->execute([$s['mainId'], $s['name'], $s['code'], $s['id']]);
-            } else {
-                $stmt = $conn->prepare("INSERT INTO st_sub_categories (main_id, name, code) VALUES (?, ?, ?)");
-                $stmt->execute([$s['mainId'], $s['name'], $s['code']]);
-                $s['id'] = $conn->lastInsertId();
-            }
-            echo json_encode(['status' => 'success', 'id' => $s['id']]);
-        }
-
-        elseif ($action === 'delete_st_sub') {
-            $id = $input['id'];
-            // Protection: Check if has children
-            $count = $conn->prepare("SELECT COUNT(*) FROM st_items WHERE sub_id = ?");
-            $count->execute([$id]);
-            if ($count->fetchColumn() > 0) {
-                echo json_encode(['status' => 'error', 'message' => 'Cannot delete because it has Items']);
-            } else {
-                $conn->prepare("DELETE FROM st_sub_categories WHERE id = ?")->execute([$id]);
-                echo json_encode(['status' => 'success']);
-            }
-        }
-
-        elseif ($action === 'save_st_item') {
-            $i = $input['item'];
-            if (isset($i['id']) && !empty($i['id'])) {
-                // Determine stock if opening_stock changed? 
-                // For now just update normally.
-                $stmt = $conn->prepare("UPDATE st_items SET sub_id = ?, name = ?, code = ?, opening_stock = ?, low_stock_limit = ? WHERE id = ?");
-                $stmt->execute([$i['subId'], $i['name'], $i['code'], $i['openingStock'] ?? 0, $i['lowStockLimit'] ?? null, $i['id']]);
-            } else {
-                $stmt = $conn->prepare("INSERT INTO st_items (sub_id, name, code, opening_stock, low_stock_limit, stock) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$i['subId'], $i['name'], $i['code'], $i['openingStock'] ?? 0, $i['lowStockLimit'] ?? null, $i['openingStock'] ?? 0]);
-                $i['id'] = $conn->lastInsertId();
-            }
-            echo json_encode(['status' => 'success', 'id' => $i['id']]);
-        }
-
-        elseif ($action === 'delete_st_item') {
-            $id = $input['id'];
-            $conn->prepare("DELETE FROM st_items WHERE id = ?")->execute([$id]);
             echo json_encode(['status' => 'success']);
         }
 
