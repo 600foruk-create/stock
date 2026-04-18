@@ -537,15 +537,15 @@ function refreshStoreInventory() {
 
     // Sort categories
     storeMainCategories.sort((a,b) => a.code.localeCompare(b.code)).forEach(main => {
-        let mainSubs = storeSubCategories.filter(s => s.mainId == main.id);
+        let mainSubs = storeSubCategories.filter(s => (s.mainId == main.id || s.main_id == main.id));
         let mainItems = storeItems.filter(i => {
-            let sub = storeSubCategories.find(s => s.id == i.subId);
-            return sub && sub.mainId == main.id;
+            let sub = storeSubCategories.find(s => s.id == (i.subId || i.sub_id));
+            return sub && (sub.mainId == main.id || sub.main_id == main.id);
         });
         
         let subHtml = '';
         mainSubs.sort((a,b) => a.code.localeCompare(b.code)).forEach(sub => {
-            let sItems = storeItems.filter(i => i.subId == sub.id);
+            let sItems = storeItems.filter(i => (i.subId == sub.id || i.sub_id == sub.id));
             
             let itemRows = '';
             sItems.sort((a,b) => a.code.localeCompare(b.code)).forEach(item => {
