@@ -28,6 +28,16 @@ try {
                     report_type VARCHAR(20) DEFAULT 'FG'
                 )");
 
+                // NEW: Physical Audit Live Table
+                $conn->exec("CREATE TABLE IF NOT EXISTS audit_records (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    item_id INT NOT NULL,
+                    system_qty DECIMAL(15,3),
+                    godown_qty DECIMAL(15,3),
+                    diff_qty DECIMAL(15,3),
+                    date DATETIME DEFAULT CURRENT_TIMESTAMP
+                )");
+
                 // AUTO-REPAIR: Add report_type column if missing
                 try {
                     $cols = $conn->query("SHOW COLUMNS FROM audit_reports_archive")->fetchAll(PDO::FETCH_COLUMN);
@@ -808,6 +818,49 @@ try {
                 $conn->rollBack();
                 throw $e;
             }
+        }
+
+        elseif ($action === 'save_audit') {
+            $records = $input['records'] ?? [];
+            $conn->beginTransaction();
+            try {
+                // We clear old records for the same items to keep it fresh
+                foreach ($records as $r) {
+                    $conn->prepare("DELETE FROM audit_records WHERE item_id = ?")->execute([$r['itemId']]);
+                    $stmt = $conn->prepare("INSERT INTO audit_records (item_id, system_qty, godown_qty, diff_qty) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$r['itemId'], $r['systemQty'], $r['godownQty'], $r['diffQty']]);
+                }
+                $conn->commit();
+                echo json_encode(['status' => 'success']);
+            } catch (Exception $e) {
+                $conn->rollBack();
+                throw $e;
+            }
+        }
+
+        elseif ($action === 'clear_audit') {
+            $conn->exec("DELETE FROM audit_records");
+            echo json_encode(['status' => 'success']);
+        }
+
+        elseif ($action === 'archive_report') {
+            $title = $input['title'] ?? 'Audit Report';
+            $data_json = json_encode($input['data']);
+            $type = $input['report_type'] ?? 'FG';
+            $date = date('Y-m-d H:i:s');
+            
+            $stmt = $conn->prepare("INSERT INTO audit_reports_archive (date, title, data, report_type) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$date, $title, $data_json, $type]);
+            echo json_encode(['status' => 'success']);
+        }
+
+        elseif ($action === 'delete_archived_report') {
+            $id = $input['id'] ?? null;
+            if ($id) {
+                $stmt = $conn->prepare("DELETE FROM audit_reports_archive WHERE id = ?");
+                $stmt->execute([$id]);
+                echo json_encode(['status' => 'success']);
+            } else { echo json_encode(['status' => 'error', 'message' => 'No ID']); }
         }
     }
 } catch (Exception $e) {

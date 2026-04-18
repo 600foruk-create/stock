@@ -515,15 +515,6 @@ function switchModule(module) {
     }
 }
 
-// Store Module Refresh Placeholders
-function refreshStoreDashboard() { console.log('Store: Dashboard Refresh placeholder'); }
-function refreshStoreInwards() { console.log('Store: Inwards Refresh placeholder'); }
-function refreshStoreOutwards() { console.log('Store: Outwards Refresh placeholder'); }
-function refreshStoreInventory() { console.log('Store: Inventory Refresh placeholder'); }
-function refreshStoreItems() { console.log('Store: Item Records Refresh placeholder'); }
-function refreshStoreAudit() { console.log('Store: Audit Refresh placeholder'); }
-function refreshStoreReports() { console.log('Store: Reports Refresh placeholder'); }
-
 function togglePassword(fieldId) {
     let password = document.getElementById(fieldId);
     password.type = password.type === 'password' ? 'text' : 'password';
@@ -6988,6 +6979,201 @@ async function adjustSingleRMItem(itemId) {
         initApp(); // Refresh
     }
 }
+function refreshRMAudit() {
+    const tbody = document.getElementById('rmAuditTable');
+    if (!tbody) return;
+
+    if (!rmItems || rmItems.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--gray-500);">No raw materials found.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '';
+    
+    // Sort items by name
+    const sortedItems = [...rmItems].sort((a, b) => a.name.localeCompare(b.name));
+
+    sortedItems.forEach(item => {
+        const sysStock = parseFloat(item.stock) || 0;
+        const physStock = rmPhysicalStockMap[item.id] !== undefined ? rmPhysicalStockMap[item.id] : 0;
+        const diff = physStock - sysStock;
+        const isBalanced = Math.abs(diff) < 0.0001;
+        const status = isBalanced ? 'Balanced' : (diff > 0 ? 'Excess' : 'Shortage');
+        const statusColor = isBalanced ? '#64748b' : (diff > 0 ? '#16a34a' : '#dc2626');
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td style="padding: 0.8rem 1.5rem;">
+                <div style="font-weight: 700;">${item.name}</div>
+                <div style="font-size: 0.75rem; color: var(--gray-400); font-family: monospace;">${item.code}</div>
+            </td>
+            <td style="text-align: center; font-weight: 600; color: var(--gray-600);">${sysStock.toFixed(2)} ${item.unit}</td>
+            <td style="text-align: center;">
+                <input type="number" step="0.01" value="${physStock}" 
+                    style="width: 100px; padding: 0.4rem; border: 2px solid var(--gray-200); border-radius: 6px; text-align: center; font-weight: 700;"
+                    oninput="calculateRMAuditDifference(${item.id}, this.value)">
+            </td>
+            <td id="rmAuditDiff_${item.id}" style="text-align: center; font-weight: 700; color: ${statusColor};">
+                ${diff > 0 ? '+' : ''}${diff.toFixed(2)}
+            </td>
+            <td style="text-align: center;">
+                <span id="rmAuditStatus_${item.id}" class="badge" style="background: ${statusColor}; color: white; padding: 4px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 800;">
+                    ${status}
+                </span>
+            </td>
+            <td style="text-align: center; padding-right: 1.5rem;">
+                <button class="btn btn-sm" onclick="adjustSingleRMItem(${item.id})" style="background: var(--sky-100); color: var(--sky-700); font-weight: 700; border: none; padding: 0.3rem 0.8rem; border-radius: 6px; font-size: 0.75rem;">Adjust</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function calculateRMAuditDifference(itemId, val) {
+    const physStock = parseFloat(val) || 0;
+    rmPhysicalStockMap[itemId] = physStock;
+    localStorage.setItem('rmPhysicalStockMap', JSON.stringify(rmPhysicalStockMap)); // Save to storage
+
+    const item = rmItems.find(i => i.id == itemId);
+    const sysStock = item ? parseFloat(item.stock) : 0;
+    const diff = physStock - sysStock;
+    
+    const diffEl = document.getElementById(`rmAuditDiff_${itemId}`);
+    const statusEl = document.getElementById(`rmAuditStatus_${itemId}`);
+    
+    if (diffEl && statusEl) {
+        const isBalanced = Math.abs(diff) < 0.0001;
+        const status = isBalanced ? 'Balanced' : (diff > 0 ? 'Excess' : 'Shortage');
+        const statusColor = isBalanced ? '#64748b' : (diff > 0 ? '#16a34a' : '#dc2626');
+        
+        diffEl.innerText = (diff > 0 ? '+' : '') + diff.toFixed(2);
+        diffEl.style.color = statusColor;
+        
+        statusEl.innerText = status;
+        statusEl.style.background = statusColor;
+    }
+}
+
+async function saveRMAudit() {
+    localStorage.setItem('rmPhysicalStockMap', JSON.stringify(rmPhysicalStockMap));
+    alert('✅ Audit values saved to browser storage.');
+}
+
+function resetRMPhysicalStock() {
+    if (!confirm('Are you sure you want to reset all physical stock entries to 0?')) return;
+    rmPhysicalStockMap = {};
+    localStorage.removeItem('rmPhysicalStockMap');
+    refreshRMAudit();
+}
+
+async function archiveRMAuditReport() {
+    if (!rmItems || rmItems.length === 0) return;
+    
+    const snapshot = rmItems.map(item => {
+        const sys = parseFloat(item.stock) || 0;
+        const phys = rmPhysicalStockMap[item.id] || 0;
+        return {
+            name: item.name,
+            code: item.code,
+            unit: item.unit,
+            system: sys,
+            physical: phys,
+            difference: phys - sys
+        };
+    });
+
+    const response = await fetch('api/sync.php?action=archive_report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            title: `RM Monthly Audit - ${new Date().toLocaleDateString()}`,
+            data: snapshot,
+            report_type: 'RM'
+        })
+    });
+    
+    const res = await response.json();
+    if (res.status === 'success') {
+        alert('✅ RM Audit Report Archived!');
+        if (typeof refreshArchivedReportsList === 'function') refreshArchivedReportsList();
+    }
+}
+
+async function autoAdjustRMAll() {
+    if (!verifyAdminAction()) return;
+
+    const adjustments = [];
+    for (const item of rmItems) {
+        const sys = parseFloat(item.stock) || 0;
+        const phys = rmPhysicalStockMap[item.id] || 0;
+        const diff = phys - sys;
+        
+        if (Math.abs(diff) > 0.0001) {
+            adjustments.push({
+                rm_item_id: item.id,
+                quantity: Math.abs(diff),
+                type: diff > 0 ? 'IN' : 'OUT',
+                notes: 'Audit Adjustment (Bulk)'
+            });
+        }
+    }
+
+    if (adjustments.length === 0) {
+        alert('ℹ️ No discrepancies found to adjust.');
+        return;
+    }
+
+    if (!confirm(`Are you sure? This will create ${adjustments.length} adjustment transactions to match physical stock.`)) return;
+
+    const response = await fetch('api/sync.php?action=bulk_save_rm_transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactions: adjustments })
+    });
+
+    const res = await response.json();
+    if (res.status === 'success') {
+        alert('✅ Bulk Stock Adjustments Completed!');
+        initApp(); // Refresh data and UI
+    }
+}
+
+async function adjustSingleRMItem(itemId) {
+    const item = rmItems.find(i => i.id == itemId);
+    if (!item) return;
+
+    const sys = parseFloat(item.stock) || 0;
+    const phys = rmPhysicalStockMap[itemId] || 0;
+    const diff = phys - sys;
+
+    if (Math.abs(diff) < 0.0001) {
+        alert('ℹ️ Item stock is already balanced.');
+        return;
+    }
+
+    if (!verifyAdminAction()) return;
+
+    if (!confirm(`Adjust ${item.name} stock level to match physical count (${phys})?`)) return;
+
+    const adjustment = {
+        rm_item_id: item.id,
+        quantity: Math.abs(diff),
+        type: diff > 0 ? 'IN' : 'OUT',
+        notes: 'Audit Adjustment (Single)'
+    };
+
+    const response = await fetch('api/sync.php?action=save_rm_transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transaction: adjustment })
+    });
+
+    const res = await response.json();
+    if (res.status === 'success') {
+        alert(`✅ ${item.name} Adjusted!`);
+        initApp(); // Refresh
+    }
+}
 
 function verifyAdminAction() {
     const code = prompt("Security Check: Enter Admin Password to authorize this adjustment:");
@@ -7040,7 +7226,7 @@ function generateStoreItemCode(subCategoryCode) {
 // --- Data Persistence ---
 async function saveStoreToDB(action, payload) {
     try {
-        const response = await fetch(pi/sync.php?action= + action, {
+        const response = await fetch(`api/sync.php?action=${action}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -7153,8 +7339,8 @@ function refreshStoreDashboard() {
     
     const activityHtml = storeTransactions.slice(0, 10).map(t => `
         <div style="padding: 0.8rem; border-bottom: 1px solid var(--gray-100); font-size: 0.9rem; display: flex; justify-content: space-between;">
-            <span><strong>\</strong>: \ \ (\)</span>
-            <span style="color: var(--gray-400);">By: \</span>
+            <span><strong>${t.date.split(' ')[0]}</strong>: ${t.type === 'INWARD' ? '📥' : '📤'} ${t.itemName} (${t.quantity})</span>
+            <span style="color: var(--gray-400);">By: ${t.source_or_person || 'N/A'}</span>
         </div>
     `).join('') || '<p style="text-align: center; color: var(--gray-400); padding: 2rem;">No recent activities.</p>';
     
@@ -7165,14 +7351,14 @@ function refreshStoreInwards() {
     const select = document.getElementById('storeInwardItemSelect');
     if (!select) return;
     select.innerHTML = '<option value="">-- Search Item --</option>' + 
-        storeItems.map(i => <option value="\">\ - \ (Qty: \)</option>).join('');
+        storeItems.map(i => `<option value="${i.id}">${i.code} - ${i.name} (Qty: ${i.stock})</option>`).join('');
 }
 
 function refreshStoreOutwards() {
     const select = document.getElementById('storeOutwardItemSelect');
     if (!select) return;
     select.innerHTML = '<option value="">-- Search Item --</option>' + 
-        storeItems.map(i => <option value="\">\ - \ (Qty: \)</option>).join('');
+        storeItems.map(i => `<option value="${i.id}">${i.code} - ${i.name} (Qty: ${i.stock})</option>`).join('');
 }
 
 function refreshStoreInventory() {
@@ -7200,15 +7386,15 @@ function refreshStoreInventory() {
         header.style.justifyContent = 'space-between';
         header.style.alignItems = 'center';
         header.style.cursor = 'pointer';
-        header.innerHTML = \
+        header.innerHTML = `
             <div style="display: flex; align-items: center; gap: 1rem;">
-                <i class="fas \" style="color: var(--gray-400); width: 20px;"></i>
-                <h4 style="margin:0; font-weight: 700; color: var(--gray-800);">?? \ <span style="font-weight: 400; color: var(--gray-400); margin-left: 0.5rem;">[\]</span></h4>
+                <i class="fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'}" style="color: var(--gray-400); width: 20px;"></i>
+                <h4 style="margin:0; font-weight: 700; color: var(--gray-800);">📁 ${cat.name} <span style="font-weight: 400; color: var(--gray-400); margin-left: 0.5rem;">[${cat.code}]</span></h4>
             </div>
-            <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteStoreCategory(\, 'main')">
+            <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteStoreCategory(${cat.id}, 'main')">
                 <i class="fas fa-trash"></i>
             </button>
-        \;
+        `;
         header.onclick = () => {
             if (storeExpandedIds.has('cat_' + cat.id)) storeExpandedIds.delete('cat_' + cat.id);
             else storeExpandedIds.add('cat_' + cat.id);
@@ -7237,15 +7423,15 @@ function refreshStoreInventory() {
                 subHeader.style.alignItems = 'center';
                 subHeader.style.cursor = 'pointer';
                 subHeader.style.background = 'var(--sky-50)';
-                subHeader.innerHTML = \
+                subHeader.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 0.8rem;">
-                         <i class="fas \" style="color: var(--sky-400);"></i>
-                         <span style="font-weight: 600; color: var(--sky-700);">?? \ <small style="color: var(--gray-400); margin-left: 5px;">(\)</small></span>
+                         <i class="fas ${subIsCollapsed ? 'fa-plus-square' : 'fa-minus-square'}" style="color: var(--sky-400);"></i>
+                         <span style="font-weight: 600; color: var(--sky-700);">🔹 ${sub.name} <small style="color: var(--gray-400); margin-left: 5px;">(${sub.code})</small></span>
                     </div>
-                    <button class="btn btn-sm" style="color: #ef4444; border: none; background: transparent;" onclick="event.stopPropagation(); deleteStoreCategory(\, 'sub')">
+                    <button class="btn btn-sm" style="color: #ef4444; border: none; background: transparent;" onclick="event.stopPropagation(); deleteStoreCategory(${sub.id}, 'sub')">
                          <i class="fas fa-times-circle"></i>
                     </button>
-                \;
+                `;
                 subHeader.onclick = () => {
                     if (storeExpandedIds.has('sub_' + sub.id)) storeExpandedIds.delete('sub_' + sub.id);
                     else storeExpandedIds.add('sub_' + sub.id);
@@ -7259,23 +7445,23 @@ function refreshStoreInventory() {
                     
                     const itms = storeItems.filter(i => i.sub_id == sub.id);
                     if (itms.length > 0) {
-                        let tableHtml = \
+                        let tableHtml = `
                             <table class="table table-sm" style="font-size: 0.85rem; margin-bottom: 1rem;">
                                 <thead style="background: var(--gray-50);">
                                     <tr><th>Code</th><th>Name</th><th>Stock</th><th>Threshold</th><th>Action</th></tr>
                                 </thead>
                                 <tbody>
-                        \;
+                        `;
                         itms.forEach(itm => {
-                            tableHtml += \
+                            tableHtml += `
                                 <tr>
-                                    <td style="font-family: monospace;">\</td>
-                                    <td style="font-weight: 500;">\</td>
-                                    <td><strong>\</strong></td>
-                                    <td style="color: var(--gray-400);">\</td>
-                                    <td><button class="btn btn-sm text-danger" onclick="deleteStoreItem(\)"><i class="fas fa-trash-alt"></i></button></td>
+                                    <td style="font-family: monospace;">${itm.code}</td>
+                                    <td style="font-weight: 500;">${itm.name}</td>
+                                    <td><strong>${itm.stock}</strong></td>
+                                    <td style="color: var(--gray-400);">${itm.low_stock_threshold}</td>
+                                    <td><button class="btn btn-sm text-danger" onclick="deleteStoreItem(${itm.id})"><i class="fas fa-trash-alt"></i></button></td>
                                 </tr>
-                            \;
+                            `;
                         });
                         tableHtml += '</tbody></table>';
                         subBody.innerHTML = tableHtml;
@@ -7292,12 +7478,12 @@ function refreshStoreInventory() {
                     addItemDiv.style.display = 'flex';
                     addItemDiv.style.gap = '0.5rem';
                     addItemDiv.style.flexWrap = 'wrap';
-                    addItemDiv.innerHTML = \
+                    addItemDiv.innerHTML = `
                         <input type="text" placeholder="New Item Name" class="form-control form-control-sm" style="flex:1; min-width: 150px;">
                         <input type="number" placeholder="Op. Stock" class="form-control form-control-sm" style="width: 80px;" value="0">
                         <input type="number" placeholder="Low Alert" class="form-control form-control-sm" style="width: 80px;" value="5">
-                        <button class="btn btn-sm btn-sky" onclick="const p=this.parentElement; addStoreItem(\, '\', p.children[0].value, p.children[1].value, p.children[2].value)">Add</button>
-                    \;
+                        <button class="btn btn-sm btn-sky" onclick="const p=this.parentElement; addStoreItem(${sub.id}, '${sub.code}', p.children[0].value, p.children[1].value, p.children[2].value)">Add</button>
+                    `;
                     subBody.appendChild(addItemDiv);
                     subDiv.appendChild(subBody);
                 }
@@ -7309,12 +7495,12 @@ function refreshStoreInventory() {
             addSubForm.style.marginTop = '1rem';
             addSubForm.style.display = 'flex';
             addSubForm.style.gap = '0.8rem';
-            addSubForm.innerHTML = \
-                <input type="text" id="newSubName_\" class="form-control" placeholder="New Sub-Category Name" style="flex:1;">
-                <button class="btn btn-outline-primary" onclick="addStoreSubCategory(\, '\', document.getElementById('newSubName_\').value)">
+            addSubForm.innerHTML = `
+                <input type="text" id="newSubName_${cat.id}" class="form-control" placeholder="New Sub-Category Name" style="flex:1;">
+                <button class="btn btn-outline-primary" onclick="addStoreSubCategory(${cat.id}, '${cat.code}', document.getElementById('newSubName_${cat.id}').value)">
                      <i class="fas fa-plus"></i> Add Sub
                 </button>
-            \;
+            `;
             body.appendChild(addSubForm);
             card.appendChild(body);
         }
@@ -7322,12 +7508,12 @@ function refreshStoreInventory() {
     });
 }
 
-function refreshStoreItemRecords() {
+function refreshStoreItems() {
     const container = document.getElementById('storeItemRecordsContainer');
     if (!container) return;
     const filter = document.getElementById('storeItemsSearch').value.toLowerCase();
     
-    let html = \
+    let html = `
         <table class="data-table">
             <thead>
                 <tr>
@@ -7339,7 +7525,7 @@ function refreshStoreItemRecords() {
                 </tr>
             </thead>
             <tbody>
-    \;
+    `;
     
     const filteredItems = storeItems.filter(i => 
         i.name.toLowerCase().includes(filter) || 
@@ -7351,17 +7537,17 @@ function refreshStoreItemRecords() {
     } else {
         filteredItems.forEach(i => {
             const isLow = parseFloat(i.stock) <= parseFloat(i.low_stock_threshold);
-            html += \
+            html += `
                 <tr>
-                    <td><strong>\</strong></td>
-                    <td>\</td>
-                    <td><span style="font-size: 1.1rem; font-weight: 700;">\</span></td>
-                    <td style="color: var(--gray-400);">\</td>
+                    <td><strong>${i.code}</strong></td>
+                    <td>${i.name}</td>
+                    <td><span style="font-size: 1.1rem; font-weight: 700;">${i.stock}</span></td>
+                    <td style="color: var(--gray-400);">${i.low_stock_threshold}</td>
                     <td>
-                        \
+                        ${isLow ? '<span style="color: var(--orange-600); background: var(--orange-50); padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.8rem;">⚠️ LOW STOCK</span>' : '<span style="color: var(--green-600); background: var(--green-50); padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.8rem;">✅ NORMAL</span>'}
                     </td>
                 </tr>
-            \;
+            `;
         });
     }
     
@@ -7369,11 +7555,11 @@ function refreshStoreItemRecords() {
     container.innerHTML = html;
 }
 
-function refreshStoreAuditTable() {
+function refreshStoreAudit() {
     const container = document.getElementById('storeAuditItemsList');
     if (!container) return;
     
-    let html = \
+    let html = `
         <table class="data-table">
             <thead>
                 <tr>
@@ -7384,21 +7570,21 @@ function refreshStoreAuditTable() {
                 </tr>
             </thead>
             <tbody>
-    \;
+    `;
     
     storeItems.forEach(i => {
-        html += \
+        html += `
             <tr>
-                <td>\</td>
-                <td>\</td>
-                <td><strong>\</strong></td>
+                <td>${i.code}</td>
+                <td>${i.name}</td>
+                <td><strong>${i.stock}</strong></td>
                 <td>
                     <input type="number" class="form-control store-audit-input" 
-                           data-id="\" data-systock="\" 
+                           data-id="${i.id}" data-systock="${i.stock}" 
                            placeholder="Enter count" step="0.01">
                 </td>
             </tr>
-        \;
+        `;
     });
     
     html += '</tbody></table>';
@@ -7436,7 +7622,7 @@ async function saveStoreAuditReport() {
     const res = await saveStoreToDB('archive_report', payload);
     if (res) {
         alert('Audit report archived successfully!');
-        refreshStoreAuditTable();
+        refreshStoreAudit();
     }
 }
 
@@ -7452,18 +7638,18 @@ function refreshStoreReports() {
     
     let html = '';
     storeReports.forEach(r => {
-        html += \
+        html += `
             <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h5 style="margin:0; font-weight: 700; color: var(--gray-800);">\</h5>
-                    <small style="color: var(--gray-400);">Generated on: \</small>
+                    <h5 style="margin:0; font-weight: 700; color: var(--gray-800);">${r.title}</h5>
+                    <small style="color: var(--gray-400);">Generated on: ${r.date}</small>
                 </div>
                 <div style="display: flex; gap: 0.5rem;">
-                    <button class="btn btn-sm btn-outline-primary" onclick="viewArchivedReport(\)">?? View</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteArchivedReport(\)"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewArchivedReport(${r.id})">🔍 View</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteArchivedReport(${r.id})"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
-        \;
+        `;
     });
     container.innerHTML = html;
 }
@@ -7492,7 +7678,7 @@ async function printStoreLatestReport() {
             '<thead><tr><th>Code</th><th>Name</th><th>System</th><th>Physical</th><th>Diff</th></tr></thead><tbody>';
         
         report.forEach(r => {
-            printHtml += \<tr><td>\</td><td>\</td><td>\</td><td>\</td><td>\</td></tr>\;
+            printHtml += `<tr><td>${r.itemCode}</td><td>${r.itemName}</td><td>${r.systemStock}</td><td>${r.physicalStock}</td><td>${r.diff}</td></tr>`;
         });
         printHtml += '</tbody></table>';
         
@@ -7505,6 +7691,6 @@ async function printStoreLatestReport() {
 
 // Add event listener for live search
 document.addEventListener('input', (e) => {
-    if (e.target.id === 'storeItemsSearch') refreshStoreItemRecords();
+    if (e.target.id === 'storeItemsSearch') refreshStoreItems();
 });
 
