@@ -18,6 +18,8 @@ let rmUnits = [];
 let rmFormulas = [];
 let rmFormulaItems = [];
 let storeItems = [];
+let storeMainCategories = [];
+let storeSubCategories = [];
 let rmTransactions = [];
 let rmConsumptionLogs = [];
 let rmExpandedIds = new Set();
@@ -82,6 +84,8 @@ async function initApp() {
             rmFormulas = d.rmFormulas || [];
             rmFormulaItems = d.rmFormulaItems || [];
             storeItems = d.storeItems || [];
+            storeMainCategories = d.storeMainCategories || [];
+            storeSubCategories = d.storeSubCategories || [];
             rmTransactions = d.rmTransactions || [];
             archivedReports = d.archivedReports || [];
             rmConsumptionLogs = d.rmConsumptionLogs || [];
@@ -273,6 +277,10 @@ function loadLocalData() {
         if (savedRM) rawMaterials = JSON.parse(savedRM);
         let savedStore = localStorage.getItem('stock_storeItems');
         if (savedStore) storeItems = JSON.parse(savedStore);
+        let savedStoreMain = localStorage.getItem('stock_storeMainCat');
+        if (savedStoreMain) storeMainCategories = JSON.parse(savedStoreMain);
+        let savedStoreSub = localStorage.getItem('stock_storeSubCat');
+        if (savedStoreSub) storeSubCategories = JSON.parse(savedStoreSub);
         let savedRMTrans = localStorage.getItem('stock_rmTransactions');
         if (savedRMTrans) rmTransactions = JSON.parse(savedRMTrans);
         let savedCompany = localStorage.getItem('stock_company');
@@ -300,6 +308,8 @@ function saveData() {
     localStorage.setItem('stock_subCat', JSON.stringify(subCategories || []));
     localStorage.setItem('stock_rawMaterials', JSON.stringify(rawMaterials || []));
     localStorage.setItem('stock_storeItems', JSON.stringify(storeItems || []));
+    localStorage.setItem('stock_storeMainCat', JSON.stringify(storeMainCategories || []));
+    localStorage.setItem('stock_storeSubCat', JSON.stringify(storeSubCategories || []));
     localStorage.setItem('stock_rmTransactions', JSON.stringify(rmTransactions || []));
     localStorage.setItem('stock_usedOrders', JSON.stringify(Array.from(usedCompletedOrders || [])));
     localStorage.setItem('stock_company', JSON.stringify(companySettings));
@@ -508,14 +518,353 @@ function switchModule(module) {
     }
 }
 
-// Store Module Refresh Placeholders
+// Store Module Hierarchy Logic
+function refreshStoreInventory() {
+    let container = document.getElementById('storeInventoryList');
+    if (!container) return;
+    let html = '';
+    
+    if (storeMainCategories.length === 0) {
+        html = '<div style="text-align:center; padding:2rem; color:var(--gray-500);">No categories added yet. Click "Add Main Category" to start.</div>';
+        container.innerHTML = html;
+        return;
+    }
+
+    // Sort categories
+    storeMainCategories.sort((a,b) => a.code.localeCompare(b.code)).forEach(main => {
+        let mainSubs = storeSubCategories.filter(s => s.mainId == main.id);
+        let mainItems = storeItems.filter(i => {
+            let sub = storeSubCategories.find(s => s.id == i.subId);
+            return sub && sub.mainId == main.id;
+        });
+        
+        let subHtml = '';
+        mainSubs.sort((a,b) => a.code.localeCompare(b.code)).forEach(sub => {
+            let sItems = storeItems.filter(i => i.subId == sub.id);
+            
+            let itemRows = '';
+            sItems.sort((a,b) => a.code.localeCompare(b.code)).forEach(item => {
+                itemRows += `
+                    <div class="item-row" style="background:white; margin-bottom:0.5rem; border-radius:0.5rem; padding:0.8rem; border:1px solid var(--gray-200);">
+                        <div class="item-info">
+                            <span class="item-name-badge" style="background:var(--sky-600); border-radius:4px;">${item.code}</span>
+                            <span style="font-weight:600; font-size:1.1rem; margin-left:0.5rem;">${item.name}</span>
+                            <div style="display:flex; gap:1rem; margin-top:0.4rem; font-size:0.85rem;">
+                                <span title="Current Stock">📦 <b>${item.stock}</b></span>
+                                <span title="Opening Stock">🏁 <b>${item.opening_stock}</b></span>
+                                <span title="Low Stock Limit">⚠️ <b>${item.low_stock_limit}</b></span>
+                            </div>
+                            ${item.notes ? `<div style="font-size:0.8rem; color:var(--gray-500); margin-top:0.3rem;">📝 ${item.notes}</div>` : ''}
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-icon btn-icon-sm" onclick="editStoreItem(${item.id})" title="Edit Item">✏️</button>
+                            <button class="btn-icon btn-icon-sm" onclick="deleteStoreItem(${item.id})" title="Delete Item">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            subHtml += `
+                <div class="sub-category" id="storeSub_${sub.id}" style="margin-left: 2rem; border-left: 2px solid var(--sky-200); padding-left: 1rem;">
+                    <div class="sub-header" onclick="toggleStoreSubCategory(this)" style="display:flex; justify-content:space-between; align-items:center; padding:0.8rem; cursor:pointer; background:var(--gray-50); border-radius:8px; margin-bottom:0.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.8rem;">
+                            <span style="background:var(--sky-400); color:white; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.8rem; font-weight:bold;">${sub.code}</span>
+                            <span class="sub-name" style="font-weight:600;">📂 ${sub.name}</span>
+                            <span class="sub-stats" style="background:white; padding:0.1rem 0.6rem; border-radius:10px; font-size:0.75rem;">${sItems.length} Items</span>
+                        </div>
+                        <div class="sub-actions">
+                            <button class="btn-icon btn-icon-sm" onclick="editStoreSub(${sub.id}); event.stopPropagation();" title="Edit Sub">✏️</button>
+                            <button class="btn-icon btn-icon-sm" onclick="deleteStoreSub(${sub.id}); event.stopPropagation();" title="Delete Sub">🗑️</button>
+                            <button class="add-btn add-btn-sm" onclick="showAddStoreItemFor(${sub.id}); event.stopPropagation();">+ Add Item</button>
+                        </div>
+                    </div>
+                    <div class="items-container" style="display:block;">
+                        ${itemRows || '<div style="color: var(--gray-500); text-align: center; padding: 1rem; border:1px dashed var(--gray-300); border-radius:8px;">No items in this sub-category</div>'}
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+            <div class="main-category" id="storeMain_${main.id}" style="border: 1px solid var(--gray-200); border-radius: 12px; margin-bottom: 1rem; overflow: hidden;">
+                <div class="category-header" onclick="toggleStoreMainCategory(this)" style="background:var(--gray-100); padding:1rem 1.5rem; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+                    <div class="category-title" style="display:flex; align-items:center; gap:1rem;">
+                        <span style="background:var(--sky-600); color:white; padding:0.3rem 0.7rem; border-radius:6px; font-weight:bold;">${main.code}</span>
+                        <span class="category-name" style="font-size:1.2rem; font-weight:700; color:var(--sky-700);">🏢 ${main.name}</span>
+                        <span class="category-stats" style="background:white; padding:0.2rem 0.8rem; border-radius:12px; font-size:0.8rem; font-weight:600;">${mainItems.length} Total Items</span>
+                    </div>
+                    <div class="category-actions">
+                        <button class="btn-icon" onclick="editStoreMain(${main.id}); event.stopPropagation();" title="Edit Main">✏️</button>
+                        <button class="btn-icon" onclick="deleteStoreMain(${main.id}); event.stopPropagation();" title="Delete Main">🗑️</button>
+                        <button class="add-btn" onclick="showAddStoreSubFor(${main.id}); event.stopPropagation();">+ Add Sub</button>
+                    </div>
+                </div>
+                <div class="sub-category-container" style="padding:1rem; display:block;">
+                    ${subHtml || '<div style="color: var(--gray-500); text-align: center; padding: 2rem;">No sub-categories added yet.</div>'}
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function toggleStoreMainCategory(header) {
+    let container = header.parentElement.querySelector('.sub-category-container');
+    if (container) container.style.display = container.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleStoreSubCategory(header) {
+    let container = header.parentElement.querySelector('.items-container');
+    if (container) container.style.display = container.style.display === 'none' ? 'block' : 'none';
+}
+
+// Store CRUD Functions
+async function saveStoreMain() {
+    let id = document.getElementById('editStoreMainId').value;
+    let name = document.getElementById('storeMainName').value.trim();
+    let code = document.getElementById('storeMainCode').value.trim();
+
+    if (!name || !code) { alert('Please enter both Name and Code'); return; }
+    
+    // Duplicate Check
+    if (storeMainCategories.some(c => c.code === code && c.id != id)) {
+        alert('Duplicate Code! This code is already assigned to another Main Category.');
+        return;
+    }
+
+    let data = { name, code };
+    if (id) data.id = parseInt(id);
+
+    try {
+        let res = await fetch('api/sync.php?action=save_store_main', {
+            method: 'POST',
+            body: JSON.stringify({ main: data })
+        });
+        let result = await res.json();
+        if (result.status === 'success') {
+            data.id = result.id;
+            if (id) {
+                let idx = storeMainCategories.findIndex(c => c.id == id);
+                storeMainCategories[idx] = data;
+            } else {
+                storeMainCategories.push(data);
+            }
+            saveData(); refreshStoreInventory(); closeStoreMainModal();
+        } else { alert(result.message); }
+    } catch(e) { console.error(e); }
+}
+
+async function deleteStoreMain(id) {
+    if (!confirm('Are you sure? This will delete the main category.')) return;
+    try {
+        let res = await fetch('api/sync.php?action=delete_store_main', {
+            method: 'POST',
+            body: JSON.stringify({ id })
+        });
+        let result = await res.json();
+        if (result.status === 'success') {
+            storeMainCategories = storeMainCategories.filter(c => c.id != id);
+            saveData(); refreshStoreInventory();
+        } else { alert(result.message); }
+    } catch(e) { console.error(e); }
+}
+
+async function saveStoreSub() {
+    let id = document.getElementById('editStoreSubId').value;
+    let mainId = document.getElementById('storeSubMainId').value;
+    let name = document.getElementById('storeSubName').value.trim();
+    let code = document.getElementById('storeSubCode').value.trim();
+
+    if (!name || !code) { alert('Please enter Name'); return; }
+
+    let data = { mainId, name, code };
+    if (id) data.id = parseInt(id);
+
+    try {
+        let res = await fetch('api/sync.php?action=save_store_sub', {
+            method: 'POST',
+            body: JSON.stringify({ sub: data })
+        });
+        let result = await res.json();
+        if (result.status === 'success') {
+            data.id = result.id;
+            if (id) {
+                let idx = storeSubCategories.findIndex(c => c.id == id);
+                storeSubCategories[idx] = data;
+            } else {
+                storeSubCategories.push(data);
+            }
+            saveData(); refreshStoreInventory(); closeStoreSubModal();
+        } else { alert(result.message); }
+    } catch(e) { console.error(e); }
+}
+
+async function deleteStoreSub(id) {
+    if (!confirm('Are you sure?')) return;
+    try {
+        let res = await fetch('api/sync.php?action=delete_store_sub', {
+            method: 'POST',
+            body: JSON.stringify({ id })
+        });
+        let result = await res.json();
+        if (result.status === 'success') {
+            storeSubCategories = storeSubCategories.filter(c => c.id != id);
+            saveData(); refreshStoreInventory();
+        } else { alert(result.message); }
+    } catch(e) { console.error(e); }
+}
+
+async function saveStoreItem() {
+    let id = document.getElementById('editStoreItemId').value;
+    let subId = document.getElementById('storeItemSubId').value;
+    let name = document.getElementById('storeItemName').value.trim();
+    let code = document.getElementById('storeItemCode').value.trim();
+    let opening_stock = parseInt(document.getElementById('storeItemOpeningStock').value) || 0;
+    let low_stock_limit = parseInt(document.getElementById('storeItemLowStock').value) || 10;
+    let notes = document.getElementById('storeItemNotes').value.trim();
+
+    if (!name || !code) { alert('Please enter Name'); return; }
+
+    let data = { 
+        subId, name, code, opening_stock, 
+        stock: id ? storeItems.find(i => i.id == id).stock : opening_stock, 
+        low_stock_limit, notes 
+    };
+    if (id) data.id = parseInt(id);
+
+    try {
+        let res = await fetch('api/sync.php?action=save_store_item', {
+            method: 'POST',
+            body: JSON.stringify({ item: data })
+        });
+        let result = await res.json();
+        if (result.status === 'success') {
+            data.id = result.id;
+            if (id) {
+                let idx = storeItems.findIndex(i => i.id == id);
+                storeItems[idx] = data;
+            } else {
+                storeItems.push(data);
+            }
+            saveData(); refreshStoreInventory(); closeStoreItemModal();
+        } else { alert(result.message); }
+    } catch(e) { console.error(e); }
+}
+
+async function deleteStoreItem(id) {
+    if (!confirm('Are you sure?')) return;
+    try {
+        let res = await fetch('api/sync.php?action=delete_store_item', {
+            method: 'POST',
+            body: JSON.stringify({ id })
+        });
+        let result = await res.json();
+        if (result.status === 'success') {
+            storeItems = storeItems.filter(i => i.id != id);
+            saveData(); refreshStoreInventory();
+        } else { alert(result.message); }
+    } catch(e) { console.error(e); }
+}
+
+// Modal Helpers
+function showAddStoreMain() {
+    document.getElementById('storeMainModalTitle').textContent = '➕ Add Main Category';
+    document.getElementById('editStoreMainId').value = '';
+    document.getElementById('storeMainName').value = '';
+    document.getElementById('storeMainCode').value = '';
+    document.getElementById('storeMainModal').style.display = 'block';
+}
+
+function editStoreMain(id) {
+    let main = storeMainCategories.find(c => c.id == id);
+    if (!main) return;
+    document.getElementById('storeMainModalTitle').textContent = '✏️ Edit Main Category';
+    document.getElementById('editStoreMainId').value = main.id;
+    document.getElementById('storeMainName').value = main.name;
+    document.getElementById('storeMainCode').value = main.code;
+    document.getElementById('storeMainModal').style.display = 'block';
+}
+
+function closeStoreMainModal() { document.getElementById('storeMainModal').style.display = 'none'; }
+
+function showAddStoreSubFor(mainId) {
+    let main = storeMainCategories.find(c => c.id == mainId);
+    if (!main) return;
+    document.getElementById('storeSubModalTitle').textContent = `➕ Add Sub Category under ${main.name}`;
+    document.getElementById('editStoreSubId').value = '';
+    document.getElementById('storeSubMainId').value = mainId;
+    document.getElementById('storeSubName').value = '';
+    // Auto Code with Gap Filling
+    let existingCodes = storeSubCategories.filter(s => s.mainId == mainId).map(s => s.code);
+    document.getElementById('storeSubCode').value = getNextStoreSeqCode(main.code, existingCodes, 3);
+    document.getElementById('storeSubModal').style.display = 'block';
+}
+
+function editStoreSub(id) {
+    let sub = storeSubCategories.find(s => s.id == id);
+    if (!sub) return;
+    document.getElementById('storeSubModalTitle').textContent = '✏️ Edit Sub Category';
+    document.getElementById('editStoreSubId').value = sub.id;
+    document.getElementById('storeSubMainId').value = sub.mainId;
+    document.getElementById('storeSubName').value = sub.name;
+    document.getElementById('storeSubCode').value = sub.code;
+    document.getElementById('storeSubModal').style.display = 'block';
+}
+
+function closeStoreSubModal() { document.getElementById('storeSubModal').style.display = 'none'; }
+
+function showAddStoreItemFor(subId) {
+    let sub = storeSubCategories.find(s => s.id == subId);
+    if (!sub) return;
+    document.getElementById('storeItemModalTitle').textContent = `➕ Add Item under ${sub.name}`;
+    document.getElementById('editStoreItemId').value = '';
+    document.getElementById('storeItemSubId').value = subId;
+    document.getElementById('storeItemName').value = '';
+    document.getElementById('storeItemOpeningStock').value = '0';
+    document.getElementById('storeItemLowStock').value = '10';
+    document.getElementById('storeItemNotes').value = '';
+    // Auto Code with Gap Filling
+    let existingCodes = storeItems.filter(i => i.subId == subId).map(i => i.code);
+    document.getElementById('storeItemCode').value = getNextStoreSeqCode(sub.code, existingCodes, 4);
+    document.getElementById('storeItemModal').style.display = 'block';
+}
+
+function editStoreItem(id) {
+    let item = storeItems.find(i => i.id == id);
+    if (!item) return;
+    document.getElementById('storeItemModalTitle').textContent = '✏️ Edit Item';
+    document.getElementById('editStoreItemId').value = item.id;
+    document.getElementById('storeItemSubId').value = item.subId;
+    document.getElementById('storeItemName').value = item.name;
+    document.getElementById('storeItemCode').value = item.code;
+    document.getElementById('storeItemOpeningStock').value = item.opening_stock;
+    document.getElementById('storeItemLowStock').value = item.low_stock_limit;
+    document.getElementById('storeItemNotes').value = item.notes || '';
+    document.getElementById('storeItemModal').style.display = 'block';
+}
+
+function closeStoreItemModal() { document.getElementById('storeItemModal').style.display = 'none'; }
+
+// Gap Filling Logic
+function getNextStoreSeqCode(prefix, existingCodes, padding) {
+    let indices = existingCodes
+        .map(c => parseInt(c.replace(prefix, '')))
+        .filter(n => !isNaN(n))
+        .sort((a, b) => a - b);
+    
+    let nextIndex = 1;
+    for (let i = 0; i < indices.length; i++) {
+        if (indices[i] === nextIndex) {
+            nextIndex++;
+        } else if (indices[i] > nextIndex) {
+            break;
+        }
+    }
+    return prefix + String(nextIndex).padStart(padding, '0');
+}
+
+
 function refreshStoreDashboard() { console.log('Store: Dashboard Refresh placeholder'); }
-function refreshStoreInwards() { console.log('Store: Inwards Refresh placeholder'); }
-function refreshStoreOutwards() { console.log('Store: Outwards Refresh placeholder'); }
-function refreshStoreInventory() { console.log('Store: Inventory Refresh placeholder'); }
-function refreshStoreItems() { console.log('Store: Item Records Refresh placeholder'); }
-function refreshStoreAudit() { console.log('Store: Audit Refresh placeholder'); }
-function refreshStoreReports() { console.log('Store: Reports Refresh placeholder'); }
 
 function togglePassword(fieldId) {
     let password = document.getElementById(fieldId);
