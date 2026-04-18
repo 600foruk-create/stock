@@ -4666,26 +4666,38 @@ function refreshTransactions() {
     const fromDate = document.getElementById('transDateFrom')?.value;
     const toDate = document.getElementById('transDateTo')?.value;
 
-    // Calculate Today's Production Total (KG)
-    const todayStr = new Date().toDateString();
-    let dailyProdOverallKg = 0;
-    
+    // Calculate Last Recorded Production (KG) - find the most recent day with production
+    let maxDate = null;
     transactions.forEach(t => {
-        if (t.type === 'IN') { 
-            const tDate = new Date(t.date);
-            if (!isNaN(tDate.getTime()) && tDate.toDateString() === todayStr) {
-                // Fix: Use itemWeight (from SQL JOIN) instead of weight
-                dailyProdOverallKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.itemWeight) || 0);
+        if (t.type === 'IN') {
+            const d = new Date(t.date);
+            if (!isNaN(d.getTime())) {
+                if (!maxDate || d > maxDate) maxDate = d;
             }
         }
     });
 
+    let dailyProdOverallKg = 0;
     const lastProdLabel = document.getElementById('lastProdDateLabel');
-    if (lastProdLabel) {
-        const today = new Date();
-        const day = String(today.getDate()).padStart(2, '0');
-        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        lastProdLabel.innerText = `${day}-${monthNames[today.getMonth()]}-${today.getFullYear()}`;
+
+    if (maxDate) {
+        const targetDateStr = maxDate.toDateString();
+        transactions.forEach(t => {
+            if (t.type === 'IN') {
+                const tDate = new Date(t.date);
+                if (!isNaN(tDate.getTime()) && tDate.toDateString() === targetDateStr) {
+                    dailyProdOverallKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.itemWeight) || 0);
+                }
+            }
+        });
+
+        if (lastProdLabel) {
+            const day = String(maxDate.getDate()).padStart(2, '0');
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            lastProdLabel.innerText = `${day}-${monthNames[maxDate.getMonth()]}-${maxDate.getFullYear()}`;
+        }
+    } else {
+        if (lastProdLabel) lastProdLabel.innerText = "--";
     }
     
     const dailyProdEl = document.getElementById('dailyProductionWeight');
