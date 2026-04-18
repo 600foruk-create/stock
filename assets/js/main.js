@@ -18,6 +18,10 @@ let rmUnits = [];
 let rmFormulas = [];
 let rmFormulaItems = [];
 let storeItems = [];
+let storeMainCategories = [];
+let storeSubCategories = [];
+let storeTransactions = [];
+let storeExpandedIds = new Set();
 let rmTransactions = [];
 let rmConsumptionLogs = [];
 let rmExpandedIds = new Set();
@@ -82,6 +86,9 @@ async function initApp() {
             rmFormulas = d.rmFormulas || [];
             rmFormulaItems = d.rmFormulaItems || [];
             storeItems = d.storeItems || [];
+            storeMainCategories = d.storeMainCategories || [];
+            storeSubCategories = d.storeSubCategories || [];
+            storeTransactions = d.storeTransactions || [];
             rmTransactions = d.rmTransactions || [];
             archivedReports = d.archivedReports || [];
             rmConsumptionLogs = d.rmConsumptionLogs || [];
@@ -6999,4 +7006,505 @@ function verifyAdminAction() {
 function printRMAudit() {
     window.print();
 }
+
+
+// ==================== STORE MODULE LOGIC ====================
+
+// --- Code Generation ---
+function generateStoreSubCategoryCode(categoryCode) {
+    let existingSubs = storeSubCategories.filter(s => s.code.startsWith(categoryCode));
+    let maxNum = 0;
+    existingSubs.forEach(sub => {
+        let suffix = sub.code.substring(categoryCode.length);
+        if (suffix && /^[0-9]+$/.test(suffix)) {
+            let num = parseInt(suffix, 10);
+            if (!isNaN(num)) maxNum = Math.max(maxNum, num);
+        }
+    });
+    return categoryCode + (maxNum + 1).toString().padStart(3, '0');
+}
+
+function generateStoreItemCode(subCategoryCode) {
+    let existingItems = storeItems.filter(i => i.code.startsWith(subCategoryCode));
+    let maxSeq = 0;
+    existingItems.forEach(it => {
+        let suffix = it.code.substring(subCategoryCode.length);
+        if (suffix && /^[0-9]+$/.test(suffix)) {
+            let num = parseInt(suffix, 10);
+            if (!isNaN(num)) maxSeq = Math.max(maxSeq, num);
+        }
+    });
+    return subCategoryCode + (maxSeq + 1).toString().padStart(4, '0');
+}
+
+// --- Data Persistence ---
+async function saveStoreToDB(action, payload) {
+    try {
+        const response = await fetch(pi/sync.php?action= + action, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            await initApp(); // Refresh local data
+            return result;
+        } else {
+            alert('Error: ' + result.message);
+            return null;
+        }
+    } catch (e) {
+        console.error('Store Save Error:', e);
+        return null;
+    }
+}
+
+// --- Category Management ---
+async function addStoreCategory() {
+    const name = document.getElementById('storeCatName').value.trim();
+    const code = document.getElementById('storeCatCodeManual').value.trim().toUpperCase();
+    if (!name || !code) return alert('Name and Category Code are required.');
+    
+    if (storeMainCategories.some(c => c.code === code)) return alert('Category code already exists!');
+    
+    const res = await saveStoreToDB('save_store_category', { type: 'main', category: { name, code } });
+    if (res) {
+        document.getElementById('storeCatName').value = '';
+        document.getElementById('storeCatCodeManual').value = '';
+        refreshStoreInventory();
+    }
+}
+
+async function addStoreSubCategory(mainId, mainCode, subName) {
+    if (!subName) return alert('Enter sub-category name');
+    const subCode = generateStoreSubCategoryCode(mainCode);
+    const res = await saveStoreToDB('save_store_category', { type: 'sub', category: { main_id: mainId, name: subName, code: subCode } });
+    if (res) refreshStoreInventory();
+}
+
+async function deleteStoreCategory(id, type) {
+    if (!confirm('Are you sure you want to delete this category? All hierarchy below it will be affected.')) return;
+    const res = await saveStoreToDB('delete_store_category', { id, type });
+    if (res) refreshStoreInventory();
+}
+
+// --- Item Management ---
+async function addStoreItem(subId, subCode, itemName, openingStock, threshold) {
+    if (!itemName) return alert('Item name is required');
+    const itemCode = generateStoreItemCode(subCode);
+    const res = await saveStoreToDB('save_store_item', { item: { sub_id: subId, name: itemName, code: itemCode, opening_stock: openingStock, stock: openingStock, low_stock_threshold: threshold } });
+    if (res) refreshStoreInventory();
+}
+
+async function deleteStoreItem(id) {
+    if (!confirm('Delete this item?')) return;
+    const res = await saveStoreToDB('delete_store_item', { id });
+    if (res) refreshStoreInventory();
+}
+
+// --- Transaction Functions ---
+async function saveStoreInward() {
+    const itemId = document.getElementById('storeInwardItemSelect').value;
+    const qty = parseFloat(document.getElementById('storeInwardQty').value);
+    const source = document.getElementById('storeInwardSource').value;
+    if (!itemId || isNaN(qty) || qty <= 0) return alert('Valid item and quantity required');
+    
+    const res = await saveStoreToDB('save_store_transaction', { 
+        transaction: { item_id: itemId, quantity: qty, type: 'INWARD', ref: source, source_or_person: source } 
+    });
+    if (res) {
+        alert('Stock received successfully');
+        document.getElementById('storeInwardQty').value = 1;
+        document.getElementById('storeInwardSource').value = '';
+    }
+}
+
+async function saveStoreOutward() {
+    const itemId = document.getElementById('storeOutwardItemSelect').value;
+    const qty = parseFloat(document.getElementById('storeOutwardQty').value);
+    const to = document.getElementById('storeIssuedTo').value;
+    const reason = document.getElementById('storeIssueReason').value;
+    if (!itemId || isNaN(qty) || qty <= 0 || !to) return alert('All fields are required');
+    
+    const item = storeItems.find(i => i.id == itemId);
+    if (item && item.stock < qty) return alert('Insufficient stock! Current balance: ' + item.stock);
+
+    const res = await saveStoreToDB('save_store_transaction', { 
+        transaction: { item_id: itemId, quantity: qty, type: 'OUTWARD', ref: to, source_or_person: to, notes: reason } 
+    });
+    if (res) {
+        alert('Item issued successfully');
+        document.getElementById('storeOutwardQty').value = '';
+        document.getElementById('storeIssuedTo').value = '';
+        document.getElementById('storeIssueReason').value = '';
+    }
+}
+
+// --- Refresh Functions (UI) ---
+
+function refreshStoreDashboard() {
+    const catCount = storeMainCategories.length;
+    const itemCount = storeItems.length;
+    const lowStockCount = storeItems.filter(i => parseFloat(i.stock) <= parseFloat(i.low_stock_threshold)).length;
+    
+    if (document.getElementById('storeDashCatCount')) document.getElementById('storeDashCatCount').innerText = catCount;
+    if (document.getElementById('storeDashItemCount')) document.getElementById('storeDashItemCount').innerText = itemCount;
+    if (document.getElementById('storeDashLowStock')) document.getElementById('storeDashLowStock').innerText = lowStockCount;
+    
+    const activityHtml = storeTransactions.slice(0, 10).map(t => `
+        <div style="padding: 0.8rem; border-bottom: 1px solid var(--gray-100); font-size: 0.9rem; display: flex; justify-content: space-between;">
+            <span><strong>\</strong>: \ \ (\)</span>
+            <span style="color: var(--gray-400);">By: \</span>
+        </div>
+    `).join('') || '<p style="text-align: center; color: var(--gray-400); padding: 2rem;">No recent activities.</p>';
+    
+    if (document.getElementById('storeRecentActivityLog')) document.getElementById('storeRecentActivityLog').innerHTML = activityHtml;
+}
+
+function refreshStoreInwards() {
+    const select = document.getElementById('storeInwardItemSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Search Item --</option>' + 
+        storeItems.map(i => <option value="\">\ - \ (Qty: \)</option>).join('');
+}
+
+function refreshStoreOutwards() {
+    const select = document.getElementById('storeOutwardItemSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Search Item --</option>' + 
+        storeItems.map(i => <option value="\">\ - \ (Qty: \)</option>).join('');
+}
+
+function refreshStoreInventory() {
+    const container = document.getElementById('storeCategoriesContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (storeMainCategories.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--gray-400);">No categories created yet. Add your first category above.</div>';
+        return;
+    }
+
+    storeMainCategories.forEach(cat => {
+        const isCollapsed = !storeExpandedIds.has('cat_' + cat.id);
+        const card = document.createElement('div');
+        card.style.marginBottom = '1.5rem';
+        card.style.border = '1px solid var(--gray-200)';
+        card.style.borderRadius = '16px';
+        card.style.overflow = 'hidden';
+        
+        const header = document.createElement('div');
+        header.style.padding = '1rem 1.5rem';
+        header.style.background = 'var(--gray-50)';
+        header.style.display = 'flex';
+        header.style.justifyContent = 'space-between';
+        header.style.alignItems = 'center';
+        header.style.cursor = 'pointer';
+        header.innerHTML = \
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <i class="fas \" style="color: var(--gray-400); width: 20px;"></i>
+                <h4 style="margin:0; font-weight: 700; color: var(--gray-800);">?? \ <span style="font-weight: 400; color: var(--gray-400); margin-left: 0.5rem;">[\]</span></h4>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteStoreCategory(\, 'main')">
+                <i class="fas fa-trash"></i>
+            </button>
+        \;
+        header.onclick = () => {
+            if (storeExpandedIds.has('cat_' + cat.id)) storeExpandedIds.delete('cat_' + cat.id);
+            else storeExpandedIds.add('cat_' + cat.id);
+            refreshStoreInventory();
+        };
+        card.appendChild(header);
+
+        if (!isCollapsed) {
+            const body = document.createElement('div');
+            body.style.padding = '1.5rem';
+            
+            // Sub-categories list
+            const subs = storeSubCategories.filter(s => s.main_id == cat.id);
+            subs.forEach(sub => {
+                const subIsCollapsed = !storeExpandedIds.has('sub_' + sub.id);
+                const subDiv = document.createElement('div');
+                subDiv.style.marginBottom = '1rem';
+                subDiv.style.border = '1px solid var(--sky-100)';
+                subDiv.style.background = 'white';
+                subDiv.style.borderRadius = '12px';
+                
+                const subHeader = document.createElement('div');
+                subHeader.style.padding = '0.8rem 1.2rem';
+                subHeader.style.display = 'flex';
+                subHeader.style.justifyContent = 'space-between';
+                subHeader.style.alignItems = 'center';
+                subHeader.style.cursor = 'pointer';
+                subHeader.style.background = 'var(--sky-50)';
+                subHeader.innerHTML = \
+                    <div style="display: flex; align-items: center; gap: 0.8rem;">
+                         <i class="fas \" style="color: var(--sky-400);"></i>
+                         <span style="font-weight: 600; color: var(--sky-700);">?? \ <small style="color: var(--gray-400); margin-left: 5px;">(\)</small></span>
+                    </div>
+                    <button class="btn btn-sm" style="color: #ef4444; border: none; background: transparent;" onclick="event.stopPropagation(); deleteStoreCategory(\, 'sub')">
+                         <i class="fas fa-times-circle"></i>
+                    </button>
+                \;
+                subHeader.onclick = () => {
+                    if (storeExpandedIds.has('sub_' + sub.id)) storeExpandedIds.delete('sub_' + sub.id);
+                    else storeExpandedIds.add('sub_' + sub.id);
+                    refreshStoreInventory();
+                };
+                subDiv.appendChild(subHeader);
+
+                if (!subIsCollapsed) {
+                    const subBody = document.createElement('div');
+                    subBody.style.padding = '1rem';
+                    
+                    const itms = storeItems.filter(i => i.sub_id == sub.id);
+                    if (itms.length > 0) {
+                        let tableHtml = \
+                            <table class="table table-sm" style="font-size: 0.85rem; margin-bottom: 1rem;">
+                                <thead style="background: var(--gray-50);">
+                                    <tr><th>Code</th><th>Name</th><th>Stock</th><th>Threshold</th><th>Action</th></tr>
+                                </thead>
+                                <tbody>
+                        \;
+                        itms.forEach(itm => {
+                            tableHtml += \
+                                <tr>
+                                    <td style="font-family: monospace;">\</td>
+                                    <td style="font-weight: 500;">\</td>
+                                    <td><strong>\</strong></td>
+                                    <td style="color: var(--gray-400);">\</td>
+                                    <td><button class="btn btn-sm text-danger" onclick="deleteStoreItem(\)"><i class="fas fa-trash-alt"></i></button></td>
+                                </tr>
+                            \;
+                        });
+                        tableHtml += '</tbody></table>';
+                        subBody.innerHTML = tableHtml;
+                    } else {
+                        subBody.innerHTML = '<p style="color: var(--gray-400); font-style: italic; font-size: 0.85rem;">No items yet.</p>';
+                    }
+                    
+                    // Add Item Form
+                    const addItemDiv = document.createElement('div');
+                    addItemDiv.style.background = '#fcfdfd';
+                    addItemDiv.style.border = '1px dashed var(--gray-200)';
+                    addItemDiv.style.padding = '0.8rem';
+                    addItemDiv.style.borderRadius = '8px';
+                    addItemDiv.style.display = 'flex';
+                    addItemDiv.style.gap = '0.5rem';
+                    addItemDiv.style.flexWrap = 'wrap';
+                    addItemDiv.innerHTML = \
+                        <input type="text" placeholder="New Item Name" class="form-control form-control-sm" style="flex:1; min-width: 150px;">
+                        <input type="number" placeholder="Op. Stock" class="form-control form-control-sm" style="width: 80px;" value="0">
+                        <input type="number" placeholder="Low Alert" class="form-control form-control-sm" style="width: 80px;" value="5">
+                        <button class="btn btn-sm btn-sky" onclick="const p=this.parentElement; addStoreItem(\, '\', p.children[0].value, p.children[1].value, p.children[2].value)">Add</button>
+                    \;
+                    subBody.appendChild(addItemDiv);
+                    subDiv.appendChild(subBody);
+                }
+                body.appendChild(subDiv);
+            });
+
+            // Add Sub-category form
+            const addSubForm = document.createElement('div');
+            addSubForm.style.marginTop = '1rem';
+            addSubForm.style.display = 'flex';
+            addSubForm.style.gap = '0.8rem';
+            addSubForm.innerHTML = \
+                <input type="text" id="newSubName_\" class="form-control" placeholder="New Sub-Category Name" style="flex:1;">
+                <button class="btn btn-outline-primary" onclick="addStoreSubCategory(\, '\', document.getElementById('newSubName_\').value)">
+                     <i class="fas fa-plus"></i> Add Sub
+                </button>
+            \;
+            body.appendChild(addSubForm);
+            card.appendChild(body);
+        }
+        container.appendChild(card);
+    });
+}
+
+function refreshStoreItemRecords() {
+    const container = document.getElementById('storeItemRecordsContainer');
+    if (!container) return;
+    const filter = document.getElementById('storeItemsSearch').value.toLowerCase();
+    
+    let html = \
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Item Code</th>
+                    <th>Item Name</th>
+                    <th>Stock Balance</th>
+                    <th>Threshold</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+    \;
+    
+    const filteredItems = storeItems.filter(i => 
+        i.name.toLowerCase().includes(filter) || 
+        i.code.toLowerCase().includes(filter)
+    );
+    
+    if (filteredItems.length === 0) {
+        html += '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--gray-400);">No matching items found.</td></tr>';
+    } else {
+        filteredItems.forEach(i => {
+            const isLow = parseFloat(i.stock) <= parseFloat(i.low_stock_threshold);
+            html += \
+                <tr>
+                    <td><strong>\</strong></td>
+                    <td>\</td>
+                    <td><span style="font-size: 1.1rem; font-weight: 700;">\</span></td>
+                    <td style="color: var(--gray-400);">\</td>
+                    <td>
+                        \
+                    </td>
+                </tr>
+            \;
+        });
+    }
+    
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function refreshStoreAuditTable() {
+    const container = document.getElementById('storeAuditItemsList');
+    if (!container) return;
+    
+    let html = \
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Item Code</th>
+                    <th>Item Name</th>
+                    <th>System Stock</th>
+                    <th style="width: 200px;">Physical Count</th>
+                </tr>
+            </thead>
+            <tbody>
+    \;
+    
+    storeItems.forEach(i => {
+        html += \
+            <tr>
+                <td>\</td>
+                <td>\</td>
+                <td><strong>\</strong></td>
+                <td>
+                    <input type="number" class="form-control store-audit-input" 
+                           data-id="\" data-systock="\" 
+                           placeholder="Enter count" step="0.01">
+                </td>
+            </tr>
+        \;
+    });
+    
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+async function saveStoreAuditReport() {
+    const inputs = document.querySelectorAll('.store-audit-input');
+    const reportData = [];
+    let filledCount = 0;
+    
+    inputs.forEach(inp => {
+        if (inp.value) {
+            filledCount++;
+            const systock = parseFloat(inp.dataset.systock);
+            const physical = parseFloat(inp.value);
+            const diff = physical - systock;
+            const itemId = inp.dataset.id;
+            const item = storeItems.find(it => it.id == itemId);
+            reportData.push({
+                itemId, itemCode: item.code, itemName: item.name,
+                systemStock: systock, physicalStock: physical, diff
+            });
+        }
+    });
+    
+    if (filledCount === 0) return alert('Please enter at least one physical count.');
+    
+    const payload = {
+        title: 'Store Physical Audit - ' + new Date().toLocaleDateString(),
+        report_type: 'STORE',
+        data: reportData
+    };
+    
+    const res = await saveStoreToDB('archive_report', payload);
+    if (res) {
+        alert('Audit report archived successfully!');
+        refreshStoreAuditTable();
+    }
+}
+
+function refreshStoreReports() {
+    const container = document.getElementById('storeSavedReportsList');
+    if (!container) return;
+    
+    const storeReports = archivedReports.filter(r => r.report_type === 'STORE');
+    if (storeReports.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--gray-400); padding: 3rem;">No store audit reports found.</p>';
+        return;
+    }
+    
+    let html = '';
+    storeReports.forEach(r => {
+        html += \
+            <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h5 style="margin:0; font-weight: 700; color: var(--gray-800);">\</h5>
+                    <small style="color: var(--gray-400);">Generated on: \</small>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewArchivedReport(\)">?? View</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteArchivedReport(\)"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        \;
+    });
+    container.innerHTML = html;
+}
+
+function exportStoreReportsToExcel() {
+    const storeReports = archivedReports.filter(r => r.report_type === 'STORE');
+    const blob = new Blob([JSON.stringify(storeReports, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Store_Audit_Reports.json';
+    a.click();
+}
+
+async function printStoreLatestReport() {
+    const storeReports = archivedReports.filter(r => r.report_type === 'STORE');
+    if (storeReports.length === 0) return alert('No reports found');
+    
+    const latest = storeReports[0];
+    const res = await fetch('api/sync.php?action=get_archived_report&id=' + latest.id);
+    const data = await res.json();
+    if (data.status === 'success') {
+        const report = JSON.parse(data.report.data);
+        let printHtml = '<h2>' + latest.title + '</h2>' + 
+            '<table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse;">' +
+            '<thead><tr><th>Code</th><th>Name</th><th>System</th><th>Physical</th><th>Diff</th></tr></thead><tbody>';
+        
+        report.forEach(r => {
+            printHtml += \<tr><td>\</td><td>\</td><td>\</td><td>\</td><td>\</td></tr>\;
+        });
+        printHtml += '</tbody></table>';
+        
+        const win = window.open('', '_blank');
+        win.document.write(printHtml);
+        win.print();
+        win.close();
+    }
+}
+
+// Add event listener for live search
+document.addEventListener('input', (e) => {
+    if (e.target.id === 'storeItemsSearch') refreshStoreItemRecords();
+});
 

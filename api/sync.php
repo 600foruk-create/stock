@@ -66,15 +66,20 @@ try {
                     }
                 } catch(Exception $e) {}
 
-                // NEW: RM Consumption Logs for Daily History
-                $conn->exec("CREATE TABLE IF NOT EXISTS rm_consumption_logs (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    date DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    fg_weight DECIMAL(15,3) NOT NULL,
-                    rm_weight DECIMAL(15,3) NOT NULL,
-                    gap DECIMAL(15,3) NOT NULL,
-                    notes TEXT
-                )");
+                // NEW: Store Module Hierarchy Tables
+                $conn->exec("CREATE TABLE IF NOT EXISTS store_main_categories (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL UNIQUE)");
+                $conn->exec("CREATE TABLE IF NOT EXISTS store_sub_categories (id INT AUTO_INCREMENT PRIMARY KEY, main_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL UNIQUE, FOREIGN KEY (main_id) REFERENCES store_main_categories(id) ON DELETE CASCADE)");
+                $conn->exec("CREATE TABLE IF NOT EXISTS store_items (id INT AUTO_INCREMENT PRIMARY KEY, sub_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL UNIQUE, opening_stock DECIMAL(15,3) DEFAULT 0, stock DECIMAL(15,3) DEFAULT 0, low_stock_threshold DECIMAL(15,3) DEFAULT 0, FOREIGN KEY (sub_id) REFERENCES store_sub_categories(id) ON DELETE CASCADE)");
+                $conn->exec("CREATE TABLE IF NOT EXISTS store_transactions (id INT AUTO_INCREMENT PRIMARY KEY, date DATETIME DEFAULT CURRENT_TIMESTAMP, item_id INT NOT NULL, quantity DECIMAL(15,3) NOT NULL, type ENUM('INWARD', 'OUTWARD') NOT NULL, ref VARCHAR(255), notes TEXT, source_or_person VARCHAR(255), FOREIGN KEY (item_id) REFERENCES store_items(id) ON DELETE CASCADE)");
+
+                // AUTO-REPAIR: Store Items Schema for hierarchy
+                try {
+                    $stCols = $conn->query("SHOW COLUMNS FROM store_items")->fetchAll(PDO::FETCH_COLUMN);
+                    if (!in_array('sub_id', $stCols)) $conn->exec("ALTER TABLE store_items ADD COLUMN sub_id INT DEFAULT NULL");
+                    if (!in_array('code', $stCols)) $conn->exec("ALTER TABLE store_items ADD COLUMN code VARCHAR(50) DEFAULT NULL");
+                    if (!in_array('opening_stock', $stCols)) $conn->exec("ALTER TABLE store_items ADD COLUMN opening_stock DECIMAL(15,3) DEFAULT 0");
+                    if (!in_array('low_stock_threshold', $stCols)) $conn->exec("ALTER TABLE store_items ADD COLUMN low_stock_threshold DECIMAL(15,3) DEFAULT 0");
+                } catch(Exception $e) {}
 
             } catch (Exception $e) {}
 
@@ -97,10 +102,13 @@ try {
                 'rmFormulas' => $conn->query("SELECT * FROM rm_formulas")->fetchAll(PDO::FETCH_ASSOC),
                 'rmFormulaItems' => $conn->query("SELECT * FROM rm_formula_items")->fetchAll(PDO::FETCH_ASSOC),
                 'rmTransactions' => $conn->query("SELECT * FROM rm_transactions ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
-                'storeItems' => $conn->query("SELECT id, name, description, stock FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
+                'rmConsumptionLogs' => $conn->query("SELECT * FROM rm_consumption_logs ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
+                'storeMainCategories' => $conn->query("SELECT * FROM store_main_categories")->fetchAll(PDO::FETCH_ASSOC),
+                'storeSubCategories' => $conn->query("SELECT * FROM store_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
+                'storeItems' => $conn->query("SELECT i.*, sc.main_id AS mainId FROM store_items i LEFT JOIN store_sub_categories sc ON i.sub_id = sc.id")->fetchAll(PDO::FETCH_ASSOC),
+                'storeTransactions' => $conn->query("SELECT t.*, i.name AS itemName, i.code AS itemCode FROM store_transactions t LEFT JOIN store_items i ON t.item_id = i.id ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
                 'latestAudit' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id)")->fetchAll(PDO::FETCH_ASSOC),
                 'archivedReports' => $conn->query("SELECT id, date, title, report_type FROM audit_reports_archive ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
-                'rmConsumptionLogs' => $conn->query("SELECT * FROM rm_consumption_logs ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
             ];
             
             // Add order items to orders
@@ -532,14 +540,77 @@ try {
         elseif ($action === 'save_store_item') {
             $si = $input['item'];
             if (isset($si['id']) && !empty($si['id'])) {
-                $stmt = $conn->prepare("UPDATE store_items SET name = ?, description = ?, stock = ? WHERE id = ?");
-                $stmt->execute([$si['name'], $si['description'] ?? '', $si['stock'] ?? 0, $si['id']]);
+                $stmt = $conn->prepare("UPDATE store_items SET sub_id = ?, name = ?, code = ?, opening_stock = ?, stock = ?, low_stock_threshold = ? WHERE id = ?");
+                $stmt->execute([$si['sub_id'], $si['name'], $si['code'], $si['opening_stock'] ?? 0, $si['stock'] ?? 0, $si['low_stock_threshold'] ?? 0, $si['id']]);
             } else {
-                $stmt = $conn->prepare("INSERT INTO store_items (name, description, stock) VALUES (?, ?, ?)");
-                $stmt->execute([$si['name'], $si['description'] ?? '', $si['stock'] ?? 0]);
+                $stmt = $conn->prepare("INSERT INTO store_items (sub_id, name, code, opening_stock, stock, low_stock_threshold) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$si['sub_id'], $si['name'], $si['code'], $si['opening_stock'] ?? 0, $si['opening_stock'] ?? 0, $si['low_stock_threshold'] ?? 0]);
                 $si['id'] = $conn->lastInsertId();
             }
             echo json_encode(['status' => 'success', 'id' => $si['id']]);
+        }
+
+        elseif ($action === 'save_store_category') {
+            $cat = $input['category'];
+            $type = $input['type']; // 'main' or 'sub'
+            
+            if ($type === 'main') {
+                if (isset($cat['id']) && !empty($cat['id'])) {
+                    $stmt = $conn->prepare("UPDATE store_main_categories SET name = ?, code = ? WHERE id = ?");
+                    $stmt->execute([$cat['name'], $cat['code'], $cat['id']]);
+                } else {
+                    $stmt = $conn->prepare("INSERT INTO store_main_categories (name, code) VALUES (?, ?)");
+                    $stmt->execute([$cat['name'], $cat['code']]);
+                    $cat['id'] = $conn->lastInsertId();
+                }
+            } else {
+                if (isset($cat['id']) && !empty($cat['id'])) {
+                    $stmt = $conn->prepare("UPDATE store_sub_categories SET name = ?, code = ?, main_id = ? WHERE id = ?");
+                    $stmt->execute([$cat['name'], $cat['code'], $cat['main_id'], $cat['id']]);
+                } else {
+                    $stmt = $conn->prepare("INSERT INTO store_sub_categories (name, code, main_id) VALUES (?, ?, ?)");
+                    $stmt->execute([$cat['name'], $cat['code'], $cat['main_id']]);
+                    $cat['id'] = $conn->lastInsertId();
+                }
+            }
+            echo json_encode(['status' => 'success', 'id' => $cat['id']]);
+        }
+
+        elseif ($action === 'delete_store_category') {
+            $id = $input['id'];
+            $type = $input['type'];
+            if ($type === 'main') {
+                $conn->prepare("DELETE FROM store_main_categories WHERE id = ?")->execute([$id]);
+            } else {
+                $conn->prepare("DELETE FROM store_sub_categories WHERE id = ?")->execute([$id]);
+            }
+            echo json_encode(['status' => 'success']);
+        }
+
+        elseif ($action === 'delete_store_item') {
+            $id = $input['id'];
+            $conn->prepare("DELETE FROM store_items WHERE id = ?")->execute([$id]);
+            echo json_encode(['status' => 'success']);
+        }
+
+        elseif ($action === 'save_store_transaction') {
+            $t = $input['transaction'];
+            $conn->beginTransaction();
+            try {
+                $stmt = $conn->prepare("INSERT INTO store_transactions (item_id, quantity, type, ref, source_or_person, notes) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$t['item_id'], $t['quantity'], $t['type'], $t['ref'] ?? '', $t['source_or_person'] ?? '', $t['notes'] ?? '']);
+                
+                if ($t['type'] === 'INWARD') {
+                    $conn->prepare("UPDATE store_items SET stock = stock + ? WHERE id = ?")->execute([$t['quantity'], $t['item_id']]);
+                } else {
+                    $conn->prepare("UPDATE store_items SET stock = stock - ? WHERE id = ?")->execute([$t['quantity'], $t['item_id']]);
+                }
+                $conn->commit();
+                echo json_encode(['status' => 'success']);
+            } catch (Exception $e) {
+                $conn->rollBack();
+                throw $e;
+            }
         }
 
         // --- NEW RAW MATERIALS ACTIONS ---
