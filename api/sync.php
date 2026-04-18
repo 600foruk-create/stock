@@ -81,20 +81,6 @@ try {
                 $conn->exec("CREATE TABLE IF NOT EXISTS store_sub_categories (id INT AUTO_INCREMENT PRIMARY KEY, main_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL)");
                 $conn->exec("CREATE TABLE IF NOT EXISTS store_items (id INT AUTO_INCREMENT PRIMARY KEY, sub_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL, opening_stock INT DEFAULT 0, stock INT DEFAULT 0, low_stock_limit INT DEFAULT 10, notes TEXT)");
 
-                // AUTO-REPAIR: Store Tables
-                try {
-                    $itemCols = $conn->query("SHOW COLUMNS FROM store_items")->fetchAll(PDO::FETCH_COLUMN);
-                    if (!in_array('opening_stock', $itemCols)) $conn->exec("ALTER TABLE store_items ADD COLUMN opening_stock INT DEFAULT 0");
-                    if (!in_array('low_stock_limit', $itemCols)) $conn->exec("ALTER TABLE store_items ADD COLUMN low_stock_limit INT DEFAULT 10");
-                    if (!in_array('notes', $itemCols)) $conn->exec("ALTER TABLE store_items ADD COLUMN notes TEXT");
-                    if (!in_array('stock', $itemCols)) $conn->exec("ALTER TABLE store_items ADD COLUMN stock INT DEFAULT 0");
-                } catch(Exception $e) {}
-
-                try {
-                    $subCols = $conn->query("SHOW COLUMNS FROM store_sub_categories")->fetchAll(PDO::FETCH_COLUMN);
-                    if (!in_array('main_id', $subCols)) $conn->exec("ALTER TABLE store_sub_categories ADD COLUMN main_id INT NOT NULL");
-                } catch(Exception $e) {}
-
             } catch (Exception $e) {}
 
             $data = [
@@ -116,9 +102,9 @@ try {
                 'rmFormulas' => $conn->query("SELECT * FROM rm_formulas")->fetchAll(PDO::FETCH_ASSOC),
                 'rmFormulaItems' => $conn->query("SELECT * FROM rm_formula_items")->fetchAll(PDO::FETCH_ASSOC),
                 'rmTransactions' => $conn->query("SELECT * FROM rm_transactions ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
-                'storeItems' => $conn->query("SELECT id, sub_id AS subId, name, code, opening_stock, stock, low_stock_limit, notes FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
+                'storeItems' => $conn->query("SELECT * FROM store_items")->fetchAll(PDO::FETCH_ASSOC),
                 'storeMainCategories' => $conn->query("SELECT * FROM store_main_categories")->fetchAll(PDO::FETCH_ASSOC),
-                'storeSubCategories' => $conn->query("SELECT id, main_id AS mainId, name, code FROM store_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
+                'storeSubCategories' => $conn->query("SELECT * FROM store_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'latestAudit' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id)")->fetchAll(PDO::FETCH_ASSOC),
                 'archivedReports' => $conn->query("SELECT id, date, title, report_type FROM audit_reports_archive ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
                 'rmConsumptionLogs' => $conn->query("SELECT * FROM rm_consumption_logs ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
