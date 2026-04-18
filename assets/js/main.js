@@ -6142,23 +6142,43 @@ function exportRMOutToExcel() {
 
 // Process RM Transaction
 function refreshRMConsumptionReport() {
-    const todayStr = new Date().toDateString();
-    
-    // 1. Calculate Today's FG Production (Inbound)
-    let fgTotalKg = 0;
+    // 1. Calculate Latest FG Production (Inbound) - Most recent active day
+    let lastFGDate = null;
     transactions.forEach(t => {
-        if (t.type === 'IN' && new Date(t.date).toDateString() === todayStr) {
-            fgTotalKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.itemWeight) || 0);
+        if (t.type === 'IN') {
+            const d = new Date(t.date);
+            if (!isNaN(d.getTime()) && (!lastFGDate || d > lastFGDate)) lastFGDate = d;
         }
     });
 
-    // 2. Calculate Today's RM Formula Issuance (Outbound)
-    let rmTotalKg = 0;
+    let fgTotalKg = 0;
+    if (lastFGDate) {
+        const lastFGDateStr = lastFGDate.toDateString();
+        transactions.forEach(t => {
+            if (t.type === 'IN' && new Date(t.date).toDateString() === lastFGDateStr) {
+                fgTotalKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.itemWeight) || 0);
+            }
+        });
+    }
+
+    // 2. Calculate Latest RM Formula Issuance (Outbound) - Most recent active day
+    let lastRMDate = null;
     rmTransactions.forEach(t => {
-        if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:') && new Date(t.date).toDateString() === todayStr) {
-            rmTotalKg += (parseFloat(t.quantity) || 0);
+        if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:')) {
+            const d = new Date(t.date);
+            if (!isNaN(d.getTime()) && (!lastRMDate || d > lastRMDate)) lastRMDate = d;
         }
     });
+
+    let rmTotalKg = 0;
+    if (lastRMDate) {
+        const lastRMDateStr = lastRMDate.toDateString();
+        rmTransactions.forEach(t => {
+            if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:') && new Date(t.date).toDateString() === lastRMDateStr) {
+                rmTotalKg += (parseFloat(t.quantity) || 0);
+            }
+        });
+    }
 
     // 3. Update UI Elements
     const fgWeightEl = document.getElementById('wipFGWeight');
