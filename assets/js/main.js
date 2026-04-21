@@ -465,6 +465,8 @@ function sortItems(itemsList) {
 
 function switchModule(module) {
     currentModule = module;
+    console.log('StockFlow: Switching to module:', module);
+    currentModule = module;
     document.querySelectorAll('.menu-item').forEach((btn, index) => {
         btn.classList.remove('active');
         if (module === 'finishGood' && index === 0) btn.classList.add('active');
