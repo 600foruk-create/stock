@@ -106,6 +106,16 @@ try {
                     if (!in_array('low_stock_threshold', $stCols)) $conn->exec("ALTER TABLE store_items ADD COLUMN low_stock_threshold DECIMAL(15,3) DEFAULT 0");
                 } catch(Exception $e) {}
 
+                // AUTO-REPAIR: Store Transactions Schema for issuance details
+                try {
+                    $stTransCols = $conn->query("SHOW COLUMNS FROM store_transactions")->fetchAll(PDO::FETCH_COLUMN);
+                    if (!in_array('issued_by', $stTransCols)) $conn->exec("ALTER TABLE store_transactions ADD COLUMN issued_by VARCHAR(255) DEFAULT NULL");
+                    if (!in_array('issued_to', $stTransCols)) $conn->exec("ALTER TABLE store_transactions ADD COLUMN issued_to VARCHAR(255) DEFAULT NULL");
+                    if (!in_array('purpose', $stTransCols)) $conn->exec("ALTER TABLE store_transactions ADD COLUMN purpose VARCHAR(255) DEFAULT NULL");
+                    if (!in_array('ref', $stTransCols)) $conn->exec("ALTER TABLE store_transactions ADD COLUMN ref VARCHAR(255) DEFAULT NULL");
+                    if (!in_array('source_or_person', $stTransCols)) $conn->exec("ALTER TABLE store_transactions ADD COLUMN source_or_person VARCHAR(255) DEFAULT NULL");
+                } catch(Exception $e) {}
+
                 // NEW: Raw Materials Consumption History Table
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_consumption_logs (
                     id INT AUTO_INCREMENT PRIMARY KEY,
