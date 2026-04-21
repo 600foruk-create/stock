@@ -7596,7 +7596,18 @@ async function saveStoreToDB(action, payload) {
     }
 }
 
-// --- Category Management ---
+// --- Store Inventory Module ---
+
+function toggleMainCategoryForm() {
+    const container = document.getElementById('newMainCategoryFormContainer');
+    if (container) {
+        container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        if (container.style.display === 'block') {
+            document.getElementById('storeCatName').focus();
+        }
+    }
+}
+
 async function addStoreCategory() {
     const name = document.getElementById('storeCatName').value.trim();
     const code = document.getElementById('storeCatCodeManual').value.trim().toUpperCase();
@@ -7608,8 +7619,22 @@ async function addStoreCategory() {
     if (res) {
         document.getElementById('storeCatName').value = '';
         document.getElementById('storeCatCodeManual').value = '';
+        toggleMainCategoryForm();
         refreshStoreInventory();
     }
+}
+
+async function editStoreCategory(id, type) {
+    const categories = type === 'main' ? storeMainCategories : storeSubCategories;
+    const cat = categories.find(c => c.id == id);
+    if (!cat) return;
+
+    const newName = prompt(`Enter new name for ${type} category:`, cat.name);
+    if (!newName || newName === cat.name) return;
+
+    const payload = { type: type, category: { id: id, name: newName, code: cat.code, main_id: cat.main_id } };
+    const res = await saveStoreToDB('save_store_category', payload);
+    if (res) refreshStoreInventory();
 }
 
 async function addStoreSubCategory(mainId, mainCode, subName) {
@@ -7620,7 +7645,10 @@ async function addStoreSubCategory(mainId, mainCode, subName) {
 }
 
 async function deleteStoreCategory(id, type) {
-    if (!confirm('Are you sure you want to delete this category? All hierarchy below it will be affected.')) return;
+    const confirmMsg = type === 'main' 
+        ? 'Are you sure? Delete this Category? It must be empty.' 
+        : 'Are you sure? Delete this Sub-Category? It must be empty.';
+    if (!confirm(confirmMsg)) return;
     const res = await saveStoreToDB('delete_store_category', { id, type });
     if (res) refreshStoreInventory();
 }
@@ -7634,8 +7662,24 @@ async function addStoreItem(subId, subCode, itemName, openingStock, threshold) {
 }
 
 async function deleteStoreItem(id) {
-    if (!confirm('Delete this item?')) return;
+    if (!confirm('Are you sure you want to delete this item?')) return;
     const res = await saveStoreToDB('delete_store_item', { id });
+    if (res) refreshStoreInventory();
+}
+
+async function editStoreItem(id) {
+    const itm = storeItems.find(i => i.id == id);
+    if (!itm) return;
+
+    const newName = prompt('Enter new item name:', itm.name);
+    if (!newName) return;
+    const newStock = prompt('Update current stock:', itm.stock);
+    if (newStock === null) return;
+    const newThreshold = prompt('Update low stock threshold:', itm.low_stock_threshold);
+    if (newThreshold === null) return;
+
+    const payload = { item: { id, sub_id: itm.sub_id, name: newName, code: itm.code, opening_stock: itm.opening_stock, stock: newStock, low_stock_threshold: newThreshold } };
+    const res = await saveStoreToDB('save_store_item', payload);
     if (res) refreshStoreInventory();
 }
 
@@ -7743,7 +7787,7 @@ function refreshStoreInventory() {
     container.innerHTML = '';
     
     if (storeMainCategories.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--gray-400);">No categories created yet. Add your first category above.</div>';
+        container.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--gray-400);">No categories created yet. Click "New Main Category" to start.</div>';
         return;
     }
 
@@ -7751,32 +7795,42 @@ function refreshStoreInventory() {
         const isCollapsed = !storeExpandedIds.has('cat_' + cat.id);
         const card = document.createElement('div');
         card.className = 'store-cat-card';
-        card.style.marginBottom = '1.5rem';
-        card.style.border = '1px solid var(--gray-200)';
-        card.style.borderRadius = '16px';
+        card.style.marginBottom = '2rem';
+        card.style.border = '1px solid var(--sky-200)';
+        card.style.borderRadius = '20px';
         card.style.overflow = 'hidden';
-        card.style.boxShadow = 'var(--shadow-sm)';
+        card.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.05)';
         
         const header = document.createElement('div');
-        header.style.padding = '1.2rem 1.5rem';
-        header.style.background = 'white';
+        header.style.padding = '1.2rem 2rem';
+        header.style.background = 'linear-gradient(90deg, #f0f9ff 0%, #e0f2fe 100%)';
         header.style.display = 'flex';
         header.style.justifyContent = 'space-between';
         header.style.alignItems = 'center';
         header.style.cursor = 'pointer';
+        header.style.borderLeft = '6px solid var(--sky-600)';
+        
         header.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 1.2rem;">
-                <i class="fas ${isCollapsed ? 'fa-folder' : 'fa-folder-open'}" style="color: var(--sky-500); font-size: 1.4rem;"></i>
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <div style="background: white; width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);">
+                    <i class="fas ${isCollapsed ? 'fa-box' : 'fa-box-open'}" style="color: var(--sky-600); font-size: 1.4rem;"></i>
+                </div>
                 <div>
-                    <h4 style="margin:0; font-weight: 700; color: var(--gray-800); font-size: 1.1rem;">${cat.name}</h4>
-                    <small style="color: var(--gray-400); font-weight: 600;">Code: ${cat.code}</small>
+                    <h4 style="margin:0; font-weight: 800; color: #0c4a6e; font-size: 1.25rem;">${cat.name}</h4>
+                    <span style="background: #bae6fd; color: #0369a1; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">CODE: ${cat.code}</span>
                 </div>
             </div>
-            <div style="display: flex; gap: 0.5rem;">
-                <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteStoreCategory(${cat.id}, 'main')">
-                    <i class="fas fa-trash"></i>
+            <div style="display: flex; gap: 0.8rem; align-items: center;">
+                <button class="btn btn-sm" onclick="event.stopPropagation(); toggleStoreForm('addSub_${cat.id}')" style="background: var(--sky-600); color: white; border-radius: 8px; padding: 6px 12px;">
+                    <i class="fas fa-plus"></i> Add Sub
                 </button>
-                <i class="fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'}" style="color: var(--gray-300); margin-left: 1rem;"></i>
+                <button class="btn btn-sm btn-white" onclick="event.stopPropagation(); editStoreCategory(${cat.id}, 'main')" style="background:white; border: 1px solid var(--gray-200); padding: 6px 10px; border-radius: 8px;">
+                    <i class="fas fa-edit" style="color: var(--sky-600);"></i>
+                </button>
+                <button class="btn btn-sm btn-white" onclick="event.stopPropagation(); deleteStoreCategory(${cat.id}, 'main')" style="background:white; border: 1px solid var(--gray-200); padding: 6px 10px; border-radius: 8px;">
+                    <i class="fas fa-trash" style="color: var(--red-500);"></i>
+                </button>
+                <i class="fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'}" style="color: var(--sky-300); margin-left: 0.5rem;"></i>
             </div>
         `;
         header.onclick = () => {
@@ -7786,40 +7840,67 @@ function refreshStoreInventory() {
         };
         card.appendChild(header);
 
+        // Inline Add Sub Form
+        const addSubForm = document.createElement('div');
+        addSubForm.id = `addSub_${cat.id}`;
+        addSubForm.style.display = 'none';
+        addSubForm.style.padding = '1.5rem';
+        addSubForm.style.background = '#f1f5f9';
+        addSubForm.style.borderBottom = '1px solid var(--gray-200)';
+        addSubForm.innerHTML = `
+            <div style="display: flex; gap: 1rem; align-items: flex-end;">
+                <div style="flex: 1;">
+                    <label style="font-weight: 700; font-size: 0.85rem; color: var(--gray-600);">New Sub-Category Name</label>
+                    <input type="text" id="newSubName_${cat.id}" class="form-control" placeholder="e.g. Spare Parts">
+                </div>
+                <button class="btn btn-primary" onclick="addStoreSubCategory(${cat.id}, '${cat.code}', document.getElementById('newSubName_${cat.id}').value)">Create Sub-Category</button>
+                <button class="btn btn-secondary" onclick="toggleStoreForm('addSub_${cat.id}')">Cancel</button>
+            </div>
+        `;
+        card.appendChild(addSubForm);
+
         if (!isCollapsed) {
             const body = document.createElement('div');
-            body.style.padding = '1.5rem';
-            body.style.background = 'var(--gray-50)';
-            body.style.borderTop = '1px solid var(--gray-100)';
+            body.style.padding = '1.5rem 2rem';
+            body.style.background = 'white';
             
-            // Sub-categories list
             const subs = storeSubCategories.filter(s => s.main_id == cat.id);
             subs.forEach(sub => {
                 const subIsCollapsed = !storeExpandedIds.has('sub_' + sub.id);
                 const subDiv = document.createElement('div');
-                subDiv.style.marginBottom = '1.2rem';
-                subDiv.style.border = '1px solid var(--gray-200)';
-                subDiv.style.background = 'white';
-                subDiv.style.borderRadius = '12px';
-                subDiv.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.02)';
+                subDiv.style.marginBottom = '1.5rem';
+                subDiv.style.border = '1px solid #dcfce7';
+                subDiv.style.borderRadius = '16px';
+                subDiv.style.overflow = 'hidden';
                 
                 const subHeader = document.createElement('div');
-                subHeader.style.padding = '1rem 1.2rem';
+                subHeader.style.padding = '1rem 1.5rem';
+                subHeader.style.background = '#f0fdf4';
                 subHeader.style.display = 'flex';
                 subHeader.style.justifyContent = 'space-between';
                 subHeader.style.alignItems = 'center';
                 subHeader.style.cursor = 'pointer';
+                subHeader.style.borderLeft = '5px solid #22c55e';
+                
                 subHeader.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 1rem;">
-                         <i class="fas ${subIsCollapsed ? 'fa-plus-circle' : 'fa-minus-circle'}" style="color: var(--sky-400);"></i>
-                         <div>
-                            <span style="font-weight: 700; color: var(--gray-700); font-size: 1rem;">${sub.name}</span>
-                            <br><small style="color: var(--gray-400);">ID: ${sub.code}</small>
-                         </div>
+                        <i class="fas ${subIsCollapsed ? 'fa-plus-circle' : 'fa-minus-circle'}" style="color: #22c55e; font-size: 1.2rem;"></i>
+                        <div>
+                            <span style="font-weight: 800; color: #14532d; font-size: 1.05rem;">${sub.name}</span>
+                            <span style="margin-left: 0.5rem; color: #3f6212; background: #d9f99d; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700;">${sub.code}</span>
+                        </div>
                     </div>
-                    <button class="btn btn-sm btn-outline-danger" style="border:none;" onclick="event.stopPropagation(); deleteStoreCategory(${sub.id}, 'sub')">
-                         <i class="fas fa-times"></i>
-                    </button>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                         <button class="btn btn-sm" onclick="event.stopPropagation(); toggleStoreForm('addItem_${sub.id}')" style="background: #16a34a; color: white; border-radius: 6px; padding: 4px 10px; font-size: 0.8rem;">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                        <button class="btn btn-sm" onclick="event.stopPropagation(); editStoreCategory(${sub.id}, 'sub')" style="background: white; border: 1px solid #bdf2d5; padding: 4px 8px; border-radius: 6px;">
+                            <i class="fas fa-edit" style="color: #16a34a;"></i>
+                        </button>
+                        <button class="btn btn-sm" onclick="event.stopPropagation(); deleteStoreCategory(${sub.id}, 'sub')" style="background: white; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 6px;">
+                            <i class="fas fa-trash" style="color: #ef4444;"></i>
+                        </button>
+                    </div>
                 `;
                 subHeader.onclick = () => {
                     if (storeExpandedIds.has('sub_' + sub.id)) storeExpandedIds.delete('sub_' + sub.id);
@@ -7828,22 +7909,48 @@ function refreshStoreInventory() {
                 };
                 subDiv.appendChild(subHeader);
 
+                // Inline Add Item Form
+                const addItemForm = document.createElement('div');
+                addItemForm.id = `addItem_${sub.id}`;
+                addItemForm.style.display = 'none';
+                addItemForm.style.padding = '1.2rem';
+                addItemForm.style.background = '#f8fafc';
+                addItemForm.style.borderBottom = '1px solid #e2e8f0';
+                addItemForm.innerHTML = `
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 1rem; align-items: flex-end;">
+                        <div>
+                            <label style="font-weight: 700; font-size: 0.75rem; color: var(--gray-600);">New Item Name</label>
+                            <input type="text" class="form-control form-control-sm" placeholder="Part Name / Item..">
+                        </div>
+                        <div>
+                            <label style="font-weight: 700; font-size: 0.75rem; color: var(--gray-600);">Opening Stock</label>
+                            <input type="number" class="form-control form-control-sm" value="0">
+                        </div>
+                        <div>
+                            <label style="font-weight: 700; font-size: 0.75rem; color: var(--gray-600);">Low Stock Limit</label>
+                            <input type="number" class="form-control form-control-sm" value="5">
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-success btn-sm" onclick="const p=this.parentElement.parentElement; addStoreItem(${sub.id}, '${sub.code}', p.children[0].querySelector('input').value, p.children[1].querySelector('input').value, p.children[2].querySelector('input').value)">Add</button>
+                            <button class="btn btn-secondary btn-sm" onclick="toggleStoreForm('addItem_${sub.id}')">X</button>
+                        </div>
+                    </div>
+                `;
+                subDiv.appendChild(addItemForm);
+
                 if (!subIsCollapsed) {
                     const subBody = document.createElement('div');
-                    subBody.style.padding = '1rem 1.2rem';
-                    subBody.style.borderTop = '1px solid var(--gray-100)';
+                    subBody.style.padding = '1.5rem';
                     
                     const itms = storeItems.filter(i => i.sub_id == sub.id);
                     if (itms.length > 0) {
                         let tableHtml = `
-                            <table class="table" style="font-size: 0.9rem; margin-bottom: 1.5rem; width: 100%;">
-                                <thead style="background: var(--gray-50); color: var(--gray-600); font-weight: 700;">
+                            <table class="table" style="width: 100%; border-collapse: separate; border-spacing: 0 8px;">
+                                <thead style="color: var(--gray-500); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;">
                                     <tr>
-                                        <th style="padding: 10px;">Item Code</th>
-                                        <th style="padding: 10px;">Item Name</th>
-                                        <th style="padding: 10px; text-align: center;">Stock</th>
-                                        <th style="padding: 10px; text-align: center;">Threshold</th>
-                                        <th style="padding: 10px; text-align: center;">Actions</th>
+                                        <th style="padding: 10px;">Item Details</th>
+                                        <th style="padding: 10px; text-align: center;">Stock Status</th>
+                                        <th style="padding: 10px; text-align: right;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -7851,18 +7958,23 @@ function refreshStoreInventory() {
                         itms.forEach(itm => {
                             const isLow = parseFloat(itm.stock) <= parseFloat(itm.low_stock_threshold);
                             tableHtml += `
-                                <tr style="border-bottom: 1px solid var(--gray-100);">
-                                    <td style="padding: 10px; font-family: monospace; color: var(--sky-600); font-weight: 600;">${itm.code}</td>
-                                    <td style="padding: 10px; font-weight: 600;">${itm.name}</td>
-                                    <td style="padding: 10px; text-align: center;">
-                                        <span style="padding: 4px 10px; border-radius: 20px; font-weight: 800; background: ${isLow ? '#fee2e2' : '#f0fdf4'}; color: ${isLow ? '#ef4444' : '#16a34a'};">
-                                            ${itm.stock}
-                                        </span>
+                                <tr style="background: #f8fafc; transition: all 0.2s;">
+                                    <td style="padding: 12px 15px; border-radius: 12px 0 0 12px;">
+                                        <div style="font-weight: 700; color: #1e293b;">${itm.name}</div>
+                                        <div style="font-size: 0.7rem; color: var(--sky-600); font-weight: 600;">CODE: ${itm.code}</div>
                                     </td>
-                                    <td style="padding: 10px; text-align: center; color: var(--gray-500); font-weight: 600;">${itm.low_stock_threshold}</td>
-                                    <td style="padding: 10px; text-align: center;">
-                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteStoreItem(${itm.id})" style="padding: 4px 8px;">
-                                            <i class="fas fa-trash-alt"></i>
+                                    <td style="padding: 12px 15px; text-align: center;">
+                                        <div style="display: inline-flex; align-items: center; gap: 0.8rem;">
+                                            <div style="font-size: 1.1rem; font-weight: 900; color: ${isLow ? '#ef4444' : '#0f172a'};">${itm.stock}</div>
+                                            <div style="font-size: 0.7rem; color: var(--gray-400); background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">Limit: ${itm.low_stock_threshold}</div>
+                                        </div>
+                                    </td>
+                                    <td style="padding: 12px 15px; text-align: right; border-radius: 0 12px 12px 0;">
+                                        <button class="btn btn-sm btn-white" onclick="editStoreItem(${itm.id})" style="background:white; border: 1px solid var(--gray-200); padding: 5px 10px; border-radius: 8px;">
+                                            <i class="fas fa-pencil-alt" style="color: var(--sky-500);"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-white" onclick="deleteStoreItem(${itm.id})" style="background:white; border: 1px solid var(--gray-200); padding: 5px 10px; border-radius: 8px; margin-left: 4px;">
+                                            <i class="fas fa-trash-alt" style="color: var(--red-500);"></i>
                                         </button>
                                     </td>
                                 </tr>
@@ -7871,67 +7983,26 @@ function refreshStoreInventory() {
                         tableHtml += '</tbody></table>';
                         subBody.innerHTML = tableHtml;
                     } else {
-                        subBody.innerHTML = '<div style="text-align: center; padding: 1.5rem; color: var(--gray-400); font-style: italic; background: var(--gray-50); border-radius: 8px; margin-bottom: 1rem;">No items found in this section.</div>';
+                        subBody.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--gray-400); font-style: italic; background: #fdfdfd; border: 1px dashed #eee; border-radius: 12px;">No items found. Click "+ Add Item" above to create one.</div>';
                     }
-                    
-                    // Add Item Form
-                    const addItemDiv = document.createElement('div');
-                    addItemDiv.style.background = '#f8fafc';
-                    addItemDiv.style.border = '1px dashed var(--sky-200)';
-                    addItemDiv.style.padding = '1.2rem';
-                    addItemDiv.style.borderRadius = '10px';
-                    addItemDiv.style.display = 'grid';
-                    addItemDiv.style.gridTemplateColumns = '1fr 100px 100px auto';
-                    addItemDiv.style.gap = '1rem';
-                    addItemDiv.style.alignItems = 'end';
-                    
-                    addItemDiv.innerHTML = `
-                        <div class="form-group" style="margin:0;">
-                            <label style="font-size: 0.75rem; font-weight: 700; color: var(--gray-600);">New Item Name</label>
-                            <input type="text" class="form-control form-control-sm" placeholder="Enter name...">
-                        </div>
-                        <div class="form-group" style="margin:0;">
-                            <label style="font-size: 0.75rem; font-weight: 700; color: var(--gray-600);">Opening</label>
-                            <input type="number" class="form-control form-control-sm" value="0">
-                        </div>
-                        <div class="form-group" style="margin:0;">
-                            <label style="font-size: 0.75rem; font-weight: 700; color: var(--gray-600);">Alert At</label>
-                            <input type="number" class="form-control form-control-sm" value="5">
-                        </div>
-                        <button class="btn btn-sm btn-sky" style="height: 34px; padding: 0 1.2rem; font-weight: 700;" onclick="const p=this.parentElement; addStoreItem(${sub.id}, '${sub.code}', p.children[0].querySelector('input').value, p.children[1].querySelector('input').value, p.children[2].querySelector('input').value)">
-                            <i class="fas fa-plus"></i> Add Item
-                        </button>
-                    `;
-                    subBody.appendChild(addItemDiv);
                     subDiv.appendChild(subBody);
                 }
                 body.appendChild(subDiv);
             });
-
-            // Add Sub-category form
-            const addSubForm = document.createElement('div');
-            addSubForm.style.marginTop = '1.5rem';
-            addSubForm.style.background = 'white';
-            addSubForm.style.padding = '1.5rem';
-            addSubForm.style.borderRadius = '12px';
-            addSubForm.style.border = '1px solid var(--gray-200)';
-            addSubForm.style.display = 'flex';
-            addSubForm.style.gap = '1rem';
-            addSubForm.style.alignItems = 'flex-end';
-            addSubForm.innerHTML = `
-                <div class="form-group" style="flex:1; margin:0;">
-                    <label style="font-weight: 700; color: var(--gray-700); font-size: 0.85rem;">New Sub-Category for ${cat.name}</label>
-                    <input type="text" id="newSubName_${cat.id}" class="form-control" placeholder="Enter sub-category name...">
-                </div>
-                <button class="btn btn-primary" onclick="addStoreSubCategory(${cat.id}, '${cat.code}', document.getElementById('newSubName_${cat.id}').value)">
-                     <i class="fas fa-plus"></i> Create Sub-Category
-                </button>
-            `;
-            body.appendChild(addSubForm);
             card.appendChild(body);
         }
         container.appendChild(card);
     });
+}
+
+function toggleStoreForm(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+    if (el.style.display === 'block') {
+        const input = el.querySelector('input');
+        if (input) input.focus();
+    }
 }
 
 function refreshStoreItems() {
