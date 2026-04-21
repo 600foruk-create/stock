@@ -727,6 +727,12 @@ try {
             }
         }
 
+        elseif ($action === 'delete_store_transaction') {
+            $id = $input['id'];
+            $conn->prepare("DELETE FROM store_transactions WHERE id = ?")->execute([$id]);
+            echo json_encode(['status' => 'success']);
+        }
+
         // --- NEW RAW MATERIALS ACTIONS ---
         elseif ($action === 'save_rm_main') {
             $m = $input['main'];

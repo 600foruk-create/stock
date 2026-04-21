@@ -7705,7 +7705,11 @@ async function saveStoreInward() {
         document.getElementById('storeInwardQty').value = 1;
         document.getElementById('storeInwardSource').value = '';
         document.getElementById('storeInwardNotes').value = '';
-        refreshStoreDashboard();
+        refreshTransactions().then(() => {
+            refreshStoreDashboard();
+            refreshStoreInwards();
+            refreshStoreInwardHistory();
+        });
     }
 }
 
@@ -7740,7 +7744,11 @@ async function saveStoreOutward() {
         document.getElementById('storeIssuedBy').value = '';
         document.getElementById('storePurpose').value = '';
         document.getElementById('storeIssueNotes').value = '';
-        refreshStoreDashboard();
+        refreshTransactions().then(() => {
+            refreshStoreDashboard();
+            refreshStoreOutwards();
+            refreshStoreOutwardHistory();
+        });
     }
 }
 
@@ -7771,6 +7779,17 @@ function refreshStoreInwards() {
     const items = storeItems.slice().sort((a,b) => a.name.localeCompare(b.name));
     select.innerHTML = '<option value="">-- Select Item --</option>' + 
         items.map(i => `<option value="${i.id}">${i.code} - ${i.name} (Stock: ${i.stock})</option>`).join('');
+    
+    // Set current month/year if not set
+    const mSelect = document.getElementById('inwardHistMonth');
+    const ySelect = document.getElementById('inwardHistYear');
+    if (mSelect && !mSelect.dataset.init) {
+        const now = new Date();
+        mSelect.value = now.getMonth() + 1;
+        ySelect.value = now.getFullYear();
+        mSelect.dataset.init = "true";
+    }
+    refreshStoreInwardHistory();
 }
 
 function refreshStoreOutwards() {
@@ -7779,6 +7798,147 @@ function refreshStoreOutwards() {
     const items = storeItems.slice().sort((a,b) => a.name.localeCompare(b.name));
     select.innerHTML = '<option value="">-- Select Item --</option>' + 
         items.map(i => `<option value="${i.id}">${i.code} - ${i.name} (Stock: ${i.stock})</option>`).join('');
+    
+    // Set current month/year if not set
+    const mSelect = document.getElementById('outwardHistMonth');
+    const ySelect = document.getElementById('outwardHistYear');
+    if (mSelect && !mSelect.dataset.init) {
+        const now = new Date();
+        mSelect.value = now.getMonth() + 1;
+        ySelect.value = now.getFullYear();
+        mSelect.dataset.init = "true";
+    }
+    refreshStoreOutwardHistory();
+}
+
+function refreshStoreInwardHistory() {
+    const month = parseInt(document.getElementById('inwardHistMonth').value);
+    const year = parseInt(document.getElementById('inwardHistYear').value);
+    const tbody = document.getElementById('storeInwardHistoryBody');
+    if (!tbody) return;
+
+    const filtered = storeTransactions.filter(t => {
+        if (t.type !== 'INWARD') return false;
+        const d = new Date(t.date);
+        return (d.getMonth() + 1) === month && d.getFullYear() === year;
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 3rem; color: #94a3b8; font-style: italic;">No inward records found for this period.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(t => `
+        <tr style="background: white; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+            <td style="padding: 15px; border-radius: 10px 0 0 10px;">
+                <div style="font-weight: 700; color: #1e293b;">${t.date.split(' ')[0]}</div>
+                <div style="font-size: 0.7rem; color: #64748b;">${t.date.split(' ')[1] || ''}</div>
+            </td>
+            <td style="padding: 15px; font-family: monospace; font-weight: 700; color: #0ea5e9;">${t.itemCode}</td>
+            <td style="padding: 15px; font-weight: 600;">${t.itemName}</td>
+            <td style="padding: 15px; text-align: center;"><span style="background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 6px; font-weight: 800;">+${t.quantity}</span></td>
+            <td style="padding: 15px; color: #475569; max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${t.source_or_person || '-'}</td>
+            <td style="padding: 15px; text-align: right; border-radius: 0 10px 10px 0;">
+                <button class="btn btn-sm" onclick="deleteStoreTransaction(${t.id}, 'INWARD')" style="background: #fee2e2; color: #ef4444; border: none; padding: 5px 12px; border-radius: 6px; font-weight: 700;">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function refreshStoreOutwardHistory() {
+    const month = parseInt(document.getElementById('outwardHistMonth').value);
+    const year = parseInt(document.getElementById('outwardHistYear').value);
+    const tbody = document.getElementById('storeOutwardHistoryBody');
+    if (!tbody) return;
+
+    const filtered = storeTransactions.filter(t => {
+        if (t.type !== 'OUTWARD') return false;
+        const d = new Date(t.date);
+        return (d.getMonth() + 1) === month && d.getFullYear() === year;
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 3rem; color: #94a3b8; font-style: italic;">No outward records found for this period.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(t => `
+        <tr style="background: white; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+            <td style="padding: 15px; border-radius: 10px 0 0 10px;">
+                <div style="font-weight: 700; color: #1e293b;">${t.date.split(' ')[0]}</div>
+                <div style="font-size: 0.7rem; color: #64748b;">${t.date.split(' ')[1] || ''}</div>
+            </td>
+            <td style="padding: 15px; font-family: monospace; font-weight: 700; color: #f43f5e;">${t.itemCode}</td>
+            <td style="padding: 15px; font-weight: 600;">${t.itemName}</td>
+            <td style="padding: 15px; text-align: center;"><span style="background: #fff1f2; color: #be123c; padding: 4px 10px; border-radius: 6px; font-weight: 800;">-${t.quantity}</span></td>
+            <td style="padding: 15px; color: #475569;">
+                <div style="font-weight: 700;">To: ${t.issued_to || '-'}</div>
+                <div style="font-size: 0.7rem;">By: ${t.issued_by || '-'}</div>
+            </td>
+            <td style="padding: 15px; text-align: right; border-radius: 0 10px 10px 0;">
+                <button class="btn btn-sm" onclick="deleteStoreTransaction(${t.id}, 'OUTWARD')" style="background: #fee2e2; color: #ef4444; border: none; padding: 5px 12px; border-radius: 6px; font-weight: 700;">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function deleteStoreTransaction(id, type) {
+    if (!confirm('Are you sure you want to delete this record? This will NOT affect current stock balance.')) return;
+    const res = await saveStoreToDB('delete_store_transaction', { id });
+    if (res) {
+        refreshTransactions().then(() => {
+            if (type === 'INWARD') refreshStoreInwardHistory();
+            else refreshStoreOutwardHistory();
+        });
+    }
+}
+
+function printStoreHistory(type) {
+    const monthEl = document.getElementById(type === 'INWARD' ? 'inwardHistMonth' : 'outwardHistMonth');
+    const yearEl = document.getElementById(type === 'INWARD' ? 'inwardHistYear' : 'outwardHistYear');
+    const monthName = monthEl.options[monthEl.selectedIndex].text;
+    const yearValue = yearEl.value;
+
+    const content = document.getElementById(type === 'INWARD' ? 'storeInwardHistoryTableContainer' : 'storeOutwardHistoryTableContainer').innerHTML;
+    
+    // Create print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Store ${type} Report - ${monthName} ${yearValue}</title>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; }
+                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; font-size: 11pt; }
+                    th { background-color: #f2f2f2; font-weight: bold; }
+                    .btn-sm { display: none; }
+                    @media print {
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>Store ${type} History Report</h1>
+                    <h3>Period: ${monthName} ${yearValue}</h3>
+                    <p>Report Generated On: ${new Date().toLocaleString()}</p>
+                </div>
+                ${content}
+                <div style="margin-top: 50px; display: flex; justify-content: space-between;">
+                    <div>___________________<br>Store In-charge</div>
+                    <div>___________________<br>Factory Manager</div>
+                </div>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 500);
 }
 
 function refreshStoreInventory() {
