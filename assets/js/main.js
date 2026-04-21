@@ -7851,20 +7851,36 @@ function refreshSmartDropdown(type, query = '') {
     }
     list.sort();
 
-    const html = list.map(val => `
-        <div class="dropdown-item-custom" onclick="selectSmartItem('${type}', '${val.replace(/'/g, "\\'")}')">
-            <span>${val}</span>
-            <i class="fas fa-trash-alt delete-btn" onclick="event.stopPropagation(); deleteSmartItem('${type}', '${val.replace(/'/g, "\\'")}')"></i>
+    const html = `
+        <div style="flex: 1; overflow-y: auto;">
+            ${list.map(val => `
+                <div class="dropdown-item-custom" onclick="selectSmartItem('${type}', '${val.replace(/'/g, "\\'")}')" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f8fafc; padding: 12px;">
+                    <span style="font-weight: 500;">${val}</span>
+                    <button type="button" onclick="event.stopPropagation(); deleteSmartItem('${type}', '${val.replace(/'/g, "\\'")}')" style="background:#fee2e2; color:#ef4444; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; font-size: 0.75rem;">
+                        <i class="fas fa-trash-alt"></i> Delete
+                    </button>
+                </div>
+            `).join('')}
+            ${list.length === 0 ? `<div style="padding:20px; color:#94a3b8; font-style:italic; font-size:0.85rem; text-align:center;">Empty list</div>` : ''}
         </div>
-    `).join('');
+        <div style="border-top: 1px solid #f1f5f9; padding-top: 5px;">
+            <button type="button" onclick="addNewFromInput('${type}')" style="width:100%; background:#ecfdf5; color:#059669; border:none; padding:10px; border-radius:8px; font-weight:800; cursor:pointer; font-size:0.85rem;">
+                <i class="fas fa-plus"></i> + Add Current Text to List
+            </button>
+        </div>
+    `;
 
-    container.innerHTML = html || `<div style="padding:10px; color:#94a3b8; font-style:italic; font-size:0.8rem; text-align:center;">No matches found</div>`;
+    container.innerHTML = html;
     
-    // Check if we should show the "Add New" indicator
+    // Manage indicator display
     const indicator = document.getElementById(`add_indicator_${type}`);
     if (indicator) {
-        const exactMatch = list.some(item => item.toLowerCase() === query.toLowerCase());
-        indicator.style.display = (query && !exactMatch) ? 'block' : 'none';
+        const inputVal = document.querySelector(`.smart-input[data-type="${type}"]`).value.trim();
+        const exactMatch = list.some(item => item.toLowerCase() === inputVal.toLowerCase());
+        indicator.style.display = (inputVal && !exactMatch) ? 'block' : 'none';
+        if (inputVal && !exactMatch) {
+            indicator.innerText = `+ Add "${inputVal}" to List`;
+        }
     }
 }
 

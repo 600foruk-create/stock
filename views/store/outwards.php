@@ -81,26 +81,28 @@
             color: #9b2c2c;
         }
         .dropdown-item-custom .delete-btn {
-            color: #cbd5e1;
-            padding: 5px;
+            color: #ef4444;
+            padding: 5px 8px;
             border-radius: 6px;
             transition: all 0.2s;
+            opacity: 0.6;
         }
-        .dropdown-item-custom .delete-btn:hover {
-            color: #ef4444;
+        .dropdown-item-custom:hover .delete-btn {
+            opacity: 1;
             background: #fee2e2;
         }
         .add-new-indicator {
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            color: #EF4444;
+            padding: 12px;
+            font-size: 0.85rem;
+            color: white;
             font-weight: 700;
-            background: #fff5f5;
+            background: #ef4444;
             cursor: pointer;
             margin-top: 5px;
-            border-radius: 8px;
+            border-radius: 12px;
             text-align: center;
             display: none;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
         }
         /* Select2 override to match heights */
         .select2-container--default .select2-selection--single {
@@ -129,30 +131,39 @@
         </div>
 
         <div class="store-field">
-            <label>Issued To (Person/Dept)</label>
+            <label>
+                Issued To (Person/Dept)
+                <button type="button" onclick="addNewFromInput('issued_to')" style="border:none; background:#ecfdf5; color:#059669; font-size:0.75rem; padding:2px 8px; border-radius:6px; font-weight:800; cursor:pointer;">+ Add New</button>
+            </label>
             <div class="store-input-group">
                 <input type="text" id="storeIssuedTo" class="store-control smart-input" data-type="issued_to" autocomplete="off" placeholder="Select or type to add...">
                 <div class="smart-dropdown" id="dropdown_issued_to"></div>
             </div>
-            <div class="add-new-indicator" id="add_indicator_issued_to" onclick="addNewFromInput('issued_to')">+ Add as New Entry</div>
+            <div class="add-new-indicator" id="add_indicator_issued_to" onclick="addNewFromInput('issued_to')">+ Add "${document.getElementById('storeIssuedTo')?.value}" to List</div>
         </div>
 
         <div class="store-field">
-            <label>Issued By (Staff)</label>
+            <label>
+                Issued By (Staff)
+                <button type="button" onclick="addNewFromInput('issued_by')" style="border:none; background:#ecfdf5; color:#059669; font-size:0.75rem; padding:2px 8px; border-radius:6px; font-weight:800; cursor:pointer;">+ Add New</button>
+            </label>
             <div class="store-input-group">
                 <input type="text" id="storeIssuedBy" class="store-control smart-input" data-type="issued_by" autocomplete="off" placeholder="Select or type to add...">
                 <div class="smart-dropdown" id="dropdown_issued_by"></div>
             </div>
-            <div class="add-new-indicator" id="add_indicator_issued_by" onclick="addNewFromInput('issued_by')">+ Add as New Entry</div>
+            <div class="add-new-indicator" id="add_indicator_issued_by" onclick="addNewFromInput('issued_by')">+ Add "${document.getElementById('storeIssuedBy')?.value}" to List</div>
         </div>
 
         <div class="store-field">
-            <label>Purpose / Reason</label>
+            <label>
+                Purpose / Reason
+                <button type="button" onclick="addNewFromInput('purpose')" style="border:none; background:#ecfdf5; color:#059669; font-size:0.75rem; padding:2px 8px; border-radius:6px; font-weight:800; cursor:pointer;">+ Add New</button>
+            </label>
             <div class="store-input-group">
                 <input type="text" id="storePurpose" class="store-control smart-input" data-type="purpose" autocomplete="off" placeholder="Select or type to add...">
                 <div class="smart-dropdown" id="dropdown_purpose"></div>
             </div>
-            <div class="add-new-indicator" id="add_indicator_purpose" onclick="addNewFromInput('purpose')">+ Add as New Entry</div>
+            <div class="add-new-indicator" id="add_indicator_purpose" onclick="addNewFromInput('purpose')">+ Add "${document.getElementById('storePurpose')?.value}" to List</div>
         </div>
 
         <div class="store-field">
