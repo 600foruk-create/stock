@@ -1,54 +1,69 @@
 <div class="store-outwards" style="padding: 1rem;">
     <!-- OUTWARD FORM -->
-    <div class="row" style="background: white; padding: 2.5rem; border-radius: 20px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); margin-bottom: 2rem;">
-        <div class="col-md-6">
+    <div class="row" style="background: white; padding: 2.5rem; border-radius: 20px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); margin-bottom: 2rem; display: flex; flex-wrap: wrap;">
+        <div class="col-6" style="margin-bottom: 1.5rem;">
             <div class="form-group">
-                <label style="font-weight: 700; color: #9b2c2c;">Select Item</label>
+                <label style="font-weight: 700; color: #9b2c2c; font-size: 0.9rem;">Select Item</label>
                 <select id="storeOutwardItemSelect" class="form-control select2" style="width: 100%;">
                     <!-- Populated by JS -->
                 </select>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-6" style="margin-bottom: 1.5rem;">
             <div class="form-group">
-                <label style="font-weight: 700; color: #9b2c2c;">Quantity</label>
+                <label style="font-weight: 700; color: #9b2c2c; font-size: 0.9rem;">Quantity</label>
                 <input type="number" id="storeOutwardQty" class="form-control" min="1" step="0.01">
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-6" style="margin-bottom: 1.5rem;">
             <div class="form-group">
-                <label style="font-weight: 700; color: #9b2c2c;">Issued To (Person/Dept)</label>
+                <label style="font-weight: 700; color: #9b2c2c; font-size: 0.9rem;">Issued To (Person/Dept)</label>
                 <input type="text" id="storeIssuedTo" class="form-control" list="listIssuedTo" placeholder="Select or type new...">
-                <datalist id="listIssuedTo"></datalist>
+                <datalist id="listIssuedTo">
+                    <option value="Factory Floor">
+                    <option value="Warehouse A">
+                    <option value="Maintenance Dept">
+                    <option value="Main Office">
+                </datalist>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-6" style="margin-bottom: 1.5rem;">
             <div class="form-group">
-                <label style="font-weight: 700; color: #9b2c2c;">Issued By (Staff)</label>
+                <label style="font-weight: 700; color: #9b2c2c; font-size: 0.9rem;">Issued By (Staff)</label>
                 <input type="text" id="storeIssuedBy" class="form-control" list="listIssuedBy" placeholder="Select or type new...">
-                <datalist id="listIssuedBy"></datalist>
+                <datalist id="listIssuedBy">
+                    <option value="Admin">
+                    <option value="Store Manager">
+                    <option value="Shift Supervisor">
+                </datalist>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-6" style="margin-bottom: 1.5rem;">
             <div class="form-group">
-                <label style="font-weight: 700; color: #9b2c2c;">Purpose / Reason</label>
+                <label style="font-weight: 700; color: #9b2c2c; font-size: 0.9rem;">Purpose / Reason</label>
                 <input type="text" id="storePurpose" class="form-control" list="listPurpose" placeholder="Select or type new...">
-                <datalist id="listPurpose"></datalist>
+                <datalist id="listPurpose">
+                    <option value="Production">
+                    <option value="Repair & Maintenance">
+                    <option value="Sampling">
+                    <option value="Gift">
+                    <option value="Internal Use">
+                </datalist>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-6" style="margin-bottom: 1.5rem;">
             <div class="form-group">
-                <label style="font-weight: 700; color: #9b2c2c;">Remarks / Notes</label>
-                <textarea id="storeIssueNotes" class="form-control" placeholder="Any additional details..." rows="1"></textarea>
+                <label style="font-weight: 700; color: #9b2c2c; font-size: 0.9rem;">Remarks / Notes</label>
+                <input type="text" id="storeIssueNotes" class="form-control" placeholder="Any details..." style="height: 38px; border-radius: 8px;">
             </div>
         </div>
         
-        <div class="col-12" style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center;">
-            <button class="btn btn-outline-secondary" onclick="manageStoreListsModal()" style="border-radius: 10px; font-weight: 700;">
+        <div class="col-12" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 2rem;">
+            <button class="btn btn-outline-secondary" onclick="manageStoreListsModal()" style="border-radius: 10px; font-weight: 700; background: #f8fafc; color: #475569; border-color: #e2e8f0; padding: 10px 20px;">
                 <i class="fas fa-cog"></i> Manage Selection Lists
             </button>
-            <button class="btn btn-danger btn-lg" onclick="saveStoreOutward()" style="padding: 0.8rem 3rem; font-weight: 800; border-radius: 12px; box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2); letter-spacing: 0.5px;">
-                Record Outward / Issue
+            <button class="btn btn-danger btn-lg" onclick="saveStoreOutward()" style="padding: 0.8rem 4rem; font-weight: 800; border-radius: 12px; box-shadow: 0 4px 20px rgba(220, 38, 38, 0.3); letter-spacing: 0.5px;">
+                Record Outward Record
             </button>
         </div>
     </div>
