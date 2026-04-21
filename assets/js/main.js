@@ -25,6 +25,7 @@ let storeExpandedIds = new Set();
 let rmTransactions = [];
 let rmConsumptionLogs = [];
 let rmExpandedIds = new Set();
+let storeMasterLists = { issued_to: [], issued_by: [], purpose: [] };
 let archivedReports = []; // Global list of archived report metadata
 let rmPhysicalStockMap = JSON.parse(localStorage.getItem('rmPhysicalStockMap') || '{}'); // Persist between refreshes
 
@@ -92,6 +93,19 @@ async function initApp() {
             rmTransactions = d.rmTransactions || [];
             archivedReports = d.archivedReports || [];
             rmConsumptionLogs = d.rmConsumptionLogs || [];
+            
+            // Extract Store Master Lists from settings
+            const sLists = d.settings.filter(s => s.category === 'store_lists');
+            storeMasterLists = { issued_to: [], issued_by: [], purpose: [] };
+            sLists.forEach(s => {
+                if (storeMasterLists[s.key]) {
+                    try { storeMasterLists[s.key] = JSON.parse(s.value); } catch(e) { }
+                }
+            });
+            // Defaults if empty
+            if (storeMasterLists.issued_to.length === 0) storeMasterLists.issued_to = ['Factory Floor', 'Warehouse A', 'Maintenance Dept', 'Main Office'];
+            if (storeMasterLists.issued_by.length === 0) storeMasterLists.issued_by = ['Admin', 'Store Manager', 'Shift Supervisor'];
+            if (storeMasterLists.purpose.length === 0) storeMasterLists.purpose = ['Production', 'Repair & Maintenance', 'Sampling', 'Gift', 'Internal Use'];
             
             // Sync Audit Session from DB: restore saved counts if they are not currently being edited
             if (d.latestAudit) {
@@ -7739,7 +7753,35 @@ async function saveStoreOutward() {
     });
     if (res) {
         alert('Item issued successfully');
+        
+        // Auto-learning: Save new entries to master lists
+        let autoUpdated = false;
+        if (issuedTo && !storeMasterLists.issued_to.includes(issuedTo)) {
+            storeMasterLists.issued_to.push(issuedTo);
+            autoUpdated = true;
+        }
+        if (issuedBy && !storeMasterLists.issued_by.includes(issuedBy)) {
+            storeMasterLists.issued_by.push(issuedBy);
+            autoUpdated = true;
+        }
+        if (purpose && !storeMasterLists.purpose.includes(purpose)) {
+            storeMasterLists.purpose.push(purpose);
+            autoUpdated = true;
+        }
+        
+        if (autoUpdated) {
+            saveStoreToDB('save_settings', { 
+                category: 'store_lists', 
+                settings: { 
+                    issued_to: JSON.stringify(storeMasterLists.issued_to),
+                    issued_by: JSON.stringify(storeMasterLists.issued_by),
+                    purpose: JSON.stringify(storeMasterLists.purpose)
+                } 
+            });
+        }
+
         document.getElementById('storeOutwardQty').value = '';
+        // Note: Don't clear issued_to/by/purpose if user wants to repeat, but usually better to clear for safety
         document.getElementById('storeIssuedTo').value = '';
         document.getElementById('storeIssuedBy').value = '';
         document.getElementById('storePurpose').value = '';
@@ -7748,6 +7790,7 @@ async function saveStoreOutward() {
             refreshStoreDashboard();
             refreshStoreOutwards();
             refreshStoreOutwardHistory();
+            refreshStoreMasterLists();
         });
     }
 }
@@ -7809,6 +7852,93 @@ function refreshStoreOutwards() {
         mSelect.dataset.init = "true";
     }
     refreshStoreOutwardHistory();
+    refreshStoreMasterLists();
+}
+
+function refreshStoreMasterLists() {
+    const listTo = document.getElementById('listIssuedTo');
+    const listBy = document.getElementById('listIssuedBy');
+    const listPurp = document.getElementById('listPurpose');
+    
+    if (listTo) listTo.innerHTML = storeMasterLists.issued_to.sort().map(v => `<option value="${v}">`).join('');
+    if (listBy) listBy.innerHTML = storeMasterLists.issued_by.sort().map(v => `<option value="${v}">`).join('');
+    if (listPurp) listPurp.innerHTML = storeMasterLists.purpose.sort().map(v => `<option value="${v}">`).join('');
+}
+
+function manageStoreListsModal() {
+    const modalHtml = `
+        <div id="storeListModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+            <div style="background: white; width: 90%; max-width: 800px; border-radius: 20px; padding: 2.5rem; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2 style="margin: 0; color: #1e293b; font-weight: 800;">Manage Selection Lists</h2>
+                    <button onclick="document.getElementById('storeListModal').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b;">&times;</button>
+                </div>
+                
+                <div class="row">
+                    ${['issued_to', 'issued_by', 'purpose'].map(type => `
+                        <div class="col-md-4" style="margin-bottom: 2rem;">
+                            <h4 style="text-transform: capitalize; color: #334155; margin-bottom: 1rem; font-weight: 700; font-size: 0.95rem;">${type.replace('_', ' ')}</h4>
+                            <div style="border: 1px solid #e2e8f0; border-radius: 12px; height: 300px; display: flex; flex-direction: column;">
+                                <div style="flex: 1; overflow-y: auto; padding: 10px;">
+                                    ${storeMasterLists[type].sort().map((val, idx) => `
+                                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem;">
+                                            <span>${val}</span>
+                                            <i class="fas fa-trash-alt" style="color: #ef4444; cursor: pointer;" onclick="deleteFromStoreList('${type}', '${val.replace(/'/g, "\\'")}')"></i>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div style="padding: 10px; border-top: 1px solid #e2e8f0; background: #f8fafc;">
+                                    <div style="display: flex; gap: 5px;">
+                                        <input type="text" id="add_${type}" class="form-control form-control-sm" placeholder="Add New...">
+                                        <button class="btn btn-sm btn-primary" onclick="addToStoreList('${type}')"><i class="fas fa-plus"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="text-align: right; margin-top: 1rem;">
+                    <button class="btn btn-primary" onclick="saveAllStoreLists()" style="padding: 0.7rem 2rem; border-radius: 10px; font-weight: 700;">Save All Changes</button>
+                </div>
+            </div>
+        </div>
+    `;
+    const div = document.createElement('div');
+    div.innerHTML = modalHtml;
+    document.body.appendChild(div.firstElementChild);
+}
+
+function addToStoreList(type) {
+    const input = document.getElementById('add_' + type);
+    const val = input.value.trim();
+    if (!val) return;
+    if (storeMasterLists[type].includes(val)) return alert('Already in list');
+    storeMasterLists[type].push(val);
+    input.value = '';
+    document.getElementById('storeListModal').remove();
+    manageStoreListsModal();
+}
+
+function deleteFromStoreList(type, val) {
+    storeMasterLists[type] = storeMasterLists[type].filter(v => v !== val);
+    document.getElementById('storeListModal').remove();
+    manageStoreListsModal();
+}
+
+async function saveAllStoreLists() {
+    const res = await saveStoreToDB('save_settings', { 
+        category: 'store_lists', 
+        settings: { 
+            issued_to: JSON.stringify(storeMasterLists.issued_to),
+            issued_by: JSON.stringify(storeMasterLists.issued_by),
+            purpose: JSON.stringify(storeMasterLists.purpose)
+        } 
+    });
+    if (res) {
+        alert('Lists saved successfully');
+        document.getElementById('storeListModal').remove();
+        refreshStoreMasterLists();
+    }
 }
 
 function refreshStoreInwardHistory() {
