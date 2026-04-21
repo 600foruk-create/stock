@@ -6316,24 +6316,68 @@ async function saveRMConsumptionEntry() {
 }
 
 async function autoSaveRMConsumption() {
-    const fgVal = parseFloat(document.getElementById('wipFGWeight').innerText.replace(/[^0-9.]/g, '')) || 0;
-    const rmVal = parseFloat(document.getElementById('wipRMWeight').innerText.replace(/[^0-9.]/g, '')) || 0;
-    const rmPriceStr = document.getElementById('wipRMValue')?.innerText || '0';
-    const rmPriceVal = parseFloat(rmPriceStr.replace(/[^0-9.]/g, '')) || 0;
-    
-    // Don't auto-save if both are zero (initial state)
-    if (fgVal === 0 && rmVal === 0) return;
+    // 1. Calculate FG Total (Same logic as refreshRMConsumptionReport)
+    let lastFGDate = null;
+    transactions.forEach(t => {
+        if (t.type === 'IN') {
+            const d = new Date(t.date);
+            if (!isNaN(d.getTime()) && (!lastFGDate || d > lastFGDate)) lastFGDate = d;
+        }
+    });
 
-    const gapVal = rmVal - fgVal;
+    let fgTotalKg = 0;
+    if (lastFGDate) {
+        const lastFGDateStr = lastFGDate.toDateString();
+        transactions.forEach(t => {
+            if (t.type === 'IN' && new Date(t.date).toDateString() === lastFGDateStr) {
+                fgTotalKg += (parseFloat(t.quantity) || 0) * (parseFloat(t.itemWeight) || 0);
+            }
+        });
+    }
+
+    // 2. Calculate RM Totals (Same logic as refreshRMConsumptionReport)
+    let lastRMDate = null;
+    rmTransactions.forEach(t => {
+        if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:')) {
+            const d = new Date(t.date);
+            if (!isNaN(d.getTime()) && (!lastRMDate || d > lastRMDate)) lastRMDate = d;
+        }
+    });
+
+    let rmTotalKg = 0;
+    let rmTotalValue = 0;
+    if (lastRMDate) {
+        const lastRMDateStr = lastRMDate.toDateString();
+        rmTransactions.forEach(t => {
+            if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:') && new Date(t.date).toDateString() === lastRMDateStr) {
+                const item = rmItems.find(i => i.id == t.rm_item_id);
+                const qty = (parseFloat(t.quantity) || 0);
+                let price = (parseFloat(t.price) || 0);
+
+                if (price <= 0 && item) {
+                    price = getRMItemCurrentPrice(item);
+                }
+
+                rmTotalKg += qty;
+                rmTotalValue += qty * price;
+            }
+        });
+    }
+    
+    // Don't auto-save if both are zero
+    if (fgTotalKg === 0 && rmTotalKg === 0) return;
+
+    const gapVal = rmTotalKg - fgTotalKg;
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     const log = {
-        date: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        fg_weight: fgVal,
-        rm_weight: rmVal,
-        rm_value: rmPriceVal,
+        date: now,
+        fg_weight: fgTotalKg,
+        rm_weight: rmTotalKg,
+        rm_value: rmTotalValue,
         in_process: 0,
         gap: gapVal,
-        notes: '[Auto-Saved]'
+        notes: '[Saved]'
     };
 
     try {
@@ -6345,10 +6389,11 @@ async function autoSaveRMConsumption() {
         if (result.status === 'success') {
             log.id = result.id;
             rmConsumptionLogs.unshift(log);
-            populateRMHistoryYearFilter(); // Update year filter list if new year appears
+            populateRMHistoryYearFilter(); 
             refreshRMConsumptionHistory();
+            alert('Daily entry saved successfully!');
         }
-    } catch (e) { console.error('Failed to auto-save log:', e); }
+    } catch (e) { console.error('Failed to save log:', e); }
 }
 
 function refreshRMConsumptionHistory() {
