@@ -7732,9 +7732,9 @@ async function saveStoreInward() {
 async function saveStoreOutward() {
     const itemId = document.getElementById('storeOutwardItemSelect').value;
     const qty = parseFloat(document.getElementById('storeOutwardQty').value);
-    const issuedTo = document.getElementById('storeIssuedTo').value;
-    const issuedBy = document.getElementById('storeIssuedBy').value;
-    const purpose = document.getElementById('storePurpose').value;
+    const issuedTo = document.getElementById('storeIssuedTo').value.trim();
+    const issuedBy = document.getElementById('storeIssuedBy').value.trim();
+    const purpose = document.getElementById('storePurpose').value.trim();
     const notes = document.getElementById('storeIssueNotes').value;
     
     if (!itemId || isNaN(qty) || qty <= 0 || !issuedTo) return alert('At least Item, Qty and Issued To are required');
@@ -7756,31 +7756,12 @@ async function saveStoreOutward() {
     if (res) {
         alert('Item issued successfully');
         
-        // Auto-learning: Save new entries to master lists
-        let autoUpdated = false;
-        if (issuedTo && !storeMasterLists.issued_to.includes(issuedTo)) {
-            storeMasterLists.issued_to.push(issuedTo);
-            autoUpdated = true;
-        }
-        if (issuedBy && !storeMasterLists.issued_by.includes(issuedBy)) {
-            storeMasterLists.issued_by.push(issuedBy);
-            autoUpdated = true;
-        }
-        if (purpose && !storeMasterLists.purpose.includes(purpose)) {
-            storeMasterLists.purpose.push(purpose);
-            autoUpdated = true;
-        }
+        // Auto-learning: Save new entries to master lists automatically if they don't exist
+        if (issuedTo && !storeMasterLists.issued_to.includes(issuedTo)) storeMasterLists.issued_to.push(issuedTo);
+        if (issuedBy && !storeMasterLists.issued_by.includes(issuedBy)) storeMasterLists.issued_by.push(issuedBy);
+        if (purpose && !storeMasterLists.purpose.includes(purpose)) storeMasterLists.purpose.push(purpose);
         
-        if (autoUpdated) {
-            saveStoreToDB('save_settings', { 
-                category: 'store_lists', 
-                settings: { 
-                    issued_to: JSON.stringify(storeMasterLists.issued_to),
-                    issued_by: JSON.stringify(storeMasterLists.issued_by),
-                    purpose: JSON.stringify(storeMasterLists.purpose)
-                } 
-            });
-        }
+        saveAllStoreLists(true); // Silent save
 
         document.getElementById('storeOutwardQty').value = '';
         // Note: Don't clear issued_to/by/purpose if user wants to repeat, but usually better to clear for safety
@@ -7854,80 +7835,69 @@ function refreshStoreOutwards() {
         mSelect.dataset.init = "true";
     }
     refreshStoreOutwardHistory();
-    refreshStoreMasterLists();
+    // Initialize Smart Dropdowns
+    ['issued_to', 'issued_by', 'purpose'].forEach(t => refreshSmartDropdown(t));
 }
 
-function refreshStoreMasterLists() {
-    const listTo = document.getElementById('listIssuedTo');
-    const listBy = document.getElementById('listIssuedBy');
-    const listPurp = document.getElementById('listPurpose');
+// ==================== SMART DROPDOWN CONTROLLERS ====================
+
+function refreshSmartDropdown(type, query = '') {
+    const container = document.getElementById(`dropdown_${type}`);
+    if (!container) return;
     
-    if (listTo) listTo.innerHTML = storeMasterLists.issued_to.sort().map(v => `<option value="${v}">`).join('');
-    if (listBy) listBy.innerHTML = storeMasterLists.issued_by.sort().map(v => `<option value="${v}">`).join('');
-    if (listPurp) listPurp.innerHTML = storeMasterLists.purpose.sort().map(v => `<option value="${v}">`).join('');
-}
+    let list = storeMasterLists[type] || [];
+    if (query) {
+        list = list.filter(item => item.toLowerCase().includes(query.toLowerCase()));
+    }
+    list.sort();
 
-function manageStoreListsModal() {
-    const modalHtml = `
-        <div id="storeListModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; justify-content: center; align-items: center;">
-            <div style="background: white; width: 90%; max-width: 800px; border-radius: 20px; padding: 2.5rem; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                    <h2 style="margin: 0; color: #1e293b; font-weight: 800;">Manage Selection Lists</h2>
-                    <button onclick="document.getElementById('storeListModal').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b;">&times;</button>
-                </div>
-                
-                <div class="row">
-                    ${['issued_to', 'issued_by', 'purpose'].map(type => `
-                        <div class="col-md-4" style="margin-bottom: 2rem;">
-                            <h4 style="text-transform: capitalize; color: #334155; margin-bottom: 1rem; font-weight: 700; font-size: 0.95rem;">${type.replace('_', ' ')}</h4>
-                            <div style="border: 1px solid #e2e8f0; border-radius: 12px; height: 300px; display: flex; flex-direction: column;">
-                                <div style="flex: 1; overflow-y: auto; padding: 10px;">
-                                    ${storeMasterLists[type].sort().map((val, idx) => `
-                                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem;">
-                                            <span>${val}</span>
-                                            <i class="fas fa-trash-alt" style="color: #ef4444; cursor: pointer;" onclick="deleteFromStoreList('${type}', '${val.replace(/'/g, "\\'")}')"></i>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                                <div style="padding: 10px; border-top: 1px solid #e2e8f0; background: #f8fafc;">
-                                    <div style="display: flex; gap: 5px;">
-                                        <input type="text" id="add_${type}" class="form-control form-control-sm" placeholder="Add New...">
-                                        <button class="btn btn-sm btn-primary" onclick="addToStoreList('${type}')"><i class="fas fa-plus"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-                <div style="text-align: right; margin-top: 1rem;">
-                    <button class="btn btn-primary" onclick="saveAllStoreLists()" style="padding: 0.7rem 2rem; border-radius: 10px; font-weight: 700;">Save All Changes</button>
-                </div>
-            </div>
+    const html = list.map(val => `
+        <div class="dropdown-item-custom" onclick="selectSmartItem('${type}', '${val.replace(/'/g, "\\'")}')">
+            <span>${val}</span>
+            <i class="fas fa-trash-alt delete-btn" onclick="event.stopPropagation(); deleteSmartItem('${type}', '${val.replace(/'/g, "\\'")}')"></i>
         </div>
-    `;
-    const div = document.createElement('div');
-    div.innerHTML = modalHtml;
-    document.body.appendChild(div.firstElementChild);
+    `).join('');
+
+    container.innerHTML = html || `<div style="padding:10px; color:#94a3b8; font-style:italic; font-size:0.8rem; text-align:center;">No matches found</div>`;
+    
+    // Check if we should show the "Add New" indicator
+    const indicator = document.getElementById(`add_indicator_${type}`);
+    if (indicator) {
+        const exactMatch = list.some(item => item.toLowerCase() === query.toLowerCase());
+        indicator.style.display = (query && !exactMatch) ? 'block' : 'none';
+    }
 }
 
-function addToStoreList(type) {
-    const input = document.getElementById('add_' + type);
+function selectSmartItem(type, val) {
+    const input = document.querySelector(`.smart-input[data-type="${type}"]`);
+    if (input) {
+        input.value = val;
+        document.getElementById(`dropdown_${type}`).style.display = 'none';
+        document.getElementById(`add_indicator_${type}`).style.display = 'none';
+    }
+}
+
+async function deleteSmartItem(type, val) {
+    if (!confirm(`Delete "${val}" from the list?`)) return;
+    storeMasterLists[type] = storeMasterLists[type].filter(item => item !== val);
+    await saveAllStoreLists(true);
+    refreshSmartDropdown(type, document.querySelector(`.smart-input[data-type="${type}"]`).value);
+}
+
+async function addNewFromInput(type) {
+    const input = document.querySelector(`.smart-input[data-type="${type}"]`);
     const val = input.value.trim();
     if (!val) return;
-    if (storeMasterLists[type].includes(val)) return alert('Already in list');
-    storeMasterLists[type].push(val);
-    input.value = '';
-    document.getElementById('storeListModal').remove();
-    manageStoreListsModal();
+    if (!storeMasterLists[type].includes(val)) {
+        storeMasterLists[type].push(val);
+        await saveAllStoreLists(true);
+        refreshSmartDropdown(type, val);
+        alert(`Added "${val}" to your list!`);
+        document.getElementById(`add_indicator_${type}`).style.display = 'none';
+    }
 }
 
-function deleteFromStoreList(type, val) {
-    storeMasterLists[type] = storeMasterLists[type].filter(v => v !== val);
-    document.getElementById('storeListModal').remove();
-    manageStoreListsModal();
-}
-
-async function saveAllStoreLists() {
+async function saveAllStoreLists(silent = false) {
     const res = await saveStoreToDB('save_settings', { 
         category: 'store_lists', 
         settings: { 
@@ -7936,12 +7906,34 @@ async function saveAllStoreLists() {
             purpose: JSON.stringify(storeMasterLists.purpose)
         } 
     });
-    if (res) {
-        alert('Lists saved successfully');
-        document.getElementById('storeListModal').remove();
-        refreshStoreMasterLists();
+    if (res && !silent) {
+        alert('Selection lists updated successfully.');
     }
+    return res;
 }
+
+// Event Listeners for Smart Inputs
+document.addEventListener('focusin', (e) => {
+    if (e.target.classList.contains('smart-input')) {
+        const type = e.target.dataset.type;
+        document.getElementById(`dropdown_${type}`).style.display = 'block';
+        refreshSmartDropdown(type, e.target.value);
+    }
+});
+
+document.addEventListener('input', (e) => {
+    if (e.target.classList.contains('smart-input')) {
+        const type = e.target.dataset.type;
+        refreshSmartDropdown(type, e.target.value);
+    }
+});
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.store-field')) {
+        document.querySelectorAll('.smart-dropdown').forEach(d => d.style.display = 'none');
+        document.querySelectorAll('.add-new-indicator').forEach(i => i.style.display = 'none');
+    }
+});
 
 function refreshStoreInwardHistory() {
     const month = parseInt(document.getElementById('inwardHistMonth').value);

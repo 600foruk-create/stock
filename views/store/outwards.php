@@ -1,68 +1,167 @@
 <div class="store-outwards" style="padding: 1rem;">
     <!-- OUTWARD FORM -->
-    <div class="row" style="background: white; padding: 2.5rem; border-radius: 20px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); margin-bottom: 2rem; display: flex; flex-wrap: wrap;">
-        <div class="col-6" style="margin-bottom: 1.5rem;">
-            <div class="form-group">
-                <label style="font-weight: 700; color: #9b2c2c; font-size: 0.9rem;">Select Item</label>
-                <select id="storeOutwardItemSelect" class="form-control select2" style="width: 100%;">
-                    <!-- Populated by JS -->
-                </select>
-            </div>
-        </div>
-        <div class="col-6" style="margin-bottom: 1.5rem;">
-            <div class="form-group">
-                <label style="font-weight: 700; color: #9b2c2c; font-size: 0.9rem;">Quantity</label>
-                <input type="number" id="storeOutwardQty" class="form-control" min="1" step="0.01">
-            </div>
-        </div>
-        <div class="col-6" style="margin-bottom: 1.5rem;">
-            <div class="form-group">
-                <label style="font-weight: 700; color: #9b2c2c; font-size: 0.9rem;">Issued To (Person/Dept)</label>
-                <input type="text" id="storeIssuedTo" class="form-control" list="listIssuedTo" placeholder="Select or type new...">
-                <datalist id="listIssuedTo">
-                    <option value="Factory Floor">
-                    <option value="Warehouse A">
-                    <option value="Maintenance Dept">
-                    <option value="Main Office">
-                </datalist>
-            </div>
-        </div>
-        <div class="col-6" style="margin-bottom: 1.5rem;">
-            <div class="form-group">
-                <label style="font-weight: 700; color: #9b2c2c; font-size: 0.9rem;">Issued By (Staff)</label>
-                <input type="text" id="storeIssuedBy" class="form-control" list="listIssuedBy" placeholder="Select or type new...">
-                <datalist id="listIssuedBy">
-                    <option value="Admin">
-                    <option value="Store Manager">
-                    <option value="Shift Supervisor">
-                </datalist>
-            </div>
-        </div>
-        <div class="col-6" style="margin-bottom: 1.5rem;">
-            <div class="form-group">
-                <label style="font-weight: 700; color: #9b2c2c; font-size: 0.9rem;">Purpose / Reason</label>
-                <input type="text" id="storePurpose" class="form-control" list="listPurpose" placeholder="Select or type new...">
-                <datalist id="listPurpose">
-                    <option value="Production">
-                    <option value="Repair & Maintenance">
-                    <option value="Sampling">
-                    <option value="Gift">
-                    <option value="Internal Use">
-                </datalist>
-            </div>
-        </div>
-        <div class="col-6" style="margin-bottom: 1.5rem;">
-            <div class="form-group">
-                <label style="font-weight: 700; color: #9b2c2c; font-size: 0.9rem;">Remarks / Notes</label>
-                <input type="text" id="storeIssueNotes" class="form-control" placeholder="Any details..." style="height: 38px; border-radius: 8px;">
-            </div>
+    <style>
+        .store-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 2rem;
+        }
+        .store-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+        }
+        .store-field label {
+            font-weight: 700;
+            color: #9b2c2c;
+            font-size: 0.85rem;
+            margin: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .store-input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .store-control {
+            height: 48px !important;
+            border-radius: 12px !important;
+            border: 2px solid #f1f5f9 !important;
+            padding: 0 15px !important;
+            font-size: 0.95rem !important;
+            width: 100% !important;
+            transition: all 0.2s ease;
+            background: #fdfdfd !important;
+        }
+        .store-control:focus {
+            border-color: #f87171 !important;
+            background: white !important;
+            box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.1) !important;
+            outline: none;
+        }
+        /* Custom Dropdown Styling */
+        .smart-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            z-index: 1000;
+            margin-top: 5px;
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+            padding: 8px;
+        }
+        .dropdown-item-custom {
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #475569;
+            transition: all 0.15s ease;
+        }
+        .dropdown-item-custom:hover {
+            background: #fff5f5;
+            color: #9b2c2c;
+        }
+        .dropdown-item-custom .delete-btn {
+            color: #cbd5e1;
+            padding: 5px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .dropdown-item-custom .delete-btn:hover {
+            color: #ef4444;
+            background: #fee2e2;
+        }
+        .add-new-indicator {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            color: #EF4444;
+            font-weight: 700;
+            background: #fff5f5;
+            cursor: pointer;
+            margin-top: 5px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+        /* Select2 override to match heights */
+        .select2-container--default .select2-selection--single {
+            height: 48px !important;
+            border: 2px solid #f1f5f9 !important;
+            border-radius: 12px !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            padding-left: 15px !important;
+        }
+    </style>
+
+    <div class="store-form-grid">
+        <div class="store-field">
+            <label>Select Item</label>
+            <select id="storeOutwardItemSelect" class="form-control select2">
+                <!-- Populated by JS -->
+            </select>
         </div>
         
-        <div class="col-12" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 2rem;">
-            <button class="btn btn-outline-secondary" onclick="manageStoreListsModal()" style="border-radius: 10px; font-weight: 700; background: #f8fafc; color: #475569; border-color: #e2e8f0; padding: 10px 20px;">
-                <i class="fas fa-cog"></i> Manage Selection Lists
-            </button>
-            <button class="btn btn-danger btn-lg" onclick="saveStoreOutward()" style="padding: 0.8rem 4rem; font-weight: 800; border-radius: 12px; box-shadow: 0 4px 20px rgba(220, 38, 38, 0.3); letter-spacing: 0.5px;">
+        <div class="store-field">
+            <label>Quantity</label>
+            <input type="number" id="storeOutwardQty" class="store-control" min="1" step="0.01" placeholder="0.00">
+        </div>
+
+        <div class="store-field">
+            <label>Issued To (Person/Dept)</label>
+            <div class="store-input-group">
+                <input type="text" id="storeIssuedTo" class="store-control smart-input" data-type="issued_to" autocomplete="off" placeholder="Select or type to add...">
+                <div class="smart-dropdown" id="dropdown_issued_to"></div>
+            </div>
+            <div class="add-new-indicator" id="add_indicator_issued_to" onclick="addNewFromInput('issued_to')">+ Add as New Entry</div>
+        </div>
+
+        <div class="store-field">
+            <label>Issued By (Staff)</label>
+            <div class="store-input-group">
+                <input type="text" id="storeIssuedBy" class="store-control smart-input" data-type="issued_by" autocomplete="off" placeholder="Select or type to add...">
+                <div class="smart-dropdown" id="dropdown_issued_by"></div>
+            </div>
+            <div class="add-new-indicator" id="add_indicator_issued_by" onclick="addNewFromInput('issued_by')">+ Add as New Entry</div>
+        </div>
+
+        <div class="store-field">
+            <label>Purpose / Reason</label>
+            <div class="store-input-group">
+                <input type="text" id="storePurpose" class="store-control smart-input" data-type="purpose" autocomplete="off" placeholder="Select or type to add...">
+                <div class="smart-dropdown" id="dropdown_purpose"></div>
+            </div>
+            <div class="add-new-indicator" id="add_indicator_purpose" onclick="addNewFromInput('purpose')">+ Add as New Entry</div>
+        </div>
+
+        <div class="store-field">
+            <label>Remarks / Notes</label>
+            <input type="text" id="storeIssueNotes" class="store-control" placeholder="Optional notes...">
+        </div>
+        
+        <div style="grid-column: span 2; display: flex; justify-content: flex-end; margin-top: 1rem; border-top: 1px solid #f1f5f9; padding-top: 2rem;">
+            <button class="btn btn-danger btn-lg" onclick="saveStoreOutward()" style="padding: 0.8rem 5rem; font-weight: 800; border-radius: 12px; box-shadow: 0 4px 20px rgba(220, 38, 38, 0.3); letter-spacing: 0.5px; transition: all 0.3s ease;">
                 Record Outward Record
             </button>
         </div>
