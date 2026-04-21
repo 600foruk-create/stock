@@ -92,15 +92,15 @@
         <table class="data-table" style="margin-bottom: 0;">
             <thead>
                 <tr>
-                    <th style="padding: 1.2rem;">Date & Time</th>
-                    <th style="padding: 1.2rem; text-align: right;">FG Produced (KG)</th>
-                    <th style="padding: 1.2rem; text-align: right;">RM Issued (KG)</th>
-                    <th style="padding: 1.2rem; text-align: right;">Issuance Value (Rs.)</th>
-                    <th style="padding: 1.2rem; text-align: right;">Other Expenses (Rs.)</th>
-                    <th style="padding: 1.2rem; text-align: right;">Grand Total (Rs.)</th>
-                    <th style="padding: 1.2rem; text-align: right;">In Process (KG)</th>
-                    <th style="padding: 1.2rem; text-align: right;">Gap / WIP (Net)</th>
-                    <th style="padding: 1.2rem; text-align: center;">Actions</th>
+                    <th style="padding: 1rem 0.8rem;">Date & Time</th>
+                    <th style="padding: 1rem 0.8rem; text-align: left;">FG Produced (KG)</th>
+                    <th style="padding: 1rem 0.8rem; text-align: left;">RM Issued (KG)</th>
+                    <th style="padding: 1rem 0.8rem; text-align: left;">Issuance Value (Rs.)</th>
+                    <th style="padding: 1rem 0.8rem; text-align: left;">Other Expenses (Rs.)</th>
+                    <th style="padding: 1rem 0.8rem; text-align: left;">Grand Total (Rs.)</th>
+                    <th style="padding: 1rem 0.8rem; text-align: left;">In Process (KG)</th>
+                    <th style="padding: 1rem 0.8rem; text-align: left;">Gap / WIP (Net)</th>
+                    <th style="padding: 1rem 0.8rem; text-align: center;">Actions</th>
                 </tr>
             </thead>
             <tbody id="rmConsumptionHistoryTable">

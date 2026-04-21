@@ -6441,28 +6441,28 @@ function refreshRMConsumptionHistory() {
 
         html += `
             <tr data-id="${l.id}">
-                <td style="padding: 1.2rem;">${formatDate(l.date)}</td>
-                <td style="padding: 1.2rem; text-align: right;">${fg.toLocaleString()} KG</td>
-                <td style="padding: 1.2rem; text-align: right;">${rm.toLocaleString()} KG</td>
-                <td style="padding: 1.2rem; text-align: right; color: var(--gray-600); font-weight: 700;">Rs. ${val.toLocaleString()}</td>
-                <td style="padding: 0.8rem; text-align: right;">
+                <td style="padding: 0.8rem; font-size: 0.9rem; line-height: 1.2;">${formatDate(l.date)}</td>
+                <td style="padding: 0.8rem; text-align: left;">${fg.toLocaleString()} KG</td>
+                <td style="padding: 0.8rem; text-align: left;">${rm.toLocaleString()} KG</td>
+                <td style="padding: 0.8rem; text-align: left; color: var(--gray-600); font-weight: 700;">Rs. ${val.toLocaleString()}</td>
+                <td style="padding: 0.6rem; text-align: left;">
                     <input type="number" step="1" value="${other}" 
                         onchange="updateRMConsumptionOtherExpenses(${l.id}, this.value)"
-                        style="width: 100px; padding: 0.4rem; text-align: right; border: 1px solid var(--gray-200); border-radius: 6px; font-weight: 600;">
+                        style="width: 75px; padding: 0.3rem; text-align: left; border: 1px solid var(--gray-200); border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
                 </td>
-                <td style="padding: 1.2rem; text-align: right; color: var(--success); font-weight: 800; font-size: 1.05rem;">
+                <td style="padding: 0.8rem; text-align: left; color: var(--success); font-weight: 800; font-size: 0.95rem;">
                     Rs. ${grandTotal.toLocaleString()}
                 </td>
-                <td style="padding: 0.8rem; text-align: right;">
+                <td style="padding: 0.6rem; text-align: left;">
                     <input type="number" step="0.1" value="${inp}" 
                         onchange="updateRMConsumptionInProcess(${l.id}, this.value)"
-                        style="width: 100px; padding: 0.4rem; text-align: right; border: 1px solid var(--gray-200); border-radius: 6px; font-weight: 600;">
+                        style="width: 75px; padding: 0.3rem; text-align: left; border: 1px solid var(--gray-200); border-radius: 6px; font-weight: 600; font-size: 0.85rem;">
                 </td>
-                <td style="padding: 1.2rem; text-align: right; color: ${gap < 0 ? '#dc2626' : '#059669'}; font-weight: bold;">
+                <td style="padding: 0.8rem; text-align: left; color: ${gap < 0 ? '#dc2626' : '#059669'}; font-weight: bold; font-size: 0.9rem;">
                     ${gap.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} KG
                 </td>
-                <td style="padding: 1.2rem; text-align: center;">
-                    <button class="btn btn-sm btn-danger" onclick="deleteRMConsumptionEntry(${l.id})">🗑️</button>
+                <td style="padding: 0.8rem; text-align: center;">
+                    <button class="btn btn-sm btn-danger" onclick="deleteRMConsumptionEntry(${l.id})" style="padding: 4px 8px;">🗑️</button>
                 </td>
             </tr>`;
     });
@@ -6476,14 +6476,14 @@ function refreshRMConsumptionHistory() {
     if (tfoot) {
         tfoot.innerHTML = `
             <tr>
-                <td style="padding: 1.2rem;">SUB TOTAL (FILTERED)</td>
-                <td style="padding: 1.2rem; text-align: right;">${totalFG.toLocaleString()} KG</td>
-                <td style="padding: 1.2rem; text-align: right;">${totalRM.toLocaleString()} KG</td>
-                <td style="padding: 1.2rem; text-align: right; color: var(--gray-600);">Rs. ${totalValue.toLocaleString()}</td>
-                <td style="padding: 1.2rem; text-align: right; color: var(--gray-600);">Rs. ${totalOtherExpenses.toLocaleString()}</td>
-                <td style="padding: 1.2rem; text-align: right; color: var(--success);">Rs. ${totalGrandTotal.toLocaleString()}</td>
-                <td style="padding: 1.2rem; text-align: right;">${totalInProcess.toLocaleString()} KG</td>
-                <td style="padding: 1.2rem; text-align: right; color: ${totalGap < 0 ? '#dc2626' : '#059669'};">
+                <td style="padding: 0.8rem;">SUB TOTAL (FILTERED)</td>
+                <td style="padding: 0.8rem; text-align: left;">${totalFG.toLocaleString()} KG</td>
+                <td style="padding: 0.8rem; text-align: left;">${totalRM.toLocaleString()} KG</td>
+                <td style="padding: 0.8rem; text-align: left; color: var(--gray-600);">Rs. ${totalValue.toLocaleString()}</td>
+                <td style="padding: 0.8rem; text-align: left; color: var(--gray-600);">Rs. ${totalOtherExpenses.toLocaleString()}</td>
+                <td style="padding: 0.8rem; text-align: left; color: var(--success);">Rs. ${totalGrandTotal.toLocaleString()}</td>
+                <td style="padding: 0.8rem; text-align: left;">${totalInProcess.toLocaleString()} KG</td>
+                <td style="padding: 0.8rem; text-align: left; color: ${totalGap < 0 ? '#dc2626' : '#059669'};">
                     ${totalGap.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} KG
                 </td>
                 <td></td>
