@@ -13,6 +13,7 @@
                     <span id="rmLastFormulaDate" style="font-size: 0.8rem; color: var(--sky-700); font-weight: 700; background: var(--sky-50); padding: 2px 8px; border-radius: 6px; border: 1px solid var(--sky-100);">--</span>
                 </div>
                 <div id="rmDailyFormulaWeight" style="font-size: 1.3rem; font-weight: 900; color: var(--sky-600); line-height: 1.1;">0.0 KG</div>
+                <div id="rmDailyFormulaValue" style="font-size: 0.9rem; font-weight: 700; color: var(--success); margin-top: 2px;">Rs. 0</div>
             </div>
         </div>
     </div>

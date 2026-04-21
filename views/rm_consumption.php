@@ -27,7 +27,8 @@
         <div style="background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: center; text-align: center;">
             <div>
                 <span style="font-size: 0.8rem; font-weight: 800; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.8px; display: block; margin-bottom: 8px;">Latest RM Issuance</span>
-                <div id="wipRMWeight" style="font-size: 2.2rem; font-weight: 900; color: var(--gray-800);">0.0 KG</div>
+                <div id="wipRMWeight" style="font-size: 1.8rem; font-weight: 900; color: var(--gray-800); line-height: 1;">0.0 KG</div>
+                <div id="wipRMValue" style="font-size: 1rem; font-weight: 700; color: var(--success); margin-top: 5px;">Rs. 0</div>
             </div>
         </div>
 
@@ -94,6 +95,7 @@
                     <th style="padding: 1.2rem;">Date & Time</th>
                     <th style="padding: 1.2rem; text-align: right;">FG Produced (KG)</th>
                     <th style="padding: 1.2rem; text-align: right;">RM Issued (KG)</th>
+                    <th style="padding: 1.2rem; text-align: right;">Issuance Value (Rs.)</th>
                     <th style="padding: 1.2rem; text-align: right;">In Process (KG)</th>
                     <th style="padding: 1.2rem; text-align: right;">Gap / WIP (Net)</th>
                     <th style="padding: 1.2rem; text-align: center;">Actions</th>

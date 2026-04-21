@@ -103,11 +103,14 @@ try {
                     notes TEXT
                 )");
 
-                // AUTO-REPAIR: Add in_process column if missing
+                // AUTO-REPAIR: Add price/value columns
                 try {
                     $clCols = $conn->query("SHOW COLUMNS FROM rm_consumption_logs")->fetchAll(PDO::FETCH_COLUMN);
                     if (!in_array('in_process', $clCols)) {
                         $conn->exec("ALTER TABLE rm_consumption_logs ADD COLUMN in_process DECIMAL(15,3) DEFAULT 0 AFTER rm_weight");
+                    }
+                    if (!in_array('rm_value', $clCols)) {
+                        $conn->exec("ALTER TABLE rm_consumption_logs ADD COLUMN rm_value DECIMAL(15,3) DEFAULT 0 AFTER rm_weight");
                     }
                 } catch(Exception $e) {}
 
@@ -309,8 +312,8 @@ try {
 
         elseif ($action === 'save_rm_consumption_log') {
             $log = $input['log'];
-            $stmt = $conn->prepare("INSERT INTO rm_consumption_logs (date, fg_weight, rm_weight, in_process, gap, notes) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$log['date'] ?? date('Y-m-d H:i:s'), $log['fg_weight'], $log['rm_weight'], $log['in_process'] ?? 0, $log['gap'], $log['notes'] ?? '']);
+            $stmt = $conn->prepare("INSERT INTO rm_consumption_logs (date, fg_weight, rm_weight, rm_value, in_process, gap, notes) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$log['date'] ?? date('Y-m-d H:i:s'), $log['fg_weight'], $log['rm_weight'], $log['rm_value'] ?? 0, $log['in_process'] ?? 0, $log['gap'], $log['notes'] ?? '']);
             echo json_encode(['status' => 'success', 'id' => $conn->lastInsertId()]);
         }
 

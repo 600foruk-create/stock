@@ -6010,7 +6010,18 @@ function previewFormulaUsage() {
     const items = rmFormulaItems.filter(fi => fi.formula_id == id);
     let text = '<strong>Standard Batch:</strong> ';
     
-    if (list) list.innerHTML = '';
+    if (list) {
+        list.innerHTML = `
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 1.2fr; gap: 8px; font-size: 0.75rem; font-weight: 800; color: var(--gray-400); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--gray-100); padding-bottom: 5px;">
+                <span>Material</span>
+                <span style="text-align: right;">Qty (KG)</span>
+                <span style="text-align: right;">Price</span>
+                <span style="text-align: right;">Subtotal</span>
+            </div>
+        `;
+    }
+    
+    let totalFormulaValue = 0;
     
     items.forEach((fi, idx) => {
         const item = rmItems.find(i => i.id == fi.rm_item_id);
@@ -6020,38 +6031,104 @@ function previewFormulaUsage() {
         
         // Add to editor
         if (list) {
+            const priceVal = getRMItemCurrentPrice(item);
+            const subtotal = fi.quantity * priceVal;
+            totalFormulaValue += subtotal;
+
             const row = document.createElement('div');
-            row.style.cssText = 'display: grid; grid-template-columns: 1fr 100px; gap: 8px; align-items: center; background: white; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--gray-200); margin-bottom: 2px;';
+            row.style.cssText = 'display: grid; grid-template-columns: 1.5fr 1fr 1fr 1.2fr; gap: 8px; align-items: center; background: white; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--gray-200); margin-bottom: 2px;';
             row.innerHTML = `
                 <span style="font-size: 0.85rem; font-weight: 500; color: var(--gray-700);">${name}</span>
                 <input type="number" class="form-control rm-formula-custom-qty" 
                        data-item-id="${fi.rm_item_id}" 
                        value="${fi.quantity}" 
-                       style="padding: 2px 6px; font-size: 0.85rem; height: 28px; text-align: right; border: 1px solid var(--gray-300);">
+                       style="padding: 2px 6px; font-size: 0.85rem; height: 28px; text-align: right; border: 1px solid var(--gray-300);"
+                       oninput="recalculateFormulaTotalValue()">
+                <span style="font-size: 0.8rem; text-align: right; color: var(--gray-500);">${priceVal.toFixed(1)}</span>
+                <span style="font-size: 0.85rem; font-weight: 700; text-align: right; color: var(--gray-700);">Rs. ${subtotal.toLocaleString()}</span>
             `;
             list.appendChild(row);
         }
     });
 
+    if (list) {
+        const totalRow = document.createElement('div');
+        totalRow.id = 'formulaTotalValueRow';
+        totalRow.style.cssText = 'display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 2px solid var(--gray-100);';
+        totalRow.innerHTML = `
+            <span style="font-size: 0.8rem; font-weight: 800; color: var(--gray-400); text-transform: uppercase;">Formula Total Value:</span>
+            <span id="formulaTotalValueDisplay" style="font-size: 1.2rem; font-weight: 900; color: var(--success);">Rs. ${totalFormulaValue.toLocaleString()}</span>
+        `;
+        list.appendChild(totalRow);
+    }
+
     if (preview) preview.innerHTML = text;
     if (editor) editor.style.display = 'block';
+}
+
+function getRMItemCurrentPrice(item) {
+    if (!item) return 0;
+    
+    let basePrice = parseFloat(item.base_price) || 0;
+    if (basePrice > 0) return basePrice;
+
+    // Fallback to history average
+    const history = rmTransactions.filter(t => t.type === 'IN' && t.rm_item_id == item.id && parseFloat(t.price) > 0);
+    if (history.length > 0) {
+        let totalQty = 0;
+        let totalCost = 0;
+        history.forEach(t => {
+            const q = parseFloat(t.quantity) || 0;
+            const p = parseFloat(t.price) || 0;
+            totalQty += q;
+            totalCost += (q * p);
+        });
+        return totalQty > 0 ? (totalCost / totalQty) : 0;
+    }
+    return 0;
+}
+
+function recalculateFormulaTotalValue() {
+    const list = document.getElementById('rmFormulaIngredientsList');
+    if (!list) return;
+    
+    const inputs = list.querySelectorAll('.rm-formula-custom-qty');
+    let total = 0;
+    inputs.forEach(input => {
+        const itemId = input.dataset.itemId;
+        const qty = parseFloat(input.value) || 0;
+        const item = rmItems.find(i => i.id == itemId);
+        const price = getRMItemCurrentPrice(item);
+        
+        // Update subtotal display in that row
+        const row = input.parentElement;
+        const subtotalEl = row.children[3];
+        if (subtotalEl) {
+            subtotalEl.innerText = 'Rs. ' + (qty * price).toLocaleString();
+        }
+        
+        total += qty * price;
+    });
+    
+    const display = document.getElementById('formulaTotalValueDisplay');
+    if (display) display.innerText = 'Rs. ' + total.toLocaleString();
 }
 
 function updateRMOutMetrics() {
     const lastDateEl = document.getElementById('rmLastFormulaDate');
     const weightEl = document.getElementById('rmDailyFormulaWeight');
+    const valueEl = document.getElementById('rmDailyFormulaValue');
     if (!lastDateEl || !weightEl) return;
 
     // Filter only Formula outputs (tagged in notes) for Today
     const todayStr = new Date().toDateString();
     let totalKg = 0;
+    let totalValue = 0;
 
     rmTransactions.forEach(t => {
-        if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:')) {
-            const tDate = new Date(t.date);
-            if (!isNaN(tDate.getTime()) && tDate.toDateString() === todayStr) {
-                totalKg += (parseFloat(t.quantity) || 0);
-            }
+        if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:') && new Date(t.date).toDateString() === todayStr) {
+            totalKg += (parseFloat(t.quantity) || 0);
+            totalValue += (parseFloat(t.quantity) || 0) * (parseFloat(t.price) || 0);
         }
     });
 
@@ -6061,6 +6138,7 @@ function updateRMOutMetrics() {
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     lastDateEl.innerText = `${day}-${monthNames[today.getMonth()]}-${today.getFullYear()}`;
     weightEl.innerText = totalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
+    if (valueEl) valueEl.innerText = 'Rs. ' + totalValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 }
 
 function refreshRMOutHistoryTable() {
@@ -6169,11 +6247,15 @@ function refreshRMConsumptionReport() {
     });
 
     let rmTotalKg = 0;
+    let rmTotalValue = 0;
     if (lastRMDate) {
         const lastRMDateStr = lastRMDate.toDateString();
         rmTransactions.forEach(t => {
             if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:') && new Date(t.date).toDateString() === lastRMDateStr) {
-                rmTotalKg += (parseFloat(t.quantity) || 0);
+                const qty = (parseFloat(t.quantity) || 0);
+                const price = (parseFloat(t.price) || 0);
+                rmTotalKg += qty;
+                rmTotalValue += qty * price;
             }
         });
     }
@@ -6181,6 +6263,7 @@ function refreshRMConsumptionReport() {
     // 3. Update UI Elements
     const fgWeightEl = document.getElementById('wipFGWeight');
     const rmWeightEl = document.getElementById('wipRMWeight');
+    const rmValueEl = document.getElementById('wipRMValue');
     const gapEl = document.getElementById('wipGapTotal');
 
     if (fgWeightEl) {
@@ -6189,6 +6272,10 @@ function refreshRMConsumptionReport() {
 
     if (rmWeightEl) {
         rmWeightEl.innerText = rmTotalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
+    }
+    
+    if (rmValueEl) {
+        rmValueEl.innerText = 'Rs. ' + rmTotalValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
     }
 
     if (gapEl) {
@@ -6210,12 +6297,13 @@ function refreshRMConsumptionReport() {
 
 async function saveRMConsumptionEntry() {
     await autoSaveRMConsumption();
-    alert('Daily entry saved successfully!');
 }
 
 async function autoSaveRMConsumption() {
     const fgVal = parseFloat(document.getElementById('wipFGWeight').innerText.replace(/[^0-9.]/g, '')) || 0;
     const rmVal = parseFloat(document.getElementById('wipRMWeight').innerText.replace(/[^0-9.]/g, '')) || 0;
+    const rmPriceStr = document.getElementById('wipRMValue')?.innerText || '0';
+    const rmPriceVal = parseFloat(rmPriceStr.replace(/[^0-9.]/g, '')) || 0;
     
     // Don't auto-save if both are zero (initial state)
     if (fgVal === 0 && rmVal === 0) return;
@@ -6226,6 +6314,7 @@ async function autoSaveRMConsumption() {
         date: new Date().toISOString().slice(0, 19).replace('T', ' '),
         fg_weight: fgVal,
         rm_weight: rmVal,
+        rm_value: rmPriceVal,
         in_process: 0,
         gap: gapVal,
         notes: '[Auto-Saved]'
@@ -6266,17 +6355,20 @@ function refreshRMConsumptionHistory() {
     let html = '';
     let totalFG = 0;
     let totalRM = 0;
+    let totalValue = 0;
     let totalInProcess = 0;
     let totalGap = 0;
 
     filteredLogs.forEach(l => {
         const fg = parseFloat(l.fg_weight) || 0;
         const rm = parseFloat(l.rm_weight) || 0;
+        const val = parseFloat(l.rm_value) || 0;
         const inp = parseFloat(l.in_process) || 0;
         const gap = rm - fg - inp;
         
         totalFG += fg;
         totalRM += rm;
+        totalValue += val;
         totalInProcess += inp;
         totalGap += gap;
 
@@ -6285,6 +6377,7 @@ function refreshRMConsumptionHistory() {
                 <td style="padding: 1.2rem;">${formatDate(l.date)}</td>
                 <td style="padding: 1.2rem; text-align: right;">${fg.toLocaleString()} KG</td>
                 <td style="padding: 1.2rem; text-align: right;">${rm.toLocaleString()} KG</td>
+                <td style="padding: 1.2rem; text-align: right; color: var(--success); font-weight: 700;">Rs. ${val.toLocaleString()}</td>
                 <td style="padding: 0.8rem; text-align: right;">
                     <input type="number" step="0.1" value="${inp}" 
                         onchange="updateRMConsumptionInProcess(${l.id}, this.value)"
@@ -6311,6 +6404,7 @@ function refreshRMConsumptionHistory() {
                 <td style="padding: 1.2rem;">SUB TOTAL (FILTERED)</td>
                 <td style="padding: 1.2rem; text-align: right;">${totalFG.toLocaleString()} KG</td>
                 <td style="padding: 1.2rem; text-align: right;">${totalRM.toLocaleString()} KG</td>
+                <td style="padding: 1.2rem; text-align: right; color: var(--success);">Rs. ${totalValue.toLocaleString()}</td>
                 <td style="padding: 1.2rem; text-align: right;">${totalInProcess.toLocaleString()} KG</td>
                 <td style="padding: 1.2rem; text-align: right; color: ${totalGap < 0 ? '#dc2626' : '#059669'};">
                     ${totalGap.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} KG
@@ -6439,6 +6533,9 @@ async function saveRMTransaction(type) {
         let pricePerKg = 0;
         if (type === 'IN' && actualKg > 0) {
             pricePerKg = (unitPriceUser * multiplier) / actualKg;
+        } else if (type === 'OUT') {
+            const item = rmItems.find(i => i.id == itemId);
+            pricePerKg = getRMItemCurrentPrice(item);
         }
         
         await recordSingleRMTransaction(itemId, actualKg, type, notes, pricePerKg);
@@ -6466,7 +6563,9 @@ async function saveRMTransaction(type) {
 
         for (const item of customItems) {
             const totalQty = item.qty * multiplier;
-            await recordSingleRMTransaction(item.itemId, totalQty, 'OUT', `[Formula: ${formula.name}] ${notes}`, 0);
+            const rmItem = rmItems.find(i => i.id == item.itemId);
+            const priceVal = getRMItemCurrentPrice(rmItem);
+            await recordSingleRMTransaction(item.itemId, totalQty, 'OUT', `[Formula: ${formula.name}] ${notes}`, priceVal);
         }
     }
 
