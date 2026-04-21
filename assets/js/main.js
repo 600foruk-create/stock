@@ -6417,6 +6417,8 @@ function refreshRMConsumptionHistory() {
     let totalFG = 0;
     let totalRM = 0;
     let totalValue = 0;
+    let totalOtherExpenses = 0;
+    let totalGrandTotal = 0;
     let totalInProcess = 0;
     let totalGap = 0;
 
@@ -6424,12 +6426,16 @@ function refreshRMConsumptionHistory() {
         const fg = parseFloat(l.fg_weight) || 0;
         const rm = parseFloat(l.rm_weight) || 0;
         const val = parseFloat(l.rm_value) || 0;
+        const other = parseFloat(l.other_expenses) || 0;
+        const grandTotal = val + other;
         const inp = parseFloat(l.in_process) || 0;
         const gap = rm - fg - inp;
         
         totalFG += fg;
         totalRM += rm;
         totalValue += val;
+        totalOtherExpenses += other;
+        totalGrandTotal += grandTotal;
         totalInProcess += inp;
         totalGap += gap;
 
@@ -6438,7 +6444,15 @@ function refreshRMConsumptionHistory() {
                 <td style="padding: 1.2rem;">${formatDate(l.date)}</td>
                 <td style="padding: 1.2rem; text-align: right;">${fg.toLocaleString()} KG</td>
                 <td style="padding: 1.2rem; text-align: right;">${rm.toLocaleString()} KG</td>
-                <td style="padding: 1.2rem; text-align: right; color: var(--success); font-weight: 700;">Rs. ${val.toLocaleString()}</td>
+                <td style="padding: 1.2rem; text-align: right; color: var(--gray-600); font-weight: 700;">Rs. ${val.toLocaleString()}</td>
+                <td style="padding: 0.8rem; text-align: right;">
+                    <input type="number" step="1" value="${other}" 
+                        onchange="updateRMConsumptionOtherExpenses(${l.id}, this.value)"
+                        style="width: 100px; padding: 0.4rem; text-align: right; border: 1px solid var(--gray-200); border-radius: 6px; font-weight: 600;">
+                </td>
+                <td style="padding: 1.2rem; text-align: right; color: var(--success); font-weight: 800; font-size: 1.05rem;">
+                    Rs. ${grandTotal.toLocaleString()}
+                </td>
                 <td style="padding: 0.8rem; text-align: right;">
                     <input type="number" step="0.1" value="${inp}" 
                         onchange="updateRMConsumptionInProcess(${l.id}, this.value)"
@@ -6465,7 +6479,9 @@ function refreshRMConsumptionHistory() {
                 <td style="padding: 1.2rem;">SUB TOTAL (FILTERED)</td>
                 <td style="padding: 1.2rem; text-align: right;">${totalFG.toLocaleString()} KG</td>
                 <td style="padding: 1.2rem; text-align: right;">${totalRM.toLocaleString()} KG</td>
-                <td style="padding: 1.2rem; text-align: right; color: var(--success);">Rs. ${totalValue.toLocaleString()}</td>
+                <td style="padding: 1.2rem; text-align: right; color: var(--gray-600);">Rs. ${totalValue.toLocaleString()}</td>
+                <td style="padding: 1.2rem; text-align: right; color: var(--gray-600);">Rs. ${totalOtherExpenses.toLocaleString()}</td>
+                <td style="padding: 1.2rem; text-align: right; color: var(--success);">Rs. ${totalGrandTotal.toLocaleString()}</td>
                 <td style="padding: 1.2rem; text-align: right;">${totalInProcess.toLocaleString()} KG</td>
                 <td style="padding: 1.2rem; text-align: right; color: ${totalGap < 0 ? '#dc2626' : '#059669'};">
                     ${totalGap.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} KG
@@ -6498,6 +6514,29 @@ async function updateRMConsumptionInProcess(id, val) {
         }
     } catch (e) {
         console.error('Failed to update in-process value:', e);
+        alert('Failed to save value. Check connection.');
+    }
+}
+
+async function updateRMConsumptionOtherExpenses(id, val) {
+    const value = parseFloat(val) || 0;
+    try {
+        const response = await fetch('api/sync.php?action=save_rm_consumption_other_expenses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, other_expenses: value })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            // Update local data
+            const log = rmConsumptionLogs.find(l => l.id == id);
+            if (log) {
+                log.other_expenses = value;
+            }
+            refreshRMConsumptionHistory();
+        }
+    } catch (e) {
+        console.error('Failed to update other expenses:', e);
         alert('Failed to save value. Check connection.');
     }
 }

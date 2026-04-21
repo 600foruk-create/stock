@@ -96,6 +96,8 @@
                     <th style="padding: 1.2rem; text-align: right;">FG Produced (KG)</th>
                     <th style="padding: 1.2rem; text-align: right;">RM Issued (KG)</th>
                     <th style="padding: 1.2rem; text-align: right;">Issuance Value (Rs.)</th>
+                    <th style="padding: 1.2rem; text-align: right;">Other Expenses (Rs.)</th>
+                    <th style="padding: 1.2rem; text-align: right;">Grand Total (Rs.)</th>
                     <th style="padding: 1.2rem; text-align: right;">In Process (KG)</th>
                     <th style="padding: 1.2rem; text-align: right;">Gap / WIP (Net)</th>
                     <th style="padding: 1.2rem; text-align: center;">Actions</th>
