@@ -504,6 +504,7 @@ function switchModule(module) {
             showTab('rm_dashboard');
         }
     } else if (module === 'store') {
+        document.getElementById('storePanel').style.display = 'block';
         document.getElementById('storeTabs').style.display = 'flex';
         const activeTabBtn = document.querySelector('#storeTabs .nav-tab.active');
         if (activeTabBtn) {
