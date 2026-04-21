@@ -7824,11 +7824,11 @@ function refreshStoreInventory() {
                 <button class="btn btn-sm" onclick="event.stopPropagation(); toggleStoreForm('addSub_${cat.id}')" style="background: var(--sky-600); color: white; border-radius: 8px; padding: 6px 12px;">
                     <i class="fas fa-plus"></i> Add Sub
                 </button>
-                <button class="btn btn-sm" onclick="event.stopPropagation(); editStoreCategory(${cat.id}, 'main')" style="background: var(--sky-500); color: white; border: none; padding: 6px 10px; border-radius: 8px;">
-                    <i class="fas fa-edit"></i>
+                <button class="btn btn-sm" onclick="event.stopPropagation(); editStoreCategory(${cat.id}, 'main')" style="background: var(--sky-500); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 700;">
+                    Edit
                 </button>
-                <button class="btn btn-sm" onclick="event.stopPropagation(); deleteStoreCategory(${cat.id}, 'main')" style="background: var(--red-500); color: white; border: none; padding: 6px 10px; border-radius: 8px;">
-                    <i class="fas fa-trash"></i>
+                <button class="btn btn-sm" onclick="event.stopPropagation(); deleteStoreCategory(${cat.id}, 'main')" style="background: var(--red-500); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 700;">
+                    Delete
                 </button>
                 <i class="fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'}" style="color: var(--sky-300); margin-left: 0.5rem;"></i>
             </div>
@@ -7894,11 +7894,11 @@ function refreshStoreInventory() {
                          <button class="btn btn-sm" onclick="event.stopPropagation(); toggleStoreForm('addItem_${sub.id}')" style="background: #16a34a; color: white; border-radius: 6px; padding: 4px 10px; font-size: 0.8rem;">
                             <i class="fas fa-plus"></i> Add Item
                         </button>
-                        <button class="btn btn-sm" onclick="event.stopPropagation(); editStoreCategory(${sub.id}, 'sub')" style="background: #16a34a; color: white; padding: 4px 8px; border-radius: 6px; border: none;">
-                            <i class="fas fa-edit"></i>
+                        <button class="btn btn-sm" onclick="event.stopPropagation(); editStoreCategory(${sub.id}, 'sub')" style="background: #16a34a; color: white; padding: 6px 12px; border-radius: 6px; border: none; font-weight: 700;">
+                            Edit
                         </button>
-                        <button class="btn btn-sm" onclick="event.stopPropagation(); deleteStoreCategory(${sub.id}, 'sub')" style="background: #ef4444; color: white; padding: 4px 8px; border-radius: 6px; border: none;">
-                            <i class="fas fa-trash"></i>
+                        <button class="btn btn-sm" onclick="event.stopPropagation(); deleteStoreCategory(${sub.id}, 'sub')" style="background: #ef4444; color: white; padding: 6px 12px; border-radius: 6px; border: none; font-weight: 700;">
+                            Delete
                         </button>
                     </div>
                 `;
@@ -7970,11 +7970,11 @@ function refreshStoreInventory() {
                                         </div>
                                     </td>
                                     <td style="padding: 12px 15px; text-align: right; border-radius: 0 12px 12px 0;">
-                                        <button class="btn btn-sm" onclick="editStoreItem(${itm.id})" style="background: var(--sky-500); color: white; border: none; padding: 5px 10px; border-radius: 8px;">
-                                            <i class="fas fa-pencil-alt"></i>
+                                        <button class="btn btn-sm" onclick="editStoreItem(${itm.id})" style="background: var(--sky-500); color: white; border: none; padding: 6px 15px; border-radius: 8px; font-weight: 700;">
+                                            Edit
                                         </button>
-                                        <button class="btn btn-sm" onclick="deleteStoreItem(${itm.id})" style="background: var(--red-500); color: white; border: none; padding: 5px 10px; border-radius: 8px; margin-left: 4px;">
-                                            <i class="fas fa-trash-alt"></i>
+                                        <button class="btn btn-sm" onclick="deleteStoreItem(${itm.id})" style="background: var(--red-500); color: white; border: none; padding: 6px 15px; border-radius: 8px; margin-left: 5px; font-weight: 700;">
+                                            Delete
                                         </button>
                                     </td>
                                 </tr>
