@@ -1,9 +1,6 @@
 <div class="store-inventory">
     <div class="card" style="background: white; padding: 2rem; border-radius: 12px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm);">
-        <h2 style="color: var(--sky-600); margin-bottom: 1.5rem; font-size: 1.8rem; font-weight: 700;">🗂️ Store Inventory Structure</h2>
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <p style="color: var(--gray-500); margin: 0;">Manage your 3-tier inventory hierarchy here. Add Main Categories, Sub-Categories, and Items.</p>
+        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 2rem;">
             <button class="btn btn-primary btn-lg" onclick="toggleMainCategoryForm()" style="box-shadow: 0 4px 12px rgba(12, 166, 242, 0.3); font-weight: 700; border-radius: 12px; padding: 0.8rem 1.8rem;">
                 ➕ New Main Category
             </button>
