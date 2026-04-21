@@ -135,7 +135,7 @@ try {
                 'rawMaterials' => $conn->query("SELECT id, name, category, unit, stock, threshold FROM raw_materials")->fetchAll(PDO::FETCH_ASSOC), // Legacy support
                 'rmMainCategories' => $conn->query("SELECT id, name, code FROM rm_main_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'rmSubCategories' => $conn->query("SELECT id, main_id AS mainId, name, code FROM rm_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
-                'rmItems' => $conn->query("SELECT id, sub_id AS subId, name, code, unit, stock, threshold, kg_per_bag AS kgPerBag, threshold_unit AS thresholdUnit FROM rm_items")->fetchAll(PDO::FETCH_ASSOC),
+                'rmItems' => $conn->query("SELECT id, sub_id AS subId, name, code, unit, stock, threshold, kg_per_bag AS kgPerBag, threshold_unit AS thresholdUnit, base_price FROM rm_items")->fetchAll(PDO::FETCH_ASSOC),
                 'rmUnits' => $conn->query("SELECT id, name FROM rm_units")->fetchAll(PDO::FETCH_ASSOC),
                 'rmFormulas' => $conn->query("SELECT * FROM rm_formulas")->fetchAll(PDO::FETCH_ASSOC),
                 'rmFormulaItems' => $conn->query("SELECT * FROM rm_formula_items")->fetchAll(PDO::FETCH_ASSOC),
