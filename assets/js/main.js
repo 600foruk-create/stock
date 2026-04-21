@@ -6820,15 +6820,20 @@ function refreshRMInventoryBalance() {
         // Calculate Price Metrics from history
         const history = rmTransactions.filter(t => t.type === 'IN' && t.rm_item_id == item.id && parseFloat(t.price) > 0);
         
-        let avgPrice = 0;
-        let maxPrice = 0;
+        let basePrice = parseFloat(item.base_price) || 0;
+        let avgPrice = basePrice;
+        let maxPrice = basePrice;
         let totalValue = 0;
 
         if (history.length > 0) {
             let totalQty = 0;
             let totalCost = 0;
-            maxPrice = 0;
-
+            
+            // If we have a base price, we treat it as the price for the current stock minus new purchases? 
+            // That's complex. Let's simplify: 
+            // If base_price is set, it overrides history for valuation. 
+            // This is what users typically want when "balancing" records.
+            
             history.forEach(t => {
                 const q = parseFloat(t.quantity) || 0;
                 const p = parseFloat(t.price) || 0;
@@ -6837,11 +6842,14 @@ function refreshRMInventoryBalance() {
                 if (p > maxPrice) maxPrice = p;
             });
 
-            if (totalQty > 0) {
+            if (basePrice > 0) {
+                avgPrice = basePrice; // Manual override persists
+            } else if (totalQty > 0) {
                 avgPrice = totalCost / totalQty;
             }
-            totalValue = currentStock * avgPrice;
         }
+        
+        totalValue = currentStock * avgPrice;
 
         const row = document.createElement('tr');
         row.style.borderBottom = '1px solid var(--gray-100)';
@@ -6861,7 +6869,10 @@ function refreshRMInventoryBalance() {
                 </div>
             </td>
             <td style="text-align: right; vertical-align: middle; color: var(--gray-600); font-weight: 600;">
-                ${avgPrice > 0 ? avgPrice.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) : '---'}
+                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 5px;">
+                    ${avgPrice > 0 ? avgPrice.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) : '---'}
+                    <button class="btn btn-icon-sm" onclick="setRMItemBasePrice(${item.id})" title="Set Manual Price" style="font-size: 0.7rem; color: var(--gray-400);"><i class="fas fa-edit"></i></button>
+                </div>
             </td>
             <td style="text-align: right; vertical-align: middle; color: var(--gray-600); font-weight: 600;">
                 ${maxPrice > 0 ? maxPrice.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) : '---'}
@@ -6874,6 +6885,35 @@ function refreshRMInventoryBalance() {
         `;
         tbody.appendChild(row);
     });
+}
+
+async function setRMItemBasePrice(id) {
+    const item = rmItems.find(i => i.id == id);
+    if (!item) return;
+
+    const newPrice = prompt(`Set Base/Manual Purchase Price (per KG) for "${item.name}":`, item.base_price || 0);
+    if (newPrice === null) return;
+
+    const price = parseFloat(newPrice);
+    if (isNaN(price) || price < 0) {
+        alert('Please enter a valid price.');
+        return;
+    }
+
+    try {
+        const response = await fetch('api/sync.php?action=update_rm_item_base_price', {
+            method: 'POST',
+            body: JSON.stringify({ id, base_price: price })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            item.base_price = price;
+            refreshRMInventoryBalance();
+        }
+    } catch (e) {
+        console.error('Failed to update base price:', e);
+        alert('Failed to save price. Check connection.');
+    }
 }
 
 // --- RM Audit Functions ---

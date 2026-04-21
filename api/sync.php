@@ -62,6 +62,7 @@ try {
                     $rmCols = $conn->query("SHOW COLUMNS FROM rm_items")->fetchAll(PDO::FETCH_COLUMN);
                     if (!in_array('kg_per_bag', $rmCols)) $conn->exec("ALTER TABLE rm_items ADD COLUMN kg_per_bag DECIMAL(15,3) DEFAULT 0");
                     if (!in_array('threshold_unit', $rmCols)) $conn->exec("ALTER TABLE rm_items ADD COLUMN threshold_unit VARCHAR(20) DEFAULT 'KG'");
+                    if (!in_array('base_price', $rmCols)) $conn->exec("ALTER TABLE rm_items ADD COLUMN base_price DECIMAL(15,3) DEFAULT 0");
                 } catch(Exception $e) {}
 
                 $conn->exec("CREATE TABLE IF NOT EXISTS rm_units (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(50) UNIQUE)");
@@ -202,6 +203,14 @@ try {
             echo json_encode(['status' => 'success', 'id' => $user['id']]);
         }
         
+        elseif ($action === 'update_rm_item_base_price') {
+            $id = $input['id'];
+            $price = $input['base_price'];
+            $stmt = $conn->prepare("UPDATE rm_items SET base_price = ? WHERE id = ?");
+            $stmt->execute([$price, $id]);
+            echo json_encode(['status' => 'success']);
+        }
+
         elseif ($action === 'delete_user') {
             $id = $input['id'] ?? $_GET['id'] ?? null;
             if ($id && $id != 1) { // Prevent deleting primary admin
