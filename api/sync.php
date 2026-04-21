@@ -91,6 +91,25 @@ try {
                     if (!in_array('low_stock_threshold', $stCols)) $conn->exec("ALTER TABLE store_items ADD COLUMN low_stock_threshold DECIMAL(15,3) DEFAULT 0");
                 } catch(Exception $e) {}
 
+                // NEW: Raw Materials Consumption History Table
+                $conn->exec("CREATE TABLE IF NOT EXISTS rm_consumption_logs (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    fg_weight DECIMAL(15,3) DEFAULT 0,
+                    rm_weight DECIMAL(15,3) DEFAULT 0,
+                    in_process DECIMAL(15,3) DEFAULT 0,
+                    gap DECIMAL(15,3) DEFAULT 0,
+                    notes TEXT
+                )");
+
+                // AUTO-REPAIR: Add in_process column if missing
+                try {
+                    $clCols = $conn->query("SHOW COLUMNS FROM rm_consumption_logs")->fetchAll(PDO::FETCH_COLUMN);
+                    if (!in_array('in_process', $clCols)) {
+                        $conn->exec("ALTER TABLE rm_consumption_logs ADD COLUMN in_process DECIMAL(15,3) DEFAULT 0 AFTER rm_weight");
+                    }
+                } catch(Exception $e) {}
+
             } catch (Exception $e) {}
 
             $data = [
@@ -273,9 +292,24 @@ try {
 
         elseif ($action === 'save_rm_consumption_log') {
             $log = $input['log'];
-            $stmt = $conn->prepare("INSERT INTO rm_consumption_logs (date, fg_weight, rm_weight, gap, notes) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$log['date'] ?? date('Y-m-d H:i:s'), $log['fg_weight'], $log['rm_weight'], $log['gap'], $log['notes'] ?? '']);
+            $stmt = $conn->prepare("INSERT INTO rm_consumption_logs (date, fg_weight, rm_weight, in_process, gap, notes) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$log['date'] ?? date('Y-m-d H:i:s'), $log['fg_weight'], $log['rm_weight'], $log['in_process'] ?? 0, $log['gap'], $log['notes'] ?? '']);
             echo json_encode(['status' => 'success', 'id' => $conn->lastInsertId()]);
+        }
+
+        elseif ($action === 'save_rm_consumption_in_process') {
+            $id = $input['id'];
+            $val = $input['in_process'];
+            // Re-calculate gap based on existing record
+            $stmt = $conn->prepare("SELECT fg_weight, rm_weight FROM rm_consumption_logs WHERE id = ?");
+            $stmt->execute([$id]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                $gap = ($row['rm_weight'] - $row['fg_weight']) - $val;
+                $stmt = $conn->prepare("UPDATE rm_consumption_logs SET in_process = ?, gap = ? WHERE id = ?");
+                $stmt->execute([$val, $gap, $id]);
+                echo json_encode(['status' => 'success', 'gap' => $gap]);
+            } else { echo json_encode(['status' => 'error', 'message' => 'Record not found']); }
         }
 
         elseif ($action === 'delete_rm_consumption_log') {

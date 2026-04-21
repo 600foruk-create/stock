@@ -6226,6 +6226,7 @@ async function autoSaveRMConsumption() {
         date: new Date().toISOString().slice(0, 19).replace('T', ' '),
         fg_weight: fgVal,
         rm_weight: rmVal,
+        in_process: 0,
         gap: gapVal,
         notes: '[Auto-Saved]'
     };
@@ -6265,20 +6266,32 @@ function refreshRMConsumptionHistory() {
     let html = '';
     let totalFG = 0;
     let totalRM = 0;
+    let totalInProcess = 0;
     let totalGap = 0;
 
     filteredLogs.forEach(l => {
-        totalFG += parseFloat(l.fg_weight);
-        totalRM += parseFloat(l.rm_weight);
-        totalGap += parseFloat(l.gap);
+        const fg = parseFloat(l.fg_weight) || 0;
+        const rm = parseFloat(l.rm_weight) || 0;
+        const inp = parseFloat(l.in_process) || 0;
+        const gap = rm - fg - inp;
+        
+        totalFG += fg;
+        totalRM += rm;
+        totalInProcess += inp;
+        totalGap += gap;
 
         html += `
-            <tr>
+            <tr data-id="${l.id}">
                 <td style="padding: 1.2rem;">${formatDate(l.date)}</td>
-                <td style="padding: 1.2rem; text-align: right;">${parseFloat(l.fg_weight).toLocaleString()} KG</td>
-                <td style="padding: 1.2rem; text-align: right;">${parseFloat(l.rm_weight).toLocaleString()} KG</td>
-                <td style="padding: 1.2rem; text-align: right; color: ${l.gap < 0 ? '#dc2626' : '#059669'}; font-weight: bold;">
-                    ${parseFloat(l.gap).toLocaleString()} KG
+                <td style="padding: 1.2rem; text-align: right;">${fg.toLocaleString()} KG</td>
+                <td style="padding: 1.2rem; text-align: right;">${rm.toLocaleString()} KG</td>
+                <td style="padding: 0.8rem; text-align: right;">
+                    <input type="number" step="0.1" value="${inp}" 
+                        onchange="updateRMConsumptionInProcess(${l.id}, this.value)"
+                        style="width: 100px; padding: 0.4rem; text-align: right; border: 1px solid var(--gray-200); border-radius: 6px; font-weight: 600;">
+                </td>
+                <td style="padding: 1.2rem; text-align: right; color: ${gap < 0 ? '#dc2626' : '#059669'}; font-weight: bold;">
+                    ${gap.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} KG
                 </td>
                 <td style="padding: 1.2rem; text-align: center;">
                     <button class="btn btn-sm btn-danger" onclick="deleteRMConsumptionEntry(${l.id})">🗑️</button>
@@ -6287,7 +6300,7 @@ function refreshRMConsumptionHistory() {
     });
 
     if (filteredLogs.length === 0) {
-        html = `<tr><td colspan="5" style="text-align: center; padding: 3rem; color: var(--gray-400);">No history records found for selected filters.</td></tr>`;
+        html = `<tr><td colspan="6" style="text-align: center; padding: 3rem; color: var(--gray-400);">No history records found for selected filters.</td></tr>`;
     }
 
     tbody.innerHTML = html;
@@ -6298,8 +6311,9 @@ function refreshRMConsumptionHistory() {
                 <td style="padding: 1.2rem;">SUB TOTAL (FILTERED)</td>
                 <td style="padding: 1.2rem; text-align: right;">${totalFG.toLocaleString()} KG</td>
                 <td style="padding: 1.2rem; text-align: right;">${totalRM.toLocaleString()} KG</td>
+                <td style="padding: 1.2rem; text-align: right;">${totalInProcess.toLocaleString()} KG</td>
                 <td style="padding: 1.2rem; text-align: right; color: ${totalGap < 0 ? '#dc2626' : '#059669'};">
-                    ${totalGap.toLocaleString()} KG
+                    ${totalGap.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} KG
                 </td>
                 <td></td>
             </tr>`;
@@ -6309,6 +6323,29 @@ function refreshRMConsumptionHistory() {
     updateTotalWIPSummary();
 }
 
+
+async function updateRMConsumptionInProcess(id, val) {
+    const value = parseFloat(val) || 0;
+    try {
+        const response = await fetch('api/sync.php?action=save_rm_consumption_in_process', {
+            method: 'POST',
+            body: JSON.stringify({ id, in_process: value })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            // Update local data
+            const log = rmConsumptionLogs.find(l => l.id == id);
+            if (log) {
+                log.in_process = value;
+                log.gap = result.gap;
+            }
+            refreshRMConsumptionHistory();
+        }
+    } catch (e) {
+        console.error('Failed to update in-process value:', e);
+        alert('Failed to save value. Check connection.');
+    }
+}
 
 function populateRMHistoryYearFilter() {
     const yearSelect = document.getElementById('rmHistoryYearFilter');
@@ -6467,7 +6504,10 @@ function updateTotalWIPSummary() {
 
     // Process all logs (not just filtered ones)
     rmConsumptionLogs.forEach(l => {
-        const gap = parseFloat(l.gap) || 0;
+        const fg = parseFloat(l.fg_weight) || 0;
+        const rm = parseFloat(l.rm_weight) || 0;
+        const inp = parseFloat(l.in_process) || 0;
+        const gap = rm - fg - inp;
         grandTotal += gap;
 
         const d = new Date(l.date);
