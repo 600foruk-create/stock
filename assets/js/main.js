@@ -7540,31 +7540,37 @@ function printRMAudit() {
 
 // ==================== STORE MODULE LOGIC ====================
 
-// --- Code Generation ---
-function generateStoreSubCategoryCode(categoryCode) {
-    let existingSubs = storeSubCategories.filter(s => s.code.startsWith(categoryCode));
-    let maxNum = 0;
-    existingSubs.forEach(sub => {
-        let suffix = sub.code.substring(categoryCode.length);
-        if (suffix && /^[0-9]+$/.test(suffix)) {
-            let num = parseInt(suffix, 10);
-            if (!isNaN(num)) maxNum = Math.max(maxNum, num);
+// --- Code Generation (Sequential Gap Filling) ---
+function generateStoreSubCategoryCode(mainCode) {
+    const existingCodes = storeSubCategories
+        .filter(s => s.code.startsWith(mainCode))
+        .map(s => s.code.substring(mainCode.length));
+    
+    // Find first gap in 001, 002...
+    let i = 1;
+    while (true) {
+        const suffix = i.toString().padStart(3, '0');
+        if (!existingCodes.includes(suffix)) {
+            return mainCode + suffix;
         }
-    });
-    return categoryCode + (maxNum + 1).toString().padStart(3, '0');
+        i++;
+    }
 }
 
-function generateStoreItemCode(subCategoryCode) {
-    let existingItems = storeItems.filter(i => i.code.startsWith(subCategoryCode));
-    let maxSeq = 0;
-    existingItems.forEach(it => {
-        let suffix = it.code.substring(subCategoryCode.length);
-        if (suffix && /^[0-9]+$/.test(suffix)) {
-            let num = parseInt(suffix, 10);
-            if (!isNaN(num)) maxSeq = Math.max(maxSeq, num);
+function generateStoreItemCode(subCode) {
+    const existingCodes = storeItems
+        .filter(i => i.code.startsWith(subCode))
+        .map(i => i.code.substring(subCode.length));
+    
+    // Find first gap in 0001, 0002...
+    let i = 1;
+    while (true) {
+        const suffix = i.toString().padStart(4, '0');
+        if (!existingCodes.includes(suffix)) {
+            return subCode + suffix;
         }
-    });
-    return subCategoryCode + (maxSeq + 1).toString().padStart(4, '0');
+        i++;
+    }
 }
 
 // --- Data Persistence ---
@@ -7637,36 +7643,59 @@ async function saveStoreInward() {
     const itemId = document.getElementById('storeInwardItemSelect').value;
     const qty = parseFloat(document.getElementById('storeInwardQty').value);
     const source = document.getElementById('storeInwardSource').value;
+    const notes = document.getElementById('storeInwardNotes').value;
     if (!itemId || isNaN(qty) || qty <= 0) return alert('Valid item and quantity required');
     
     const res = await saveStoreToDB('save_store_transaction', { 
-        transaction: { item_id: itemId, quantity: qty, type: 'INWARD', ref: source, source_or_person: source } 
+        transaction: { 
+            item_id: itemId, 
+            quantity: qty, 
+            type: 'INWARD', 
+            source_or_person: source, 
+            notes: notes 
+        } 
     });
     if (res) {
         alert('Stock received successfully');
         document.getElementById('storeInwardQty').value = 1;
         document.getElementById('storeInwardSource').value = '';
+        document.getElementById('storeInwardNotes').value = '';
+        refreshStoreDashboard();
     }
 }
 
 async function saveStoreOutward() {
     const itemId = document.getElementById('storeOutwardItemSelect').value;
     const qty = parseFloat(document.getElementById('storeOutwardQty').value);
-    const to = document.getElementById('storeIssuedTo').value;
-    const reason = document.getElementById('storeIssueReason').value;
-    if (!itemId || isNaN(qty) || qty <= 0 || !to) return alert('All fields are required');
+    const issuedTo = document.getElementById('storeIssuedTo').value;
+    const issuedBy = document.getElementById('storeIssuedBy').value;
+    const purpose = document.getElementById('storePurpose').value;
+    const notes = document.getElementById('storeIssueNotes').value;
+    
+    if (!itemId || isNaN(qty) || qty <= 0 || !issuedTo) return alert('At least Item, Qty and Issued To are required');
     
     const item = storeItems.find(i => i.id == itemId);
     if (item && item.stock < qty) return alert('Insufficient stock! Current balance: ' + item.stock);
 
     const res = await saveStoreToDB('save_store_transaction', { 
-        transaction: { item_id: itemId, quantity: qty, type: 'OUTWARD', ref: to, source_or_person: to, notes: reason } 
+        transaction: { 
+            item_id: itemId, 
+            quantity: qty, 
+            type: 'OUTWARD', 
+            issued_to: issuedTo,
+            issued_by: issuedBy,
+            purpose: purpose,
+            notes: notes 
+        } 
     });
     if (res) {
         alert('Item issued successfully');
         document.getElementById('storeOutwardQty').value = '';
         document.getElementById('storeIssuedTo').value = '';
-        document.getElementById('storeIssueReason').value = '';
+        document.getElementById('storeIssuedBy').value = '';
+        document.getElementById('storePurpose').value = '';
+        document.getElementById('storeIssueNotes').value = '';
+        refreshStoreDashboard();
     }
 }
 
@@ -7694,15 +7723,17 @@ function refreshStoreDashboard() {
 function refreshStoreInwards() {
     const select = document.getElementById('storeInwardItemSelect');
     if (!select) return;
-    select.innerHTML = '<option value="">-- Search Item --</option>' + 
-        storeItems.map(i => `<option value="${i.id}">${i.code} - ${i.name} (Qty: ${i.stock})</option>`).join('');
+    const items = storeItems.slice().sort((a,b) => a.name.localeCompare(b.name));
+    select.innerHTML = '<option value="">-- Select Item --</option>' + 
+        items.map(i => `<option value="${i.id}">${i.code} - ${i.name} (Stock: ${i.stock})</option>`).join('');
 }
 
 function refreshStoreOutwards() {
     const select = document.getElementById('storeOutwardItemSelect');
     if (!select) return;
-    select.innerHTML = '<option value="">-- Search Item --</option>' + 
-        storeItems.map(i => `<option value="${i.id}">${i.code} - ${i.name} (Qty: ${i.stock})</option>`).join('');
+    const items = storeItems.slice().sort((a,b) => a.name.localeCompare(b.name));
+    select.innerHTML = '<option value="">-- Select Item --</option>' + 
+        items.map(i => `<option value="${i.id}">${i.code} - ${i.name} (Stock: ${i.stock})</option>`).join('');
 }
 
 function refreshStoreInventory() {
@@ -7718,26 +7749,34 @@ function refreshStoreInventory() {
     storeMainCategories.forEach(cat => {
         const isCollapsed = !storeExpandedIds.has('cat_' + cat.id);
         const card = document.createElement('div');
+        card.className = 'store-cat-card';
         card.style.marginBottom = '1.5rem';
         card.style.border = '1px solid var(--gray-200)';
         card.style.borderRadius = '16px';
         card.style.overflow = 'hidden';
+        card.style.boxShadow = 'var(--shadow-sm)';
         
         const header = document.createElement('div');
-        header.style.padding = '1rem 1.5rem';
-        header.style.background = 'var(--gray-50)';
+        header.style.padding = '1.2rem 1.5rem';
+        header.style.background = 'white';
         header.style.display = 'flex';
         header.style.justifyContent = 'space-between';
         header.style.alignItems = 'center';
         header.style.cursor = 'pointer';
         header.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <i class="fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'}" style="color: var(--gray-400); width: 20px;"></i>
-                <h4 style="margin:0; font-weight: 700; color: var(--gray-800);">📁 ${cat.name} <span style="font-weight: 400; color: var(--gray-400); margin-left: 0.5rem;">[${cat.code}]</span></h4>
+            <div style="display: flex; align-items: center; gap: 1.2rem;">
+                <i class="fas ${isCollapsed ? 'fa-folder' : 'fa-folder-open'}" style="color: var(--sky-500); font-size: 1.4rem;"></i>
+                <div>
+                    <h4 style="margin:0; font-weight: 700; color: var(--gray-800); font-size: 1.1rem;">${cat.name}</h4>
+                    <small style="color: var(--gray-400); font-weight: 600;">Code: ${cat.code}</small>
+                </div>
             </div>
-            <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteStoreCategory(${cat.id}, 'main')">
-                <i class="fas fa-trash"></i>
-            </button>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteStoreCategory(${cat.id}, 'main')">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <i class="fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'}" style="color: var(--gray-300); margin-left: 1rem;"></i>
+            </div>
         `;
         header.onclick = () => {
             if (storeExpandedIds.has('cat_' + cat.id)) storeExpandedIds.delete('cat_' + cat.id);
@@ -7749,31 +7788,36 @@ function refreshStoreInventory() {
         if (!isCollapsed) {
             const body = document.createElement('div');
             body.style.padding = '1.5rem';
+            body.style.background = 'var(--gray-50)';
+            body.style.borderTop = '1px solid var(--gray-100)';
             
             // Sub-categories list
             const subs = storeSubCategories.filter(s => s.main_id == cat.id);
             subs.forEach(sub => {
                 const subIsCollapsed = !storeExpandedIds.has('sub_' + sub.id);
                 const subDiv = document.createElement('div');
-                subDiv.style.marginBottom = '1rem';
-                subDiv.style.border = '1px solid var(--sky-100)';
+                subDiv.style.marginBottom = '1.2rem';
+                subDiv.style.border = '1px solid var(--gray-200)';
                 subDiv.style.background = 'white';
                 subDiv.style.borderRadius = '12px';
+                subDiv.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.02)';
                 
                 const subHeader = document.createElement('div');
-                subHeader.style.padding = '0.8rem 1.2rem';
+                subHeader.style.padding = '1rem 1.2rem';
                 subHeader.style.display = 'flex';
                 subHeader.style.justifyContent = 'space-between';
                 subHeader.style.alignItems = 'center';
                 subHeader.style.cursor = 'pointer';
-                subHeader.style.background = 'var(--sky-50)';
                 subHeader.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 0.8rem;">
-                         <i class="fas ${subIsCollapsed ? 'fa-plus-square' : 'fa-minus-square'}" style="color: var(--sky-400);"></i>
-                         <span style="font-weight: 600; color: var(--sky-700);">🔹 ${sub.name} <small style="color: var(--gray-400); margin-left: 5px;">(${sub.code})</small></span>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                         <i class="fas ${subIsCollapsed ? 'fa-plus-circle' : 'fa-minus-circle'}" style="color: var(--sky-400);"></i>
+                         <div>
+                            <span style="font-weight: 700; color: var(--gray-700); font-size: 1rem;">${sub.name}</span>
+                            <br><small style="color: var(--gray-400);">ID: ${sub.code}</small>
+                         </div>
                     </div>
-                    <button class="btn btn-sm" style="color: #ef4444; border: none; background: transparent;" onclick="event.stopPropagation(); deleteStoreCategory(${sub.id}, 'sub')">
-                         <i class="fas fa-times-circle"></i>
+                    <button class="btn btn-sm btn-outline-danger" style="border:none;" onclick="event.stopPropagation(); deleteStoreCategory(${sub.id}, 'sub')">
+                         <i class="fas fa-times"></i>
                     </button>
                 `;
                 subHeader.onclick = () => {
@@ -7785,48 +7829,77 @@ function refreshStoreInventory() {
 
                 if (!subIsCollapsed) {
                     const subBody = document.createElement('div');
-                    subBody.style.padding = '1rem';
+                    subBody.style.padding = '1rem 1.2rem';
+                    subBody.style.borderTop = '1px solid var(--gray-100)';
                     
                     const itms = storeItems.filter(i => i.sub_id == sub.id);
                     if (itms.length > 0) {
                         let tableHtml = `
-                            <table class="table table-sm" style="font-size: 0.85rem; margin-bottom: 1rem;">
-                                <thead style="background: var(--gray-50);">
-                                    <tr><th>Code</th><th>Name</th><th>Stock</th><th>Threshold</th><th>Action</th></tr>
+                            <table class="table" style="font-size: 0.9rem; margin-bottom: 1.5rem; width: 100%;">
+                                <thead style="background: var(--gray-50); color: var(--gray-600); font-weight: 700;">
+                                    <tr>
+                                        <th style="padding: 10px;">Item Code</th>
+                                        <th style="padding: 10px;">Item Name</th>
+                                        <th style="padding: 10px; text-align: center;">Stock</th>
+                                        <th style="padding: 10px; text-align: center;">Threshold</th>
+                                        <th style="padding: 10px; text-align: center;">Actions</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
                         `;
                         itms.forEach(itm => {
+                            const isLow = parseFloat(itm.stock) <= parseFloat(itm.low_stock_threshold);
                             tableHtml += `
-                                <tr>
-                                    <td style="font-family: monospace;">${itm.code}</td>
-                                    <td style="font-weight: 500;">${itm.name}</td>
-                                    <td><strong>${itm.stock}</strong></td>
-                                    <td style="color: var(--gray-400);">${itm.low_stock_threshold}</td>
-                                    <td><button class="btn btn-sm text-danger" onclick="deleteStoreItem(${itm.id})"><i class="fas fa-trash-alt"></i></button></td>
+                                <tr style="border-bottom: 1px solid var(--gray-100);">
+                                    <td style="padding: 10px; font-family: monospace; color: var(--sky-600); font-weight: 600;">${itm.code}</td>
+                                    <td style="padding: 10px; font-weight: 600;">${itm.name}</td>
+                                    <td style="padding: 10px; text-align: center;">
+                                        <span style="padding: 4px 10px; border-radius: 20px; font-weight: 800; background: ${isLow ? '#fee2e2' : '#f0fdf4'}; color: ${isLow ? '#ef4444' : '#16a34a'};">
+                                            ${itm.stock}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 10px; text-align: center; color: var(--gray-500); font-weight: 600;">${itm.low_stock_threshold}</td>
+                                    <td style="padding: 10px; text-align: center;">
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteStoreItem(${itm.id})" style="padding: 4px 8px;">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </td>
                                 </tr>
                             `;
                         });
                         tableHtml += '</tbody></table>';
                         subBody.innerHTML = tableHtml;
                     } else {
-                        subBody.innerHTML = '<p style="color: var(--gray-400); font-style: italic; font-size: 0.85rem;">No items yet.</p>';
+                        subBody.innerHTML = '<div style="text-align: center; padding: 1.5rem; color: var(--gray-400); font-style: italic; background: var(--gray-50); border-radius: 8px; margin-bottom: 1rem;">No items found in this section.</div>';
                     }
                     
                     // Add Item Form
                     const addItemDiv = document.createElement('div');
-                    addItemDiv.style.background = '#fcfdfd';
-                    addItemDiv.style.border = '1px dashed var(--gray-200)';
-                    addItemDiv.style.padding = '0.8rem';
-                    addItemDiv.style.borderRadius = '8px';
-                    addItemDiv.style.display = 'flex';
-                    addItemDiv.style.gap = '0.5rem';
-                    addItemDiv.style.flexWrap = 'wrap';
+                    addItemDiv.style.background = '#f8fafc';
+                    addItemDiv.style.border = '1px dashed var(--sky-200)';
+                    addItemDiv.style.padding = '1.2rem';
+                    addItemDiv.style.borderRadius = '10px';
+                    addItemDiv.style.display = 'grid';
+                    addItemDiv.style.gridTemplateColumns = '1fr 100px 100px auto';
+                    addItemDiv.style.gap = '1rem';
+                    addItemDiv.style.alignItems = 'end';
+                    
                     addItemDiv.innerHTML = `
-                        <input type="text" placeholder="New Item Name" class="form-control form-control-sm" style="flex:1; min-width: 150px;">
-                        <input type="number" placeholder="Op. Stock" class="form-control form-control-sm" style="width: 80px;" value="0">
-                        <input type="number" placeholder="Low Alert" class="form-control form-control-sm" style="width: 80px;" value="5">
-                        <button class="btn btn-sm btn-sky" onclick="const p=this.parentElement; addStoreItem(${sub.id}, '${sub.code}', p.children[0].value, p.children[1].value, p.children[2].value)">Add</button>
+                        <div class="form-group" style="margin:0;">
+                            <label style="font-size: 0.75rem; font-weight: 700; color: var(--gray-600);">New Item Name</label>
+                            <input type="text" class="form-control form-control-sm" placeholder="Enter name...">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label style="font-size: 0.75rem; font-weight: 700; color: var(--gray-600);">Opening</label>
+                            <input type="number" class="form-control form-control-sm" value="0">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label style="font-size: 0.75rem; font-weight: 700; color: var(--gray-600);">Alert At</label>
+                            <input type="number" class="form-control form-control-sm" value="5">
+                        </div>
+                        <button class="btn btn-sm btn-sky" style="height: 34px; padding: 0 1.2rem; font-weight: 700;" onclick="const p=this.parentElement; addStoreItem(${sub.id}, '${sub.code}', p.children[0].querySelector('input').value, p.children[1].querySelector('input').value, p.children[2].querySelector('input').value)">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
                     `;
                     subBody.appendChild(addItemDiv);
                     subDiv.appendChild(subBody);
@@ -7836,13 +7909,21 @@ function refreshStoreInventory() {
 
             // Add Sub-category form
             const addSubForm = document.createElement('div');
-            addSubForm.style.marginTop = '1rem';
+            addSubForm.style.marginTop = '1.5rem';
+            addSubForm.style.background = 'white';
+            addSubForm.style.padding = '1.5rem';
+            addSubForm.style.borderRadius = '12px';
+            addSubForm.style.border = '1px solid var(--gray-200)';
             addSubForm.style.display = 'flex';
-            addSubForm.style.gap = '0.8rem';
+            addSubForm.style.gap = '1rem';
+            addSubForm.style.alignItems = 'flex-end';
             addSubForm.innerHTML = `
-                <input type="text" id="newSubName_${cat.id}" class="form-control" placeholder="New Sub-Category Name" style="flex:1;">
-                <button class="btn btn-outline-primary" onclick="addStoreSubCategory(${cat.id}, '${cat.code}', document.getElementById('newSubName_${cat.id}').value)">
-                     <i class="fas fa-plus"></i> Add Sub
+                <div class="form-group" style="flex:1; margin:0;">
+                    <label style="font-weight: 700; color: var(--gray-700); font-size: 0.85rem;">New Sub-Category for ${cat.name}</label>
+                    <input type="text" id="newSubName_${cat.id}" class="form-control" placeholder="Enter sub-category name...">
+                </div>
+                <button class="btn btn-primary" onclick="addStoreSubCategory(${cat.id}, '${cat.code}', document.getElementById('newSubName_${cat.id}').value)">
+                     <i class="fas fa-plus"></i> Create Sub-Category
                 </button>
             `;
             body.appendChild(addSubForm);
@@ -7941,61 +8022,163 @@ async function saveStoreAuditReport() {
     let filledCount = 0;
     
     inputs.forEach(inp => {
-        if (inp.value) {
-            filledCount++;
-            const systock = parseFloat(inp.dataset.systock);
-            const physical = parseFloat(inp.value);
-            const diff = physical - systock;
-            const itemId = inp.dataset.id;
-            const item = storeItems.find(it => it.id == itemId);
-            reportData.push({
-                itemId, itemCode: item.code, itemName: item.name,
-                systemStock: systock, physicalStock: physical, diff
+    const records = [];
+    let hasData = false;
+
+    inputs.forEach(input => {
+        const physical = parseFloat(input.value);
+        if (!isNaN(physical)) {
+            const system = parseFloat(input.dataset.systock);
+            records.push({
+                itemId: input.dataset.id,
+                systemQty: system,
+                godownQty: physical,
+                diffQty: physical - system
             });
+            hasData = true;
         }
     });
-    
-    if (filledCount === 0) return alert('Please enter at least one physical count.');
-    
+
+    if (!hasData) return alert('Please enter at least one physical count!');
+
     const payload = {
-        title: 'Store Physical Audit - ' + new Date().toLocaleDateString(),
+        title: 'Store Physical Audit - ' + formatDate(new Date().toISOString()),
         report_type: 'STORE',
-        data: reportData
+        data: records
     };
-    
-    const res = await saveStoreToDB('archive_report', payload);
-    if (res) {
-        alert('Audit report archived successfully!');
-        refreshStoreAudit();
+
+    try {
+        const res = await saveStoreToDB('archive_report', payload);
+        if (res) {
+            alert('Audit report saved to archives successfully!');
+            refreshStoreAudit();
+            refreshStoreReports();
+        }
+    } catch (e) {
+        console.error('Audit save error:', e);
     }
 }
 
 function refreshStoreReports() {
-    const container = document.getElementById('storeSavedReportsList');
+    const container = document.getElementById('storeReportsList');
     if (!container) return;
     
-    const storeReports = archivedReports.filter(r => r.report_type === 'STORE');
-    if (storeReports.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: var(--gray-400); padding: 3rem;">No store audit reports found.</p>';
+    const reports = archivedReports.filter(r => r.report_type === 'STORE');
+    if (reports.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--gray-400);">No archived reports yet.</div>';
         return;
     }
-    
-    let html = '';
-    storeReports.forEach(r => {
+
+    let html = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Report Title</th>
+                    <th style="text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    reports.forEach(r => {
         html += `
-            <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h5 style="margin:0; font-weight: 700; color: var(--gray-800);">${r.title}</h5>
-                    <small style="color: var(--gray-400);">Generated on: ${r.date}</small>
-                </div>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button class="btn btn-sm btn-outline-primary" onclick="viewArchivedReport(${r.id})">🔍 View</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteArchivedReport(${r.id})"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
+            <tr>
+                <td>${formatDate(r.date)}</td>
+                <td style="font-weight: 600;">${r.title}</td>
+                <td style="text-align: center;">
+                    <button class="btn btn-sm btn-sky" onclick="printStoreArchivedReport(${r.id})">🖨️ Print</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteArchivedReport(${r.id}, 'STORE')">🗑️</button>
+                </td>
+            </tr>
         `;
     });
+
+    html += '</tbody></table>';
     container.innerHTML = html;
+}
+
+async function deleteArchivedReport(id, type) {
+    if (!confirm('Are you sure you want to delete this report?')) return;
+    const res = await saveStoreToDB('delete_archived_report', { id: id });
+    if (res) {
+        archivedReports = archivedReports.filter(r => r.id != id);
+        if (type === 'STORE') refreshStoreReports();
+        else refreshReports();
+    }
+}
+
+async function printStoreArchivedReport(id) {
+    const report = archivedReports.find(r => r.id == id);
+    if (!report) return;
+
+    let reportData = [];
+    try {
+        const response = await fetch(`api/sync.php?action=get_report&id=${id}`);
+        const result = await response.json();
+        if (result.status === 'success') {
+            reportData = JSON.parse(result.data.data);
+        }
+    } catch (e) {
+        console.error('Failed to load report data:', e);
+        return;
+    }
+
+    let rowsHtml = '';
+    reportData.forEach(r => {
+        const item = storeItems.find(i => i.id == r.itemId);
+        rowsHtml += `
+            <tr>
+                <td>${item ? item.code : 'N/A'}</td>
+                <td>${item ? item.name : 'Unknown'}</td>
+                <td style="text-align: right;">${r.systemQty}</td>
+                <td style="text-align: right;">${r.godownQty}</td>
+                <td style="text-align: right; color: ${r.diffQty < 0 ? 'red' : 'green'};">${r.diffQty}</td>
+            </tr>
+        `;
+    });
+
+    const printHtml = `
+        <html>
+        <head>
+            <title>${report.title}</title>
+            <style>
+                body { font-family: sans-serif; padding: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background: #f4f4f4; }
+                .header { text-align: center; margin-bottom: 30px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h2>${report.title}</h2>
+                <p>Date: ${formatDate(report.date)} | Report Type: STORE</p>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item Code</th>
+                        <th>Item Name</th>
+                        <th style="text-align: right;">System Stock</th>
+                        <th style="text-align: right;">Godown Stock</th>
+                        <th style="text-align: right;">Difference</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+        </body>
+        </html>
+    `;
+
+    const win = window.open('', '_blank');
+    win.document.write(printHtml);
+    win.document.close();
+    win.onload = () => {
+        win.print();
+    };
 }
 
 function exportStoreReportsToExcel() {

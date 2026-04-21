@@ -25,13 +25,25 @@
                     <input type="text" id="storeIssuedTo" class="form-control" placeholder="Person or Department">
                 </div>
             </div>
-            <div class="col-md-12">
+            <div class="col-md-6">
                 <div class="form-group">
-                    <label style="font-weight: 700; color: #9b2c2c;">📝 Reason / Purpose</label>
-                    <textarea id="storeIssueReason" class="form-control" placeholder="Why is this item being issued?" rows="2"></textarea>
+                    <label style="font-weight: 700; color: #9b2c2c;">🛡️ Issued By</label>
+                    <input type="text" id="storeIssuedBy" class="form-control" placeholder="Store Manager / Supervisor">
                 </div>
             </div>
-            <div class="col-12" style="margin-top: 1rem;">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label style="font-weight: 700; color: #9b2c2c;">🎯 Purpose</label>
+                    <input type="text" id="storePurpose" class="form-control" placeholder="For Production / Maintenance / etc.">
+                </div>
+            </div>
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label style="font-weight: 700; color: #9b2c2c;">📝 Remarks / Notes</label>
+                    <textarea id="storeIssueNotes" class="form-control" placeholder="Any additional details..." rows="2"></textarea>
+                </div>
+            </div>
+            <div class="col-12" style="margin-top: 1.5rem;">
                 <button class="btn btn-danger btn-lg" onclick="saveStoreOutward()" style="padding: 0.8rem 2.5rem; font-weight: 700; border-radius: 12px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);">
                     📤 Issue Item Now
                 </button>

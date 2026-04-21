@@ -25,7 +25,13 @@
                     <input type="text" id="storeInwardSource" class="form-control" placeholder="Vendor name or Department">
                 </div>
             </div>
-            <div class="col-12" style="margin-top: 1rem;">
+            <div class="col-md-12" style="margin-top: 1rem;">
+                <div class="form-group">
+                    <label style="font-weight: 700; color: var(--gray-700);">📝 Remarks / Notes</label>
+                    <textarea id="storeInwardNotes" class="form-control" rows="2" placeholder="Any additional details..."></textarea>
+                </div>
+            </div>
+            <div class="col-12" style="margin-top: 1.5rem;">
                 <button class="btn btn-primary btn-lg" onclick="saveStoreInward()" style="padding: 0.8rem 2.5rem; font-weight: 700; border-radius: 12px; box-shadow: 0 4px 12px rgba(12, 166, 242, 0.3);">
                     ✅ Record Inward Stock
                 </button>

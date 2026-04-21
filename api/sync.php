@@ -35,6 +35,7 @@ try {
                     system_qty DECIMAL(15,3),
                     godown_qty DECIMAL(15,3),
                     diff_qty DECIMAL(15,3),
+                    report_type VARCHAR(20) DEFAULT 'FG',
                     date DATETIME DEFAULT CURRENT_TIMESTAMP
                 )");
 
@@ -81,7 +82,20 @@ try {
                 $conn->exec("CREATE TABLE IF NOT EXISTS store_main_categories (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL UNIQUE)");
                 $conn->exec("CREATE TABLE IF NOT EXISTS store_sub_categories (id INT AUTO_INCREMENT PRIMARY KEY, main_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL UNIQUE, FOREIGN KEY (main_id) REFERENCES store_main_categories(id) ON DELETE CASCADE)");
                 $conn->exec("CREATE TABLE IF NOT EXISTS store_items (id INT AUTO_INCREMENT PRIMARY KEY, sub_id INT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(50) NOT NULL UNIQUE, opening_stock DECIMAL(15,3) DEFAULT 0, stock DECIMAL(15,3) DEFAULT 0, low_stock_threshold DECIMAL(15,3) DEFAULT 0, FOREIGN KEY (sub_id) REFERENCES store_sub_categories(id) ON DELETE CASCADE)");
-                $conn->exec("CREATE TABLE IF NOT EXISTS store_transactions (id INT AUTO_INCREMENT PRIMARY KEY, date DATETIME DEFAULT CURRENT_TIMESTAMP, item_id INT NOT NULL, quantity DECIMAL(15,3) NOT NULL, type ENUM('INWARD', 'OUTWARD') NOT NULL, ref VARCHAR(255), notes TEXT, source_or_person VARCHAR(255), FOREIGN KEY (item_id) REFERENCES store_items(id) ON DELETE CASCADE)");
+                $conn->exec("CREATE TABLE IF NOT EXISTS store_transactions (
+                    id INT AUTO_INCREMENT PRIMARY KEY, 
+                    date DATETIME DEFAULT CURRENT_TIMESTAMP, 
+                    item_id INT NOT NULL, 
+                    quantity DECIMAL(15,3) NOT NULL, 
+                    type ENUM('INWARD', 'OUTWARD') NOT NULL, 
+                    ref VARCHAR(255), 
+                    notes TEXT, 
+                    source_or_person VARCHAR(255), 
+                    issued_by VARCHAR(255),
+                    issued_to VARCHAR(255),
+                    purpose VARCHAR(255),
+                    FOREIGN KEY (item_id) REFERENCES store_items(id) ON DELETE CASCADE
+                )");
 
                 // AUTO-REPAIR: Store Items Schema for hierarchy
                 try {
@@ -630,6 +644,13 @@ try {
                     $stmt = $conn->prepare("UPDATE store_main_categories SET name = ?, code = ? WHERE id = ?");
                     $stmt->execute([$cat['name'], $cat['code'], $cat['id']]);
                 } else {
+                    // Check for duplicate code
+                    $check = $conn->prepare("SELECT id FROM store_main_categories WHERE code = ?");
+                    $check->execute([$cat['code']]);
+                    if ($check->fetch()) {
+                        echo json_encode(['status' => 'error', 'message' => 'Duplicate code!']);
+                        exit;
+                    }
                     $stmt = $conn->prepare("INSERT INTO store_main_categories (name, code) VALUES (?, ?)");
                     $stmt->execute([$cat['name'], $cat['code']]);
                     $cat['id'] = $conn->lastInsertId();
@@ -651,8 +672,20 @@ try {
             $id = $input['id'];
             $type = $input['type'];
             if ($type === 'main') {
+                $check = $conn->prepare("SELECT id FROM store_sub_categories WHERE main_id = ?");
+                $check->execute([$id]);
+                if ($check->fetch()) {
+                    echo json_encode(['status' => 'error', 'message' => 'Cannot delete: Category has sub-categories!']);
+                    exit;
+                }
                 $conn->prepare("DELETE FROM store_main_categories WHERE id = ?")->execute([$id]);
             } else {
+                $check = $conn->prepare("SELECT id FROM store_items WHERE sub_id = ?");
+                $check->execute([$id]);
+                if ($check->fetch()) {
+                    echo json_encode(['status' => 'error', 'message' => 'Cannot delete: Sub-category has items!']);
+                    exit;
+                }
                 $conn->prepare("DELETE FROM store_sub_categories WHERE id = ?")->execute([$id]);
             }
             echo json_encode(['status' => 'success']);
@@ -668,8 +701,18 @@ try {
             $t = $input['transaction'];
             $conn->beginTransaction();
             try {
-                $stmt = $conn->prepare("INSERT INTO store_transactions (item_id, quantity, type, ref, source_or_person, notes) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$t['item_id'], $t['quantity'], $t['type'], $t['ref'] ?? '', $t['source_or_person'] ?? '', $t['notes'] ?? '']);
+                $stmt = $conn->prepare("INSERT INTO store_transactions (item_id, quantity, type, ref, source_or_person, issued_by, issued_to, purpose, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([
+                    $t['item_id'], 
+                    $t['quantity'], 
+                    $t['type'], 
+                    $t['ref'] ?? '', 
+                    $t['source_or_person'] ?? '', 
+                    $t['issued_by'] ?? '',
+                    $t['issued_to'] ?? '',
+                    $t['purpose'] ?? '',
+                    $t['notes'] ?? ''
+                ]);
                 
                 if ($t['type'] === 'INWARD') {
                     $conn->prepare("UPDATE store_items SET stock = stock + ? WHERE id = ?")->execute([$t['quantity'], $t['item_id']]);
@@ -882,26 +925,33 @@ try {
         }
 
         elseif ($action === 'save_audit') {
-            $records = $input['records'] ?? [];
-            $conn->beginTransaction();
-            try {
-                // We clear old records for the same items to keep it fresh
-                foreach ($records as $r) {
-                    $conn->prepare("DELETE FROM audit_records WHERE item_id = ?")->execute([$r['itemId']]);
-                    $stmt = $conn->prepare("INSERT INTO audit_records (item_id, system_qty, godown_qty, diff_qty) VALUES (?, ?, ?, ?)");
-                    $stmt->execute([$r['itemId'], $r['systemQty'], $r['godownQty'], $r['diffQty']]);
+            $records = $input['records']; // Array of {itemId, systemQty, godownQty, diffQty, reportType}
+            $type = $input['report_type'] ?? 'FG';
+            foreach ($records as $r) {
+                if ($r['itemId']) {
+                    $conn->prepare("DELETE FROM audit_records WHERE item_id = ? AND report_type = ?")->execute([$r['itemId'], $type]);
+                    $stmt = $conn->prepare("INSERT INTO audit_records (item_id, system_qty, godown_qty, diff_qty, report_type) VALUES (?, ?, ?, ?, ?)");
+                    $stmt->execute([$r['itemId'], $r['systemQty'], $r['godownQty'], $r['diffQty'], $type]);
                 }
-                $conn->commit();
-                echo json_encode(['status' => 'success']);
-            } catch (Exception $e) {
-                $conn->rollBack();
-                throw $e;
             }
+            echo json_encode(['status' => 'success']);
+        }
+        
+        elseif ($action === 'clear_audit') {
+            $type = $input['report_type'] ?? 'FG';
+            $stmt = $conn->prepare("DELETE FROM audit_records WHERE report_type = ?");
+            $stmt->execute([$type]);
+            echo json_encode(['status' => 'success']);
         }
 
-        elseif ($action === 'clear_audit') {
-            $conn->exec("DELETE FROM audit_records");
-            echo json_encode(['status' => 'success']);
+        elseif ($action === 'get_report') {
+            $id = $_GET['id'] ?? null;
+            if ($id) {
+                $stmt = $conn->prepare("SELECT data FROM audit_reports_archive WHERE id = ?");
+                $stmt->execute([$id]);
+                $data = $stmt->fetch(PDO::FETCH_ASSOC);
+                echo json_encode(['status' => 'success', 'data' => $data]);
+            } else { echo json_encode(['status' => 'error', 'message' => 'No ID']); }
         }
 
         elseif ($action === 'archive_report') {
