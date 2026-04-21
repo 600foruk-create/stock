@@ -6869,17 +6869,17 @@ function refreshRMInventoryBalance() {
                 </div>
             </td>
             <td style="text-align: right; vertical-align: middle; color: var(--gray-600); font-weight: 600;">
-                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 5px;">
-                    ${avgPrice > 0 ? avgPrice.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) : '---'}
-                    <button class="btn btn-icon-sm" onclick="setRMItemBasePrice(${item.id})" title="Set Manual Price" style="font-size: 0.7rem; color: var(--gray-400);"><i class="fas fa-edit"></i></button>
-                </div>
+                ${avgPrice > 0 ? avgPrice.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) : '---'}
             </td>
             <td style="text-align: right; vertical-align: middle; color: var(--gray-600); font-weight: 600;">
                 ${maxPrice > 0 ? maxPrice.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) : '---'}
             </td>
             <td style="text-align: right; padding-right: 1.5rem; vertical-align: middle;">
-                <div style="font-weight: 800; font-size: 1.15rem; color: var(--success);">
-                    ${totalValue > 0 ? 'Rs. ' + totalValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '---'}
+                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 5px;">
+                    <div style="font-weight: 800; font-size: 1.15rem; color: var(--success);">
+                        ${totalValue > 0 ? 'Rs. ' + totalValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '---'}
+                    </div>
+                    <button class="btn btn-icon-sm" onclick="setRMItemTotalValue(${item.id})" title="Adjust Total Stock Value" style="font-size: 0.7rem; color: var(--gray-400);"><i class="fas fa-edit"></i></button>
                 </div>
             </td>
         `;
@@ -6887,32 +6887,42 @@ function refreshRMInventoryBalance() {
     });
 }
 
-async function setRMItemBasePrice(id) {
+async function setRMItemTotalValue(id) {
     const item = rmItems.find(i => i.id == id);
     if (!item) return;
 
-    const newPrice = prompt(`Set Base/Manual Purchase Price (per KG) for "${item.name}":`, item.base_price || 0);
-    if (newPrice === null) return;
-
-    const price = parseFloat(newPrice);
-    if (isNaN(price) || price < 0) {
-        alert('Please enter a valid price.');
+    const currentStock = parseFloat(item.stock) || 0;
+    if (currentStock <= 0) {
+        alert('Cannot set value for 0 stock. Please add stock first.');
         return;
     }
+
+    const currentVal = (currentStock * (parseFloat(item.base_price) || 0)).toFixed(0);
+    const newVal = prompt(`Enter TOTAL VALUE (Rs.) for all ${currentStock.toFixed(1)} KG of "${item.name}":`, currentVal > 0 ? currentVal : '');
+    if (newVal === null) return;
+
+    const totalVal = parseFloat(newVal);
+    if (isNaN(totalVal) || totalVal < 0) {
+        alert('Please enter a valid total value.');
+        return;
+    }
+
+    // Calculate implied price per KG
+    const impliedPrice = totalVal / currentStock;
 
     try {
         const response = await fetch('api/sync.php?action=update_rm_item_base_price', {
             method: 'POST',
-            body: JSON.stringify({ id, base_price: price })
+            body: JSON.stringify({ id, base_price: impliedPrice })
         });
         const result = await response.json();
         if (result.status === 'success') {
-            item.base_price = price;
+            item.base_price = impliedPrice;
             refreshRMInventoryBalance();
         }
     } catch (e) {
-        console.error('Failed to update base price:', e);
-        alert('Failed to save price. Check connection.');
+        console.error('Failed to update total value:', e);
+        alert('Failed to save value. Check connection.');
     }
 }
 
