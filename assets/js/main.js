@@ -6127,8 +6127,17 @@ function updateRMOutMetrics() {
 
     rmTransactions.forEach(t => {
         if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:') && new Date(t.date).toDateString() === todayStr) {
-            totalKg += (parseFloat(t.quantity) || 0);
-            totalValue += (parseFloat(t.quantity) || 0) * (parseFloat(t.price) || 0);
+            const item = rmItems.find(i => i.id == t.rm_item_id);
+            const qty = (parseFloat(t.quantity) || 0);
+            let price = (parseFloat(t.price) || 0);
+            
+            // Fallback for old transactions that had 0 price
+            if (price <= 0 && item) {
+                price = getRMItemCurrentPrice(item);
+            }
+
+            totalKg += qty;
+            totalValue += qty * price;
         }
     });
 
@@ -6252,8 +6261,15 @@ function refreshRMConsumptionReport() {
         const lastRMDateStr = lastRMDate.toDateString();
         rmTransactions.forEach(t => {
             if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:') && new Date(t.date).toDateString() === lastRMDateStr) {
+                const item = rmItems.find(i => i.id == t.rm_item_id);
                 const qty = (parseFloat(t.quantity) || 0);
-                const price = (parseFloat(t.price) || 0);
+                let price = (parseFloat(t.price) || 0);
+
+                // Fallback for old transactions that had 0 price
+                if (price <= 0 && item) {
+                    price = getRMItemCurrentPrice(item);
+                }
+
                 rmTotalKg += qty;
                 rmTotalValue += qty * price;
             }
@@ -6811,10 +6827,11 @@ async function deleteAllRMInHistory() {
 }
 
 async function recordSingleRMTransaction(itemId, qty, type, notes, price = 0) {
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     await fetch('api/sync.php?action=save_rm_transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transaction: { rm_item_id: itemId, quantity: qty, price, type, notes } })
+        body: JSON.stringify({ transaction: { rm_item_id: itemId, quantity: qty, price, type, notes, date: now } })
     });
 }
 
