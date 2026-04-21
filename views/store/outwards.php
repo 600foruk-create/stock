@@ -1,9 +1,6 @@
 <div class="store-outwards" style="padding: 1rem;">
     <!-- OUTWARD FORM -->
     <div class="row" style="background: white; padding: 2.5rem; border-radius: 20px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); margin-bottom: 2rem;">
-        <div class="col-12">
-            <h3 style="color: var(--red-700); margin-bottom: 2rem; font-weight: 800; border-bottom: 2px solid var(--red-100); padding-bottom: 10px;">📤 Item Issuance / Outward</h3>
-        </div>
         <div class="col-md-5">
             <div class="form-group">
                 <label style="font-weight: 700; color: #9b2c2c;">Select Item</label>

@@ -1,9 +1,6 @@
 <div class="store-inwards" style="padding: 1rem;">
     <!-- INWARD FORM -->
     <div class="row" style="background: white; padding: 2.5rem; border-radius: 20px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); margin-bottom: 2rem;">
-        <div class="col-12">
-            <h3 style="color: var(--sky-700); margin-bottom: 2rem; font-weight: 800; border-bottom: 2px solid var(--sky-100); padding-bottom: 10px;">📦 New Stock Entry</h3>
-        </div>
         <div class="col-md-4">
             <div class="form-group">
                 <label style="font-weight: 700; color: var(--gray-700); font-size: 0.9rem;">Select Item</label>
