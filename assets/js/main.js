@@ -7824,10 +7824,10 @@ function refreshStoreInventory() {
                 <button class="btn btn-sm" onclick="event.stopPropagation(); toggleStoreForm('addSub_${cat.id}')" style="background: var(--sky-600); color: white; border-radius: 8px; padding: 6px 12px;">
                     <i class="fas fa-plus"></i> Add Sub
                 </button>
-                <button class="btn btn-sm" onclick="event.stopPropagation(); editStoreCategory(${cat.id}, 'main')" style="background: var(--sky-500); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 700;">
+                <button class="btn btn-sm" onclick="event.stopPropagation(); editStoreCategory(${cat.id}, 'main')" style="background: #0ea5e9; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 700;">
                     Edit
                 </button>
-                <button class="btn btn-sm" onclick="event.stopPropagation(); deleteStoreCategory(${cat.id}, 'main')" style="background: var(--red-500); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 700;">
+                <button class="btn btn-sm" onclick="event.stopPropagation(); deleteStoreCategory(${cat.id}, 'main')" style="background: #ef4444; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 700;">
                     Delete
                 </button>
                 <i class="fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'}" style="color: var(--sky-300); margin-left: 0.5rem;"></i>
@@ -7970,10 +7970,10 @@ function refreshStoreInventory() {
                                         </div>
                                     </td>
                                     <td style="padding: 12px 15px; text-align: right; border-radius: 0 12px 12px 0;">
-                                        <button class="btn btn-sm" onclick="editStoreItem(${itm.id})" style="background: var(--sky-500); color: white; border: none; padding: 6px 15px; border-radius: 8px; font-weight: 700;">
+                                        <button class="btn btn-sm" onclick="editStoreItem(${itm.id})" style="background: #0ea5e9; color: white; border: none; padding: 6px 15px; border-radius: 8px; font-weight: 700;">
                                             Edit
                                         </button>
-                                        <button class="btn btn-sm" onclick="deleteStoreItem(${itm.id})" style="background: var(--red-500); color: white; border: none; padding: 6px 15px; border-radius: 8px; margin-left: 5px; font-weight: 700;">
+                                        <button class="btn btn-sm" onclick="deleteStoreItem(${itm.id})" style="background: #ef4444; color: white; border: none; padding: 6px 15px; border-radius: 8px; margin-left: 5px; font-weight: 700;">
                                             Delete
                                         </button>
                                     </td>
