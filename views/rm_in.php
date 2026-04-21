@@ -2,7 +2,7 @@
 
     
     <div class="form-card" style="margin-bottom: 2rem; background: transparent; box-shadow: none; border: none; padding: 0;">
-        <div class="settings-grid" style="display: grid; grid-template-columns: 1.2fr 1fr 1.5fr; gap: 1rem; align-items: flex-end; background: #f8fafc; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <div class="settings-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem; align-items: flex-end; background: #f8fafc; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0;">
             <div class="form-group" style="margin-bottom: 0;">
                 <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.5rem; font-size: 0.9rem; display: block;">Select Raw Material</label>
                 <select id="rmInSelect" class="form-control" style="height: 48px; padding: 0.6rem 1rem; font-size: 1rem; border-radius: 8px; border: 2px solid #cbd5e1; width: 100%; background: white;"></select>
@@ -18,13 +18,17 @@
                         <option value="Grams">Grams</option>
                     </select>
                 </div>
-                <!-- Absolutely positioned hint to avoid pushing layout -->
                 <small id="rmInConversionHint" style="position: absolute; top: 100%; left: 0; color:var(--sky-600); font-weight:700; font-size: 0.75rem; margin-top: 2px; white-space: nowrap;"></small>
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.5rem; font-size: 0.9rem; display: block;">Purchase Price (per Unit)</label>
+                <input type="number" id="rmInPrice" class="form-control" style="height: 48px; padding: 0.6rem 1rem; font-size: 1rem; border-radius: 8px; border: 2px solid #cbd5e1; width: 100%; background: white;" placeholder="0.00">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
                 <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.5rem; font-size: 0.9rem; display: block;">Reference / Supplier Notes</label>
-                <input type="text" id="rmInNotes" class="form-control" style="height: 48px; padding: 0.6rem 1rem; font-size: 1rem; border-radius: 8px; border: 2px solid #cbd5e1; width: 100%; background: white;" placeholder="Supplier Name, Invoice #, etc.">
+                <input type="text" id="rmInNotes" class="form-control" style="height: 48px; padding: 0.6rem 1rem; font-size: 1rem; border-radius: 8px; border: 2px solid #cbd5e1; width: 100%; background: white;" placeholder="Supplier Name, etc.">
             </div>
         </div>
         
@@ -50,8 +54,9 @@
                 <tr>
                     <th>Date</th>
                     <th>Material</th>
-                    <th>Type</th>
                     <th>Quantity Received</th>
+                    <th>Unit Price</th>
+                    <th>Total Amount</th>
                     <th>Notes</th>
                     <th style="width: 80px; text-align: center;">Action</th>
                 </tr>

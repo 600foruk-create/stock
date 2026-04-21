@@ -110,6 +110,14 @@ try {
                     }
                 } catch(Exception $e) {}
 
+                // AUTO-REPAIR: Add price column to rm_transactions
+                try {
+                    $rtCols = $conn->query("SHOW COLUMNS FROM rm_transactions")->fetchAll(PDO::FETCH_COLUMN);
+                    if (!in_array('price', $rtCols)) {
+                        $conn->exec("ALTER TABLE rm_transactions ADD COLUMN price DECIMAL(15,3) DEFAULT 0 AFTER quantity");
+                    }
+                } catch(Exception $e) {}
+
             } catch (Exception $e) {}
 
             $data = [
@@ -212,8 +220,8 @@ try {
             $t = $input['transaction'];
             $conn->beginTransaction();
             try {
-                $stmt = $conn->prepare("INSERT INTO rm_transactions (rm_item_id, quantity, type, notes) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$t['rm_item_id'], $t['quantity'], $t['type'], $t['notes'] ?? '']);
+                $stmt = $conn->prepare("INSERT INTO rm_transactions (rm_item_id, quantity, price, type, notes) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$t['rm_item_id'], $t['quantity'], $t['price'] ?? 0, $t['type'], $t['notes'] ?? '']);
                 
                 // Update stock
                 if ($t['type'] === 'IN') {
@@ -236,8 +244,8 @@ try {
             $conn->beginTransaction();
             try {
                 foreach ($transactions as $t) {
-                    $stmt = $conn->prepare("INSERT INTO rm_transactions (rm_item_id, quantity, type, notes) VALUES (?, ?, ?, ?)");
-                    $stmt->execute([$t['rm_item_id'], $t['quantity'], $t['type'], $t['notes'] ?? '']);
+                    $stmt = $conn->prepare("INSERT INTO rm_transactions (rm_item_id, quantity, price, type, notes) VALUES (?, ?, ?, ?, ?)");
+                    $stmt->execute([$t['rm_item_id'], $t['quantity'], $t['price'] ?? 0, $t['type'], $t['notes'] ?? '']);
                     
                     if ($t['type'] === 'IN') {
                         $stmt = $conn->prepare("UPDATE rm_items SET stock = stock + ? WHERE id = ?");

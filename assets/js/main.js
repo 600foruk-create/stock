@@ -6413,7 +6413,9 @@ async function saveRMTransaction(type) {
     const mode = type === 'OUT' ? (document.querySelector('input[name="rmOutMode"]:checked')?.value || 'SINGLE') : 'SINGLE';
     const notes = type === 'IN' ? document.getElementById('rmInNotes').value : document.getElementById('rmOutNotes').value;
     const qtyInput = type === 'IN' ? document.getElementById('rmInQty') : document.getElementById('rmOutQty');
+    const priceInput = document.getElementById('rmInPrice');
     const multiplier = parseFloat(qtyInput.value);
+    const unitPriceUser = priceInput ? (parseFloat(priceInput.value) || 0) : 0;
 
     if (isNaN(multiplier) || multiplier <= 0) { alert('Enter a valid quantity'); return; }
 
@@ -6434,7 +6436,12 @@ async function saveRMTransaction(type) {
             actualKg = multiplier / 1000;
         }
         
-        await recordSingleRMTransaction(itemId, actualKg, type, notes);
+        let pricePerKg = 0;
+        if (type === 'IN' && actualKg > 0) {
+            pricePerKg = (unitPriceUser * multiplier) / actualKg;
+        }
+        
+        await recordSingleRMTransaction(itemId, actualKg, type, notes, pricePerKg);
     } else {
         // Formula Mode
         const formulaId = document.getElementById('rmOutFormulaSelect').value;
@@ -6459,7 +6466,7 @@ async function saveRMTransaction(type) {
 
         for (const item of customItems) {
             const totalQty = item.qty * multiplier;
-            await recordSingleRMTransaction(item.itemId, totalQty, 'OUT', `[Formula: ${formula.name}] ${notes}`);
+            await recordSingleRMTransaction(item.itemId, totalQty, 'OUT', `[Formula: ${formula.name}] ${notes}`, 0);
         }
     }
 
@@ -6469,6 +6476,7 @@ async function saveRMTransaction(type) {
     if (type === 'IN') {
         if (document.getElementById('rmInQty')) document.getElementById('rmInQty').value = '';
         if (document.getElementById('rmInSelect')) document.getElementById('rmInSelect').value = '';
+        if (document.getElementById('rmInPrice')) document.getElementById('rmInPrice').value = '';
         if (document.getElementById('rmInNotes')) document.getElementById('rmInNotes').value = '';
     } else {
         if (document.getElementById('rmOutQty')) document.getElementById('rmOutQty').value = '1';
@@ -6666,12 +6674,21 @@ function refreshRMInHistoryTable() {
     
     purchases.forEach(t => {
         const item = rmItems.find(i => i.id == t.rm_item_id);
+        const qty = parseFloat(t.quantity) || 0;
+        const pricePerKg = parseFloat(t.price) || 0;
+        const totalAmount = qty * pricePerKg;
+        
+        // Try to estimate original unit price for display
+        // Since we only store pricePerKg and qtyInKg, we can't be sure of original unit
+        // But for display, we'll just show total and internal unit price
+        
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${t.date ? t.date.split(' ')[0] : '---'}</td>
             <td style="font-weight: 600;">${item ? item.name : 'Unknown'}</td>
-            <td><span class="badge" style="background: #f0f7ff; color: var(--sky-600); border: 1px solid var(--sky-200);">STOCKED</span></td>
-            <td style="font-weight: bold; color: var(--success); font-size: 1.1rem;">+${t.quantity} ${item ? item.unit : ''}</td>
+            <td style="font-weight: bold; color: var(--success); font-size: 1.1rem;">+${qty.toLocaleString()} ${item ? 'KG' : ''}</td>
+            <td style="text-align: right;">${pricePerKg.toLocaleString(undefined, {minimumFractionDigits: 1})} / KG</td>
+            <td style="text-align: right; font-weight: bold; color: var(--sky-600);">Rs. ${totalAmount.toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
             <td style="color: var(--gray-500); font-style: italic; font-size: 0.85rem;">${t.notes || ''}</td>
             <td style="text-align: center;">
                 <button class="btn btn-icon text-error" onclick="deleteRMTransaction(${t.id})" title="Delete Record">🗑️</button>
@@ -6694,11 +6711,11 @@ async function deleteAllRMInHistory() {
     }
 }
 
-async function recordSingleRMTransaction(itemId, qty, type, notes) {
+async function recordSingleRMTransaction(itemId, qty, type, notes, price = 0) {
     await fetch('api/sync.php?action=save_rm_transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transaction: { rm_item_id: itemId, quantity: qty, type, notes } })
+        body: JSON.stringify({ transaction: { rm_item_id: itemId, quantity: qty, price, type, notes } })
     });
 }
 
@@ -6791,7 +6808,7 @@ function refreshRMInventoryBalance() {
     const sortedItems = [...filteredItems].sort((a, b) => a.name.localeCompare(b.name));
 
     if (sortedItems.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; padding:2rem; color:var(--gray-500);">No items match your filters.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--gray-500);">No items match your filters.</td></tr>';
         return;
     }
 
@@ -6799,6 +6816,32 @@ function refreshRMInventoryBalance() {
         const currentStock = parseFloat(item.stock) || 0;
         const kgPerBag = parseFloat(item.kgPerBag) || 0;
         const bags = kgPerBag > 0 ? (currentStock / kgPerBag).toFixed(1) : '---';
+
+        // Calculate Price Metrics from history
+        const history = rmTransactions.filter(t => t.type === 'IN' && t.rm_item_id == item.id && parseFloat(t.price) > 0);
+        
+        let avgPrice = 0;
+        let maxPrice = 0;
+        let totalValue = 0;
+
+        if (history.length > 0) {
+            let totalQty = 0;
+            let totalCost = 0;
+            maxPrice = 0;
+
+            history.forEach(t => {
+                const q = parseFloat(t.quantity) || 0;
+                const p = parseFloat(t.price) || 0;
+                totalQty += q;
+                totalCost += (q * p);
+                if (p > maxPrice) maxPrice = p;
+            });
+
+            if (totalQty > 0) {
+                avgPrice = totalCost / totalQty;
+            }
+            totalValue = currentStock * avgPrice;
+        }
 
         const row = document.createElement('tr');
         row.style.borderBottom = '1px solid var(--gray-100)';
@@ -6808,13 +6851,24 @@ function refreshRMInventoryBalance() {
                 <div style="font-size: 0.75rem; color: var(--gray-500); font-family: monospace; background: #f1f5f9; display: inline-block; padding: 2px 8px; border-radius: 4px; margin-top: 5px; border: 1px solid var(--gray-200);">${item.code}</div>
             </td>
             <td style="text-align: right; padding-right: 1.5rem; vertical-align: middle;">
-                <div style="font-weight: 800; font-size: 1.2rem; color: var(--primary);">
-                    ${bags} <span style="font-size: 0.8rem; color: var(--gray-400); font-weight: 600;">Bags</span>
+                <div style="font-weight: 800; font-size: 1.1rem; color: var(--primary);">
+                    ${bags} <span style="font-size: 0.7rem; color: var(--gray-400); font-weight: 600;">Bags</span>
                 </div>
             </td>
-            <td style="text-align: right; padding-right: 2rem; vertical-align: middle;">
-                <div style="font-weight: 800; font-size: 1.25rem; color: var(--sky-700);">
-                    ${currentStock.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} <span style="font-size: 0.8rem; color: var(--gray-400); font-weight: 600;">${item.unit}</span>
+            <td style="text-align: right; padding-right: 1.5rem; vertical-align: middle;">
+                <div style="font-weight: 800; font-size: 1.1rem; color: var(--sky-700);">
+                    ${currentStock.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} <span style="font-size: 0.7rem; color: var(--gray-400); font-weight: 600;">KG</span>
+                </div>
+            </td>
+            <td style="text-align: right; vertical-align: middle; color: var(--gray-600); font-weight: 600;">
+                ${avgPrice > 0 ? avgPrice.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) : '---'}
+            </td>
+            <td style="text-align: right; vertical-align: middle; color: var(--gray-600); font-weight: 600;">
+                ${maxPrice > 0 ? maxPrice.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) : '---'}
+            </td>
+            <td style="text-align: right; padding-right: 1.5rem; vertical-align: middle;">
+                <div style="font-weight: 800; font-size: 1.15rem; color: var(--success);">
+                    ${totalValue > 0 ? 'Rs. ' + totalValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '---'}
                 </div>
             </td>
         `;
