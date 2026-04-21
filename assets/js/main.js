@@ -8018,10 +8018,6 @@ function refreshStoreAudit() {
 
 async function saveStoreAuditReport() {
     const inputs = document.querySelectorAll('.store-audit-input');
-    const reportData = [];
-    let filledCount = 0;
-    
-    inputs.forEach(inp => {
     const records = [];
     let hasData = false;
 
@@ -8196,24 +8192,7 @@ async function printStoreLatestReport() {
     if (storeReports.length === 0) return alert('No reports found');
     
     const latest = storeReports[0];
-    const res = await fetch('api/sync.php?action=get_archived_report&id=' + latest.id);
-    const data = await res.json();
-    if (data.status === 'success') {
-        const report = JSON.parse(data.report.data);
-        let printHtml = '<h2>' + latest.title + '</h2>' + 
-            '<table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse;">' +
-            '<thead><tr><th>Code</th><th>Name</th><th>System</th><th>Physical</th><th>Diff</th></tr></thead><tbody>';
-        
-        report.forEach(r => {
-            printHtml += `<tr><td>${r.itemCode}</td><td>${r.itemName}</td><td>${r.systemStock}</td><td>${r.physicalStock}</td><td>${r.diff}</td></tr>`;
-        });
-        printHtml += '</tbody></table>';
-        
-        const win = window.open('', '_blank');
-        win.document.write(printHtml);
-        win.print();
-        win.close();
-    }
+    await printStoreArchivedReport(latest.id);
 }
 
 // Add event listener for live search
