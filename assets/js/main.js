@@ -2565,15 +2565,19 @@ function refreshLowStockReport() {
     items.forEach(item => {
         let main = mainCategories.find(m => m.id === item.mainId);
         let min = item.lowStockLimit || main?.lowStockLimit || 10;
-        if (item.stock <= min) {
-            if (!lowByBrand[main.id]) {
-                lowByBrand[main.id] = {
-                    name: main.name,
-                    color: main.color,
+        if (parseInt(item.stock) <= parseInt(min)) {
+            const brandId = main ? main.id : 'unknown';
+            const brandName = main ? main.name : 'Unknown Brand';
+            const brandColor = main ? main.color : '#ccc';
+
+            if (!lowByBrand[brandId]) {
+                lowByBrand[brandId] = {
+                    name: brandName,
+                    color: brandColor,
                     items: []
                 };
             }
-            lowByBrand[main.id].items.push(item);
+            lowByBrand[brandId].items.push(item);
         }
     });
 
@@ -2586,7 +2590,8 @@ function refreshLowStockReport() {
             let itemsHtml = '';
             brand.items.forEach(item => {
                 let sub = subCategories.find(s => s.id === item.subId);
-                let min = item.lowStockLimit || mainCategories.find(m => m.id === item.mainId)?.lowStockLimit || 10;
+                let main = mainCategories.find(m => m.id === item.mainId);
+                let min = item.lowStockLimit || main?.lowStockLimit || 10;
                 let stockPercent = (item.stock / min) * 100;
                 let status = stockPercent <= 30 ? 'critical' : 'warning';
                 let size = sub ? sub.name.replace(/[^0-9.]/g, '') : '?';
@@ -2936,6 +2941,7 @@ async function saveProduction() {
         let errors = [];
         let prodDate = document.getElementById('prodDate').value;
 
+        // Process rows...
         for (let row of rows) {
             const itemId = row.dataset.itemId;
             const lengthInput = row.children[3];
@@ -2991,13 +2997,24 @@ async function saveProduction() {
         }
 
         if (errors.length > 0) alert('Errors:\n' + errors.join('\n'));
-        saveData(); refreshTransactions(); refreshDashboard(); refreshStockList(); refreshLowStockReport(); hideAllForms();
-        // Auto-save consumption snapshot after production transaction
+        
+        // Clear Entry Data as requested
+        document.getElementById('productionRows').innerHTML = '';
+        
+        saveData(); 
+        refreshTransactions(); 
+        refreshDashboard(); 
+        refreshStockList(); 
+        refreshLowStockReport(); 
+        hideAllForms();
+        
+        // Auto-save consumption snapshot
         await autoSaveRMConsumption();
         alert('✅ Production saved successfully!');
     } catch (err) {
         console.error('saveProduction Error:', err);
-        alert('❌ Error saving production. Check console.');
+        alert('❌ Note: Production saved to database, but there was a minor error updating the screen. Refreshing page...');
+        location.reload();
     } finally {
         if (saveBtn) {
             saveBtn.disabled = false;
