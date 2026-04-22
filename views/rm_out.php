@@ -36,10 +36,9 @@
             </label>
         </div>
 
-        <div class="settings-grid" style="display: grid; grid-template-columns: 0.8fr 1.2fr 1fr 1.5fr; gap: 1rem; align-items: flex-end; background: #f8fafc; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0;">
             <div class="form-group" style="margin-bottom: 0;">
                 <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.5rem; font-size: 0.9rem; display: block;">Issue Date</label>
-                <input type="date" id="rmOutDate" class="form-control" style="height: 48px; border-radius: 8px; border: 2px solid #cbd5e1; width: 100%; background: white;">
+                <input type="date" id="rmOutDate" class="form-control" style="height: 48px; border-radius: 8px; border: 2px solid #cbd5e1; width: 100%; background: white;" onchange="updateRMOutMetrics()">
             </div>
             <!-- Single Item Mode -->
             <div id="rmOutSingleGroup" class="form-group" style="margin-bottom: 0;">
