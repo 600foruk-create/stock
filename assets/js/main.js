@@ -2927,79 +2927,83 @@ async function saveProduction() {
         saveBtn.innerText = 'Saving...';
     }
 
-    let rows = document.getElementById('productionRows').children;
-    if (rows.length === 0) { 
-        alert('Add at least one item'); 
-        if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Save Production'; }
-        return; 
-    }
-    let errors = [];
-    let prodDate = document.getElementById('prodDate').value;
+    try {
+        let rows = document.getElementById('productionRows').children;
+        if (rows.length === 0) { 
+            alert('Add at least one item'); 
+            return; 
+        }
+        let errors = [];
+        let prodDate = document.getElementById('prodDate').value;
 
-    for (let row of rows) {
-        const itemId = row.dataset.itemId;
-        const lengthInput = row.children[3];
-        const qtyInput = row.children[4];
-        const qty = parseInt(qtyInput ? qtyInput.value : 0);
-        const length = parseInt(lengthInput ? lengthInput.value : 13);
+        for (let row of rows) {
+            const itemId = row.dataset.itemId;
+            const lengthInput = row.children[3];
+            const qtyInput = row.children[4];
+            const qty = parseInt(qtyInput ? qtyInput.value : 0);
+            const length = parseInt(lengthInput ? lengthInput.value : 13);
 
-        if (!itemId) { errors.push('Select item'); continue; }
-        if (!qty || qty <= 0) { errors.push('Enter quantity'); continue; }
-        let item = items.find(i => i.id == itemId);
-        if (!item) { errors.push('Item not found'); continue; }
+            if (!itemId) { errors.push('Select item'); continue; }
+            if (!qty || qty <= 0) { errors.push('Enter quantity'); continue; }
+            let item = items.find(i => i.id == itemId);
+            if (!item) { errors.push('Item not found'); continue; }
 
-        if (length && length > 0) item.length = length;
+            if (length && length > 0) item.length = length;
 
-        let main = mainCategories.find(m => m.id === item.mainId);
-        let sub = subCategories.find(s => s.id === item.subId);
+            let main = mainCategories.find(m => m.id === item.mainId);
+            let sub = subCategories.find(s => s.id === item.subId);
 
-        let tData = {
-            type: 'PRODUCTION',
-            date: prodDate,
-            mainId: item.mainId,
-            subId: item.subId,
-            itemId: itemId,
-            quantity: qty,
-            notes: 'Production'
-        };
+            let tData = {
+                type: 'PRODUCTION',
+                date: prodDate,
+                mainId: item.mainId,
+                subId: item.subId,
+                itemId: itemId,
+                quantity: qty,
+                notes: 'Production'
+            };
 
-        try {
-            const response = await fetch('api/sync.php?action=save_transaction', {
-                method: 'POST',
-                body: JSON.stringify({ transaction: tData })
-            });
-            const result = await response.json();
-            if (result.status === 'success') {
-                item.stock = (item.stock || 0) + qty;
-                transactions.unshift({
-                    id: result.id,
-                    ...tData,
-                    mainName: main ? main.name : '',
-                    subName: sub ? sub.name : '',
-                    productCode: getProductCode(item, main, sub),
-                    itemName: item.name,
-                    weight: item.weight,
-                    length: item.length,
-                    customer: 'Factory'
+            try {
+                const response = await fetch('api/sync.php?action=save_transaction', {
+                    method: 'POST',
+                    body: JSON.stringify({ transaction: tData })
                 });
-            } else {
-                errors.push(`Failed to save ${item.name}: ${result.message}`);
+                const result = await response.json();
+                if (result.status === 'success') {
+                    item.stock = (item.stock || 0) + qty;
+                    transactions.unshift({
+                        id: result.id,
+                        ...tData,
+                        mainName: main ? main.name : '',
+                        subName: sub ? sub.name : '',
+                        productCode: getProductCode(item, main, sub),
+                        itemName: item.name,
+                        weight: item.weight,
+                        length: item.length,
+                        customer: 'Factory'
+                    });
+                } else {
+                    errors.push(`Failed to save ${item.name}: ${result.message}`);
+                }
+            } catch (e) {
+                errors.push(`Server error for ${item.name}`);
             }
-        } catch (e) {
-            errors.push(`Server error for ${item.name}`);
+        }
+
+        if (errors.length > 0) alert('Errors:\n' + errors.join('\n'));
+        saveData(); refreshTransactions(); refreshDashboard(); refreshStockList(); refreshLowStockReport(); hideAllForms();
+        // Auto-save consumption snapshot after production transaction
+        await autoSaveRMConsumption();
+        alert('✅ Production saved successfully!');
+    } catch (err) {
+        console.error('saveProduction Error:', err);
+        alert('❌ Error saving production. Check console.');
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'Save Production';
         }
     }
-
-    if (errors.length > 0) alert('Errors:\n' + errors.join('\n'));
-    saveData(); refreshTransactions(); refreshDashboard(); refreshStockList(); refreshLowStockReport(); hideAllForms();
-    // Auto-save consumption snapshot after production transaction
-    autoSaveRMConsumption();
-
-    if (saveBtn) {
-        saveBtn.disabled = false;
-        saveBtn.innerText = 'Save Production';
-    }
-    alert('Process complete.');
 }
 
 async function saveSale() {
@@ -6643,111 +6647,114 @@ async function saveRMTransaction(type) {
         saveBtn.innerText = 'Saving...';
     }
 
-    const mode = type === 'OUT' ? (document.querySelector('input[name="rmOutMode"]:checked')?.value || 'SINGLE') : 'SINGLE';
-    const notes = type === 'IN' ? document.getElementById('rmInNotes').value : document.getElementById('rmOutNotes').value;
-    const qtyInput = type === 'IN' ? document.getElementById('rmInQty') : document.getElementById('rmOutQty');
-    const priceInput = document.getElementById('rmInPrice');
-    const multiplier = parseFloat(qtyInput.value);
-    const unitPriceUser = priceInput ? (parseFloat(priceInput.value) || 0) : 0;
+    try {
+        const mode = type === 'OUT' ? (document.querySelector('input[name="rmOutMode"]:checked')?.value || 'SINGLE') : 'SINGLE';
+        const notes = type === 'IN' ? document.getElementById('rmInNotes').value : document.getElementById('rmOutNotes').value;
+        const qtyInput = type === 'IN' ? document.getElementById('rmInQty') : document.getElementById('rmOutQty');
+        const priceInput = document.getElementById('rmInPrice');
+        const multiplier = parseFloat(qtyInput.value);
+        const unitPriceUser = priceInput ? (parseFloat(priceInput.value) || 0) : 0;
 
-    if (isNaN(multiplier) || multiplier <= 0) { 
-        alert('Enter a valid quantity'); 
-        if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Save'; }
-        return; 
-    }
-
-    let actualKg = multiplier;
-    if (mode === 'SINGLE') {
-        const itemId = type === 'IN' ? document.getElementById('rmInSelect').value : document.getElementById('rmOutSelect').value;
-        const unitSelectId = type === 'IN' ? 'rmInUnitSelect' : 'rmOutUnitSelect';
-        const selectedUnit = document.getElementById(unitSelectId).value;
-        
-        if (!itemId) { alert('Select a material'); if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Save'; } return; }
-        const item = rmItems.find(i => i.id == itemId);
-        
-        if (selectedUnit === 'Bags') {
-            const kgPerBag = parseFloat(item.kgPerBag) || 0;
-            if (kgPerBag <= 0) { alert('Please set "KG per Bag" for this item in Inventory before using Bags.'); if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Save'; } return; }
-            actualKg = multiplier * kgPerBag;
-        } else if (selectedUnit === 'Grams') {
-            actualKg = multiplier / 1000;
+        if (isNaN(multiplier) || multiplier <= 0) { 
+            alert('Enter a valid quantity'); 
+            return; 
         }
-        
-        let pricePerKg = 0;
-        if (type === 'IN' && actualKg > 0) {
-            pricePerKg = (unitPriceUser * multiplier) / actualKg;
-        } else if (type === 'OUT') {
+
+        let actualKg = multiplier;
+        if (mode === 'SINGLE') {
+            const itemId = type === 'IN' ? document.getElementById('rmInSelect').value : document.getElementById('rmOutSelect').value;
+            const unitSelectId = type === 'IN' ? 'rmInUnitSelect' : 'rmOutUnitSelect';
+            const selectedUnit = document.getElementById(unitSelectId).value;
+            
+            if (!itemId) { alert('Select a material'); return; }
             const item = rmItems.find(i => i.id == itemId);
-            pricePerKg = getRMItemCurrentPrice(item);
-        }
-        
-        await recordSingleRMTransaction(itemId, actualKg, type, notes, pricePerKg);
-    } else {
-        // Formula Mode
-        const formulaId = document.getElementById('rmOutFormulaSelect').value;
-        if (!formulaId) { alert('Select a formula'); if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Save'; } return; }
-        
-        const formula = rmFormulas.find(f => f.id == formulaId);
-        
-        // Collect custom quantities from the editor
-        const customRows = document.querySelectorAll('.rm-formula-custom-qty');
-        const customItems = [];
-        customRows.forEach(input => {
-            const itemId = input.getAttribute('data-item-id');
-            const qty = parseFloat(input.value);
-            if (itemId && !isNaN(qty) && qty > 0) {
-                customItems.push({ itemId, qty });
+            
+            if (selectedUnit === 'Bags') {
+                const kgPerBag = parseFloat(item.kgPerBag) || 0;
+                if (kgPerBag <= 0) { alert('Please set "KG per Bag" for this item in Inventory before using Bags.'); return; }
+                actualKg = multiplier * kgPerBag;
+            } else if (selectedUnit === 'Grams') {
+                actualKg = multiplier / 1000;
             }
-        });
+            
+            let pricePerKg = 0;
+            if (type === 'IN' && actualKg > 0) {
+                pricePerKg = (unitPriceUser * multiplier) / actualKg;
+            } else if (type === 'OUT') {
+                const item = rmItems.find(i => i.id == itemId);
+                pricePerKg = getRMItemCurrentPrice(item);
+            }
+            
+            await recordSingleRMTransaction(itemId, actualKg, type, notes, pricePerKg);
+        } else {
+            // Formula Mode
+            const formulaId = document.getElementById('rmOutFormulaSelect').value;
+            if (!formulaId) { alert('Select a formula'); return; }
+            
+            const formula = rmFormulas.find(f => f.id == formulaId);
+            
+            // Collect custom quantities from the editor
+            const customRows = document.querySelectorAll('.rm-formula-custom-qty');
+            const customItems = [];
+            customRows.forEach(input => {
+                const itemId = input.getAttribute('data-item-id');
+                const qty = parseFloat(input.value);
+                if (itemId && !isNaN(qty) && qty > 0) {
+                    customItems.push({ itemId, qty });
+                }
+            });
 
-        if (customItems.length === 0) { alert('No valid items to consume'); if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Save'; } return; }
-        
-        if (!confirm(`Using "${formula.name}" x ${multiplier}. Total of ${customItems.length} items will be consumed with your adjusted quantities. Proceed?`)) {
-            if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Save'; }
-            return;
+            if (customItems.length === 0) { alert('No valid items to consume'); return; }
+            
+            if (!confirm(`Using "${formula.name}" x ${multiplier}. Total of ${customItems.length} items will be consumed with your adjusted quantities. Proceed?`)) {
+                return;
+            }
+
+            for (const item of customItems) {
+                const totalQty = item.qty * multiplier;
+                const rmItem = rmItems.find(i => i.id == item.itemId);
+                const priceVal = getRMItemCurrentPrice(rmItem);
+                await recordSingleRMTransaction(item.itemId, totalQty, 'OUT', `[Formula: ${formula.name}] ${notes}`, priceVal);
+            }
         }
 
-        for (const item of customItems) {
-            const totalQty = item.qty * multiplier;
-            const rmItem = rmItems.find(i => i.id == item.itemId);
-            const priceVal = getRMItemCurrentPrice(rmItem);
-            await recordSingleRMTransaction(item.itemId, totalQty, 'OUT', `[Formula: ${formula.name}] ${notes}`, priceVal);
+        await initApp();
+        
+        // Reset Form Fields
+        if (type === 'IN') {
+            if (document.getElementById('rmInQty')) document.getElementById('rmInQty').value = '';
+            if (document.getElementById('rmInSelect')) document.getElementById('rmInSelect').value = '';
+            if (document.getElementById('rmInPrice')) document.getElementById('rmInPrice').value = '';
+            if (document.getElementById('rmInNotes')) document.getElementById('rmInNotes').value = '';
+        } else {
+            if (document.getElementById('rmOutQty')) document.getElementById('rmOutQty').value = '1';
+            if (document.getElementById('rmOutSelect')) document.getElementById('rmOutSelect').value = '';
+            if (document.getElementById('rmOutFormulaSelect')) document.getElementById('rmOutFormulaSelect').value = '';
+            if (document.getElementById('rmOutNotes')) document.getElementById('rmOutNotes').value = '';
+            
+            // Hide formula editor
+            const editor = document.getElementById('rmFormulaIngredientsEditor');
+            if (editor) editor.style.display = 'none';
+            const preview = document.getElementById('formulaPreview');
+            if (preview) preview.innerHTML = '';
+        }
+        
+        // Clear hints
+        if (document.getElementById('rmInConversionHint')) document.getElementById('rmInConversionHint').innerText = '';
+        if (document.getElementById('rmOutConversionHint')) document.getElementById('rmOutConversionHint').innerText = '';
+
+        // Auto-save consumption snapshot after RM transaction
+        await autoSaveRMConsumption();
+        alert('✅ RM Transaction saved successfully!');
+    } catch (err) {
+        console.error('saveRMTransaction Error:', err);
+        alert('❌ Error saving RM transaction.');
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'Save';
         }
     }
-
-    await initApp();
-    
-    // Reset Form Fields
-    if (type === 'IN') {
-        if (document.getElementById('rmInQty')) document.getElementById('rmInQty').value = '';
-        if (document.getElementById('rmInSelect')) document.getElementById('rmInSelect').value = '';
-        if (document.getElementById('rmInPrice')) document.getElementById('rmInPrice').value = '';
-        if (document.getElementById('rmInNotes')) document.getElementById('rmInNotes').value = '';
-    } else {
-        if (document.getElementById('rmOutQty')) document.getElementById('rmOutQty').value = '1';
-        if (document.getElementById('rmOutSelect')) document.getElementById('rmOutSelect').value = '';
-        if (document.getElementById('rmOutFormulaSelect')) document.getElementById('rmOutFormulaSelect').value = '';
-        if (document.getElementById('rmOutNotes')) document.getElementById('rmOutNotes').value = '';
-        
-        // Hide formula editor
-        const editor = document.getElementById('rmFormulaIngredientsEditor');
-        if (editor) editor.style.display = 'none';
-        const preview = document.getElementById('formulaPreview');
-        if (preview) preview.innerHTML = '';
-    }
-    
-    // Clear hints
-    if (document.getElementById('rmInConversionHint')) document.getElementById('rmInConversionHint').innerText = '';
-    if (document.getElementById('rmOutConversionHint')) document.getElementById('rmOutConversionHint').innerText = '';
-
-    // Auto-save consumption snapshot after RM transaction
-    autoSaveRMConsumption();
-
-    if (saveBtn) {
-        saveBtn.disabled = false;
-        saveBtn.innerText = 'Save';
-    }
-    alert('RM Transaction saved successfully!');
 }
 
 /**
