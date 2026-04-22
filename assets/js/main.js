@@ -5167,12 +5167,24 @@ function generateProductionReport() {
         
         // Calculate Total RM Cost for this brand in the period
         const brandRMTransactions = rmTransactions.filter(t => {
+            // Loose comparison for brand_id to handle string/number mismatch
             if (t.type !== 'OUT' || !t.brand_id || t.brand_id != currentBrandId) return false;
+            
+            // Handle date matching robustly
             const tDate = new Date(t.date).getTime();
             return tDate >= start && tDate <= end;
         });
         
-        const totalRMCost = brandRMTransactions.reduce((sum, t) => sum + (parseFloat(t.quantity) * parseFloat(t.price || 0)), 0);
+        // Debugging logs to console to help find issues
+        if (brandRMTransactions.length > 0) {
+            console.log(`Report Debug [${brandName}]: Found ${brandRMTransactions.length} RM transactions.`);
+        }
+
+        const totalRMCost = brandRMTransactions.reduce((sum, t) => {
+            const price = parseFloat(t.price || 0);
+            if (price <= 0) console.warn(`Item ${t.rm_item_id} has 0 price in RM history.`);
+            return sum + (parseFloat(t.quantity) * price);
+        }, 0);
         
         // Calculate Total FG KG for the rate
         let bPcs = 0;
