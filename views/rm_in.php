@@ -2,7 +2,11 @@
 
     
     <div class="form-card" style="margin-bottom: 2rem; background: transparent; box-shadow: none; border: none; padding: 0;">
-        <div class="settings-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem; align-items: flex-end; background: #f8fafc; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <div class="settings-grid" style="display: grid; grid-template-columns: 0.8fr 1.2fr 1fr 1fr 1.5fr; gap: 1rem; align-items: flex-end; background: #f8fafc; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.5rem; font-size: 0.9rem; display: block;">Purchase Date</label>
+                <input type="date" id="rmInDate" class="form-control" style="height: 48px; border-radius: 8px; border: 2px solid #cbd5e1; width: 100%; background: white;">
+            </div>
             <div class="form-group" style="margin-bottom: 0;">
                 <label style="font-weight: 700; color: var(--gray-700); margin-bottom: 0.5rem; font-size: 0.9rem; display: block;">Select Raw Material</label>
                 <select id="rmInSelect" class="form-control" style="height: 48px; padding: 0.6rem 1rem; font-size: 1rem; border-radius: 8px; border: 2px solid #cbd5e1; width: 100%; background: white;"></select>

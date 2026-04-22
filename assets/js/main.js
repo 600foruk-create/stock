@@ -6079,6 +6079,10 @@ function toggleRMOutMode() {
 }
 
 function refreshRMOutFormControls() {
+    const dateInput = document.getElementById('rmOutDate');
+    if (dateInput && !dateInput.value) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
     const itemSelect = document.getElementById('rmOutSelect');
     const formulaSelect = document.getElementById('rmOutFormulaSelect');
     const editor = document.getElementById('rmFormulaIngredientsEditor');
@@ -6733,8 +6737,11 @@ async function saveRMTransaction(type) {
 
     try {
         const mode = type === 'OUT' ? (document.querySelector('input[name="rmOutMode"]:checked')?.value || 'SINGLE') : 'SINGLE';
-        const notes = type === 'IN' ? document.getElementById('rmInNotes').value : document.getElementById('rmOutNotes').value;
-        const qtyInput = type === 'IN' ? document.getElementById('rmInQty') : document.getElementById('rmOutQty');
+        const notes = document.getElementById(type === 'IN' ? 'rmInNotes' : 'rmOutNotes').value.trim();
+        const customDateInput = document.getElementById(type === 'IN' ? 'rmInDate' : 'rmOutDate');
+        const customDateValue = customDateInput ? customDateInput.value : null;
+
+        const qtyInput = document.getElementById(type === 'IN' ? 'rmInQty' : 'rmOutQty');
         const priceInput = document.getElementById('rmInPrice');
         const multiplier = parseFloat(qtyInput.value);
         const unitPriceUser = priceInput ? (parseFloat(priceInput.value) || 0) : 0;
@@ -6769,7 +6776,7 @@ async function saveRMTransaction(type) {
                 pricePerKg = getRMItemCurrentPrice(item);
             }
             
-            await recordSingleRMTransaction(itemId, actualKg, type, notes, pricePerKg);
+            await recordSingleRMTransaction(itemId, actualKg, type, notes, pricePerKg, null, customDateValue);
         } else {
             // Formula Mode
             const formulaId = document.getElementById('rmOutFormulaSelect').value;
@@ -6798,7 +6805,7 @@ async function saveRMTransaction(type) {
                 const totalQty = item.qty * multiplier;
                 const rmItem = rmItems.find(i => i.id == item.itemId);
                 const priceVal = getRMItemCurrentPrice(rmItem);
-                await recordSingleRMTransaction(item.itemId, totalQty, 'OUT', `[Formula: ${formula.name}] ${notes}`, priceVal, formula.main_id);
+                await recordSingleRMTransaction(item.itemId, totalQty, 'OUT', `[Formula: ${formula.name}] ${notes}`, priceVal, formula.main_id, customDateValue);
             }
         }
 
@@ -7002,6 +7009,10 @@ function setRMOutMode(mode) {
 // ==================== RM IN LOGIC ====================
 
 function refreshRMInFormControls() {
+    const dateInput = document.getElementById('rmInDate');
+    if (dateInput && !dateInput.value) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
     const itemSelect = document.getElementById('rmInSelect');
     if (itemSelect) {
         itemSelect.innerHTML = '<option value="">-- Select Material --</option>';
@@ -7062,8 +7073,8 @@ async function deleteAllRMInHistory() {
     }
 }
 
-async function recordSingleRMTransaction(itemId, qty, type, notes, price = 0, brandId = null) {
-    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+async function recordSingleRMTransaction(itemId, qty, type, notes, price = 0, brandId = null, customDate = null) {
+    const now = customDate ? (customDate + " " + new Date().toLocaleTimeString('en-GB')) : new Date().toISOString().slice(0, 19).replace('T', ' ');
     const response = await fetch('api/sync.php?action=save_rm_transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
