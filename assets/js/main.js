@@ -5128,8 +5128,14 @@ function generateProductionReport() {
     
     if (!fromDate || !toDate) { alert("Please select date range."); return; }
     
-    const start = new Date(fromDate).setHours(0,0,0,0);
-    const end = new Date(toDate).setHours(23,59,59,999);
+    // Use a robust local date parser to avoid UTC shifts
+    const parseLocal = (dStr) => {
+        const [y, m, d] = dStr.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    };
+
+    const start = parseLocal(fromDate).setHours(0,0,0,0);
+    const end = parseLocal(toDate).setHours(23,59,59,999);
     
     const filtered = transactions.filter(t => {
         if (t.type !== 'IN') return false;
@@ -7074,7 +7080,13 @@ async function deleteAllRMInHistory() {
 }
 
 async function recordSingleRMTransaction(itemId, qty, type, notes, price = 0, brandId = null, customDate = null) {
-    const now = customDate ? (customDate + " " + new Date().toLocaleTimeString('en-GB')) : new Date().toISOString().slice(0, 19).replace('T', ' ');
+    // Generate a consistent Local Time string (YYYY-MM-DD HH:mm:ss)
+    const getLocalDBDate = (dateObj) => {
+        const pad = (n) => n.toString().padStart(2, '0');
+        return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())} ${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`;
+    };
+    
+    const now = customDate ? (customDate + " " + new Date().toLocaleTimeString('en-GB')) : getLocalDBDate(new Date());
     const response = await fetch('api/sync.php?action=save_rm_transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
