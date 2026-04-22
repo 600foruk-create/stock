@@ -1,6 +1,5 @@
 <div class="store-item-records">
     <div class="card" style="background: white; padding: 2rem; border-radius: 12px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm);">
-        <h2 style="color: var(--sky-600); margin-bottom: 2rem; font-size: 1.8rem; font-weight: 700;">📋 Store Item Stock Records</h2>
         
         <div class="search-container" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; background: var(--gray-50); padding: 1.2rem; border-radius: 12px;">
             <div style="flex: 1; position: relative;">

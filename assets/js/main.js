@@ -8317,7 +8317,6 @@ function refreshStoreItems() {
                     <th>Item Code</th>
                     <th>Item Name</th>
                     <th>Stock Balance</th>
-                    <th>Threshold</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -8339,7 +8338,6 @@ function refreshStoreItems() {
                     <td><strong>${i.code}</strong></td>
                     <td>${i.name}</td>
                     <td><span style="font-size: 1.1rem; font-weight: 700;">${i.stock}</span></td>
-                    <td style="color: var(--gray-400);">${i.low_stock_threshold}</td>
                     <td>
                         ${isLow ? '<span style="color: var(--orange-600); background: var(--orange-50); padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.8rem;">⚠️ LOW STOCK</span>' : '<span style="color: var(--green-600); background: var(--green-50); padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.8rem;">✅ NORMAL</span>'}
                     </td>
