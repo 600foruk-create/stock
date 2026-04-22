@@ -5239,7 +5239,6 @@ function generateProductionReport() {
             </tfoot>
         </table></div>`;
     });
-    });
     
     // Grand Summary
     html += `
