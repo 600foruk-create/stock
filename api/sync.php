@@ -48,8 +48,11 @@ try {
                 } catch(Exception $e) {}
 
                 // FIX: Remove restrictive Foreign Key on audit_records so it works for Store items too
+                // We use a silent try-catch to avoid breaking the JSON output on different environments
                 try {
                     $conn->exec("ALTER TABLE audit_records DROP FOREIGN KEY audit_records_ibfk_1");
+                } catch(PDOException $pdoE) {
+                    // Ignore errors (e.g. if key already dropped or doesn't exist)
                 } catch(Exception $e) {}
 
                 // AUTO-REPAIR: Item Low Stock Limit

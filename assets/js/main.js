@@ -127,9 +127,8 @@ async function initApp() {
 
             if (d.latestAuditStore) {
                 d.latestAuditStore.forEach(a => {
-                    if (!(a.item_id in storeAuditSession) || !storeAuditSession[a.item_id]) {
-                        storeAuditSession[a.item_id] = String(a.godown_qty);
-                    }
+                    // Force update from DB to ensure "Save Draft" values are reflected immediately
+                    storeAuditSession[a.item_id] = String(a.godown_qty);
                 });
                 localStorage.setItem('stock_storeAuditSession', JSON.stringify(storeAuditSession));
             }
@@ -8599,7 +8598,7 @@ async function saveStoreAuditDraft() {
     const res = await saveStoreToDB('save_audit', { records, report_type: 'STORE' });
     if (res) {
         alert('Audit counts saved as Draft! They will stay in the table.');
-        refreshData(); // Refresh latestAuditStore in background
+        refreshData().then(() => refreshStoreAudit());
     }
 }
 
