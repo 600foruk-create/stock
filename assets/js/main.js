@@ -8610,10 +8610,10 @@ async function viewStoreArchivedReport(id) {
 
     let reportData = [];
     try {
-        const response = await fetch(`api/sync.php?action=get_report&id=${id}`);
+        const response = await fetch(`api/sync.php?action=get_archived_report&id=${id}`);
         const result = await response.json();
-        if (result.status === 'success') {
-            reportData = JSON.parse(result.data.data);
+        if (result.status === 'success' && result.report) {
+            reportData = JSON.parse(result.report.data);
         }
     } catch (e) {
         alert('Could not load report data.');
