@@ -21,7 +21,6 @@ let storeItems = [];
 let storeMainCategories = [];
 let storeSubCategories = [];
 let storeTransactions = [];
-let latestAuditStore = []; // New persistent store audit data
 let storeExpandedIds = new Set();
 let rmTransactions = [];
 let rmConsumptionLogs = [];
@@ -93,7 +92,6 @@ async function initApp() {
             storeTransactions = d.storeTransactions || [];
             rmTransactions = d.rmTransactions || [];
             archivedReports = d.archivedReports || [];
-            latestAuditStore = d.latestAuditStore || [];
             rmConsumptionLogs = d.rmConsumptionLogs || [];
             
             // Extract Store Master Lists from settings
@@ -8373,26 +8371,10 @@ function refreshStoreAudit() {
     
     storeItems.forEach(i => {
         const sysVal = parseFloat(i.stock) || 0;
-        
-        // Get physical value from DB (latestAuditStore)
-        const dbRec = latestAuditStore.find(a => a.item_id == i.id);
-        const phyVal = dbRec ? parseFloat(dbRec.godown_qty) : 0;
-        
-        const diff = phyVal - sysVal;
-        
-        let statusText = 'Matched';
-        let color = '#10b981'; // Green
-        let bgColor = '#ecfdf5';
-
-        if (diff < 0) {
-            statusText = 'Shortage';
-            color = '#ef4444'; // Red
-            bgColor = '#fee2e2';
-        } else if (diff > 0) {
-            statusText = 'Excess';
-            color = '#059669'; // Dark green
-            bgColor = '#d1fae5';
-        }
+        const diff = -sysVal; // Default since physical is 0
+        const statusText = sysVal === 0 ? 'Matched' : 'Shortage';
+        const color = sysVal === 0 ? '#10b981' : '#ef4444'; // Green for matched or starting zero
+        const bgColor = sysVal === 0 ? '#ecfdf5' : '#fee2e2';
 
         html += `
             <tr style="background: white;" id="audit_row_${i.id}">
@@ -8407,7 +8389,7 @@ function refreshStoreAudit() {
                     <input type="number" class="form-control store-audit-input" 
                            data-id="${i.id}" data-systock="${i.stock}" 
                            oninput="updateAuditRow(${i.id}, this.value)"
-                           value="${phyVal}" step="0.01" 
+                           value="0" step="0.01" 
                            style="height: 40px; border-radius: 8px; text-align: center; font-weight: 700; border: 2px solid #e2e8f0;">
                 </td>
                 <td style="padding: 15px; border: 1px solid #f1f5f9; text-align: center;">
@@ -8493,9 +8475,6 @@ async function adjustStoreStock(id) {
             }
         });
         if (res) {
-            // Clear draft record in database after successful adjustment
-            await saveStoreToDB('clear_audit', { item_id: id, report_type: 'STORE' });
-            
             alert('Stock adjusted successfully!');
             refreshData().then(() => refreshStoreAudit());
         }
@@ -8528,49 +8507,9 @@ async function adjustAllStoreStock() {
     if (await verifyStoreAdmin()) {
         const res = await saveStoreToDB('bulk_adjust_store_stock', { adjustments });
         if (res) {
-            // Clear all drafts for STORE after bulk adjustment
-            await saveStoreToDB('clear_audit', { report_type: 'STORE' });
-            
             alert(`Stock adjusted for ${adjustments.length} items successfully!`);
             refreshData().then(() => refreshStoreAudit());
         }
-    }
-}
-
-function resetStoreAudit() {
-    if (confirm('Are you sure you want to completely clear these counts from the database?')) {
-        saveStoreToDB('clear_audit', { report_type: 'STORE' })
-        .then(() => refreshData())
-        .then(() => refreshStoreAudit());
-    }
-}
-
-async function saveStoreAuditDraft() {
-    const inputs = document.querySelectorAll('.store-audit-input');
-    const records = [];
-    let countsEntered = 0;
-
-    inputs.forEach(input => {
-        const val = input.value.trim();
-        if (val !== '') {
-            const phy = parseFloat(val);
-            const sys = parseFloat(input.dataset.systock);
-            records.push({
-                itemId: input.dataset.id,
-                systemQty: sys,
-                godownQty: phy,
-                diffQty: phy - sys
-            });
-            countsEntered++;
-        }
-    });
-
-    if (countsEntered === 0) return alert('No counts to save!');
-
-    const res = await saveStoreToDB('save_audit', { records, report_type: 'STORE' });
-    if (res) {
-        alert('Audit counts saved as Draft! They will stay in the table.');
-        refreshData(); // Refresh latestAuditStore in background
     }
 }
 
@@ -8605,7 +8544,7 @@ async function saveStoreAuditReport() {
         const res = await saveStoreToDB('archive_report', payload);
         if (res) {
             alert('Audit report saved to archives successfully!');
-            // Removed refreshStoreAudit() to keep physical counts on screen as requested
+            refreshStoreAudit();
             refreshStoreReports();
         }
     } catch (e) {
