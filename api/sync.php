@@ -47,6 +47,11 @@ try {
                     }
                 } catch(Exception $e) {}
 
+                // FIX: Remove restrictive Foreign Key on audit_records so it works for Store items too
+                try {
+                    $conn->exec("ALTER TABLE audit_records DROP FOREIGN KEY audit_records_ibfk_1");
+                } catch(Exception $e) {}
+
                 // AUTO-REPAIR: Item Low Stock Limit
                 $itemCols = $conn->query("SHOW COLUMNS FROM items")->fetchAll(PDO::FETCH_COLUMN);
                 if (!in_array('low_stock_limit', $itemCols)) {
@@ -984,8 +989,14 @@ try {
         
         elseif ($action === 'clear_audit') {
             $type = $input['report_type'] ?? 'FG';
-            $stmt = $conn->prepare("DELETE FROM audit_records WHERE report_type = ?");
-            $stmt->execute([$type]);
+            $itemId = $input['item_id'] ?? null;
+            if ($itemId) {
+                $stmt = $conn->prepare("DELETE FROM audit_records WHERE report_type = ? AND item_id = ?");
+                $stmt->execute([$type, $itemId]);
+            } else {
+                $stmt = $conn->prepare("DELETE FROM audit_records WHERE report_type = ?");
+                $stmt->execute([$type]);
+            }
             echo json_encode(['status' => 'success']);
         }
 
