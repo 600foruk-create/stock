@@ -14,8 +14,11 @@
             <button class="btn btn-outline-secondary" onclick="resetStoreAudit()" style="border-radius: 10px; font-weight: 700;">
                 <i class="fas fa-redo"></i> Reset Table
             </button>
+            <button class="btn btn-success" onclick="saveStoreAuditDraft()" style="border-radius: 10px; font-weight: 700; background: #059669;">
+                <i class="fas fa-save"></i> Save Counts to Table
+            </button>
             <button class="btn btn-primary" onclick="saveStoreAuditReport()" style="padding: 0.8rem 2.5rem; font-weight: 700; border-radius: 12px; box-shadow: 0 4px 12px rgba(12, 166, 242, 0.3);">
-                <i class="fas fa-save"></i> Save & Archive Report
+                <i class="fas fa-file-invoice"></i> Save & Archive Report
             </button>
         </div>
     </div>

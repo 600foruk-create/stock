@@ -175,7 +175,8 @@ try {
                 'storeSubCategories' => $conn->query("SELECT * FROM store_sub_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'storeItems' => $conn->query("SELECT i.*, sc.main_id AS mainId FROM store_items i LEFT JOIN store_sub_categories sc ON i.sub_id = sc.id")->fetchAll(PDO::FETCH_ASSOC),
                 'storeTransactions' => $conn->query("SELECT t.*, i.name AS itemName, i.code AS itemCode FROM store_transactions t LEFT JOIN store_items i ON t.item_id = i.id ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
-                'latestAudit' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id)")->fetchAll(PDO::FETCH_ASSOC),
+                'latestAudit' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE report_type = 'FG' AND id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id AND ar2.report_type = 'FG')")->fetchAll(PDO::FETCH_ASSOC),
+                'latestAuditStore' => $conn->query("SELECT item_id, godown_qty FROM audit_records ar1 WHERE report_type = 'STORE' AND id = (SELECT MAX(id) FROM audit_records ar2 WHERE ar2.item_id = ar1.item_id AND ar2.report_type = 'STORE')")->fetchAll(PDO::FETCH_ASSOC),
                 'archivedReports' => $conn->query("SELECT id, date, title, report_type FROM audit_reports_archive ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC),
             ];
             
