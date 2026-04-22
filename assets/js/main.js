@@ -28,6 +28,7 @@ let rmExpandedIds = new Set();
 let storeMasterLists = { issued_to: [], issued_by: [], purpose: [] };
 let archivedReports = []; // Global list of archived report metadata
 let rmPhysicalStockMap = JSON.parse(localStorage.getItem('rmPhysicalStockMap') || '{}'); // Persist between refreshes
+let storeAuditCounts = JSON.parse(localStorage.getItem('storeAuditCounts') || '{}'); // Store Physical Audit counts
 
 let auditSession = {}; // Correctly initialized global session
 let auditRecords = [];
@@ -8371,10 +8372,23 @@ function refreshStoreAudit() {
     
     storeItems.forEach(i => {
         const sysVal = parseFloat(i.stock) || 0;
-        const diff = -sysVal; // Default since physical is 0
-        const statusText = sysVal === 0 ? 'Matched' : 'Shortage';
-        const color = sysVal === 0 ? '#10b981' : '#ef4444'; // Green for matched or starting zero
-        const bgColor = sysVal === 0 ? '#ecfdf5' : '#fee2e2';
+        // Use persistent value or default to 0
+        const phyVal = parseFloat(storeAuditCounts[i.id]) || 0;
+        const diff = phyVal - sysVal;
+        
+        let statusText = 'Matched';
+        let color = '#10b981'; // Green
+        let bgColor = '#ecfdf5';
+
+        if (diff < 0) {
+            statusText = 'Shortage';
+            color = '#ef4444'; // Red
+            bgColor = '#fee2e2';
+        } else if (diff > 0) {
+            statusText = 'Excess';
+            color = '#059669'; // Dark green
+            bgColor = '#d1fae5';
+        }
 
         html += `
             <tr style="background: white;" id="audit_row_${i.id}">
@@ -8389,7 +8403,7 @@ function refreshStoreAudit() {
                     <input type="number" class="form-control store-audit-input" 
                            data-id="${i.id}" data-systock="${i.stock}" 
                            oninput="updateAuditRow(${i.id}, this.value)"
-                           value="0" step="0.01" 
+                           value="${phyVal}" step="0.01" 
                            style="height: 40px; border-radius: 8px; text-align: center; font-weight: 700; border: 2px solid #e2e8f0;">
                 </td>
                 <td style="padding: 15px; border: 1px solid #f1f5f9; text-align: center;">
@@ -8475,6 +8489,10 @@ async function adjustStoreStock(id) {
             }
         });
         if (res) {
+            // Clear persistent value for this item after successful adjustment
+            delete storeAuditCounts[id];
+            localStorage.setItem('storeAuditCounts', JSON.stringify(storeAuditCounts));
+            
             alert('Stock adjusted successfully!');
             refreshData().then(() => refreshStoreAudit());
         }
@@ -8507,9 +8525,21 @@ async function adjustAllStoreStock() {
     if (await verifyStoreAdmin()) {
         const res = await saveStoreToDB('bulk_adjust_store_stock', { adjustments });
         if (res) {
+            // Clear all persistent values after bulk adjustment
+            storeAuditCounts = {};
+            localStorage.setItem('storeAuditCounts', JSON.stringify(storeAuditCounts));
+            
             alert(`Stock adjusted for ${adjustments.length} items successfully!`);
             refreshData().then(() => refreshStoreAudit());
         }
+    }
+}
+
+function resetStoreAudit() {
+    if (confirm('Are you sure you want to reset the table? All physical counts will be set to 0.')) {
+        storeAuditCounts = {};
+        localStorage.setItem('storeAuditCounts', JSON.stringify(storeAuditCounts));
+        refreshStoreAudit();
     }
 }
 

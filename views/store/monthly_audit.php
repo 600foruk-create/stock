@@ -11,7 +11,7 @@
         </div>
         
         <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem; border-top: 1px solid #f1f5f9; padding-top: 1.5rem;">
-            <button class="btn btn-outline-secondary" onclick="refreshStoreAudit()" style="border-radius: 10px; font-weight: 700;">
+            <button class="btn btn-outline-secondary" onclick="resetStoreAudit()" style="border-radius: 10px; font-weight: 700;">
                 <i class="fas fa-redo"></i> Reset Table
             </button>
             <button class="btn btn-primary" onclick="saveStoreAuditReport()" style="padding: 0.8rem 2.5rem; font-weight: 700; border-radius: 12px; box-shadow: 0 4px 12px rgba(12, 166, 242, 0.3);">
