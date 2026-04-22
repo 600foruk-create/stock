@@ -8576,12 +8576,15 @@ function refreshStoreReports() {
 
     reports.forEach(r => {
         html += `
-            <tr>
-                <td>${formatDate(r.date)}</td>
-                <td style="font-weight: 600;">${r.title}</td>
-                <td style="text-align: center;">
-                    <button class="btn btn-sm btn-sky" onclick="printStoreArchivedReport(${r.id})">🖨️ Print</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteArchivedReport(${r.id}, 'STORE')">🗑️</button>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 12px;">${formatDate(r.date)}</td>
+                <td style="padding: 12px; font-weight: 600; color: #1e293b;">${r.title}</td>
+                <td style="padding: 12px; text-align: center;">
+                    <div style="display: flex; gap: 8px; justify-content: center;">
+                        <button class="btn btn-sm btn-primary" onclick="viewStoreArchivedReport(${r.id})" style="border-radius: 6px; padding: 5px 12px; font-weight: 700;">👁️ View</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="printStoreArchivedReport(${r.id})" style="border-radius: 6px; padding: 5px 12px;">🖨️ Print</button>
+                        <button class="btn btn-sm btn-light" onclick="deleteArchivedReport(${r.id}, 'STORE')" style="border-radius: 6px; color: #ef4444;">🗑️</button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -8601,7 +8604,7 @@ async function deleteArchivedReport(id, type) {
     }
 }
 
-async function printStoreArchivedReport(id) {
+async function viewStoreArchivedReport(id) {
     const report = archivedReports.find(r => r.id == id);
     if (!report) return;
 
@@ -8613,7 +8616,7 @@ async function printStoreArchivedReport(id) {
             reportData = JSON.parse(result.data.data);
         }
     } catch (e) {
-        console.error('Failed to load report data:', e);
+        alert('Could not load report data.');
         return;
     }
 
@@ -8621,57 +8624,82 @@ async function printStoreArchivedReport(id) {
     reportData.forEach(r => {
         const item = storeItems.find(i => i.id == r.itemId);
         rowsHtml += `
-            <tr>
-                <td>${item ? item.code : 'N/A'}</td>
-                <td>${item ? item.name : 'Unknown'}</td>
-                <td style="text-align: right;">${r.systemQty}</td>
-                <td style="text-align: right;">${r.godownQty}</td>
-                <td style="text-align: right; color: ${r.diffQty < 0 ? 'red' : 'green'};">${r.diffQty}</td>
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 10px;">${item ? item.code : 'N/A'}</td>
+                <td style="padding: 10px; font-weight: 600;">${item ? item.name : 'Unknown'}</td>
+                <td style="padding: 10px; text-align: center;">${r.systemQty}</td>
+                <td style="padding: 10px; text-align: center;">${r.godownQty}</td>
+                <td style="padding: 10px; text-align: center; font-weight: 800; color: ${r.diffQty < 0 ? '#ef4444' : (r.diffQty > 0 ? '#10b981' : '#64748b')}">
+                    ${r.diffQty > 0 ? '+' : ''}${r.diffQty}
+                </td>
             </tr>
         `;
     });
 
-    const printHtml = `
-        <html>
-        <head>
-            <title>${report.title}</title>
-            <style>
-                body { font-family: sans-serif; padding: 20px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background: #f4f4f4; }
-                .header { text-align: center; margin-bottom: 30px; }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h2>${report.title}</h2>
-                <p>Date: ${formatDate(report.date)} | Report Type: STORE</p>
+    const bodyHtml = `
+        <div style="padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #0ea5e9; margin-bottom: 5px;">${report.title}</h1>
+                <p style="color: #64748b;">Generated on: ${formatDate(report.date)} | Store Audit Archive</p>
             </div>
-            <table>
-                <thead>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead style="background: #f8fafc;">
                     <tr>
-                        <th>Item Code</th>
-                        <th>Item Name</th>
-                        <th style="text-align: right;">System Stock</th>
-                        <th style="text-align: right;">Godown Stock</th>
-                        <th style="text-align: right;">Difference</th>
+                        <th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left;">Code</th>
+                        <th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left;">Item Name</th>
+                        <th style="padding: 10px; border: 1px solid #e2e8f0; text-align: center;">System</th>
+                        <th style="padding: 10px; border: 1px solid #e2e8f0; text-align: center;">Physical</th>
+                        <th style="padding: 10px; border: 1px solid #e2e8f0; text-align: center;">Difference</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${rowsHtml}
                 </tbody>
             </table>
-        </body>
-        </html>
+        </div>
     `;
 
-    const win = window.open('', '_blank');
-    win.document.write(printHtml);
-    win.document.close();
-    win.onload = () => {
-        win.print();
-    };
+    document.getElementById('reportViewerTitle').innerText = report.title;
+    document.getElementById('archivedReportContent').innerHTML = bodyHtml;
+    document.getElementById('reportViewerModal').style.display = 'block';
+}
+
+function closeReportViewer() {
+    document.getElementById('reportViewerModal').style.display = 'none';
+}
+
+async function printStoreArchivedReport(id) {
+    await viewStoreArchivedReport(id);
+    setTimeout(printArchivedReport, 500);
+}
+
+function printArchivedReport() {
+    const content = document.getElementById('archivedReportContent').innerHTML;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Print Report</title>
+                <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+                    th { background: #f8fafc; font-weight: 800; text-transform: uppercase; font-size: 12px; }
+                    .no-print { display: none !important; }
+                    @media print { .no-print { display: none !important; } }
+                </style>
+            </head>
+            <body>
+                ${content}
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 500);
 }
 
 function exportStoreReportsToExcel() {
