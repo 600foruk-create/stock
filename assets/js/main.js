@@ -8355,13 +8355,15 @@ function refreshStoreAudit() {
     if (!container) return;
     
     let html = `
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Item Code</th>
-                    <th>Item Name</th>
-                    <th>System Stock</th>
-                    <th style="width: 200px;">Physical Count</th>
+        <table class="table" style="width: 100%; border-collapse: separate; border-spacing: 0 10px;">
+            <thead style="background: #f8fafc;">
+                <tr style="color: #475569; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">
+                    <th style="padding: 15px; border-radius: 10px 0 0 10px;">Material Name / Code</th>
+                    <th style="padding: 15px;">System Stock</th>
+                    <th style="padding: 15px; width: 150px;">Physical Stock</th>
+                    <th style="padding: 15px; text-align: center;">Difference</th>
+                    <th style="padding: 15px; text-align: center;">Status</th>
+                    <th style="padding: 15px; text-align: right; border-radius: 0 10px 10px 0;">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -8369,14 +8371,28 @@ function refreshStoreAudit() {
     
     storeItems.forEach(i => {
         html += `
-            <tr>
-                <td>${i.code}</td>
-                <td>${i.name}</td>
-                <td><strong>${i.stock}</strong></td>
-                <td>
+            <tr style="background: white; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);" id="audit_row_${i.id}">
+                <td style="padding: 15px; border-radius: 10px 0 0 10px;">
+                    <div style="font-weight: 800; color: #1e293b;">${i.name}</div>
+                    <div style="font-size: 0.75rem; color: #64748b; font-family: monospace;">${i.code}</div>
+                </td>
+                <td style="padding: 15px;">
+                    <span style="font-weight: 700; color: #1e293b;">${i.stock}</span>
+                </td>
+                <td style="padding: 15px;">
                     <input type="number" class="form-control store-audit-input" 
                            data-id="${i.id}" data-systock="${i.stock}" 
-                           placeholder="Enter count" step="0.01">
+                           oninput="updateAuditRow(${i.id}, this.value)"
+                           placeholder="0" step="0.01" style="height: 40px; border-radius: 8px;">
+                </td>
+                <td style="padding: 15px; text-align: center;">
+                    <span id="diff_${i.id}" style="font-weight: 800; font-family: monospace;">0.00</span>
+                </td>
+                <td style="padding: 15px; text-align: center;">
+                    <span id="status_${i.id}" style="padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; background: #f1f5f9; color: #64748b;">Matched</span>
+                </td>
+                <td style="padding: 15px; text-align: right; border-radius: 0 10px 10px 0;">
+                    <button class="btn btn-sm" onclick="adjustStoreStock(${i.id})" style="font-weight: 800; color: #1e293b; border: 1px solid #e2e8f0; padding: 6px 15px; border-radius: 8px; background: white;">Adjust</button>
                 </td>
             </tr>
         `;
@@ -8384,6 +8400,110 @@ function refreshStoreAudit() {
     
     html += '</tbody></table>';
     container.innerHTML = html;
+}
+
+function updateAuditRow(id, physical) {
+    const sysStock = parseFloat(document.querySelector(`.store-audit-input[data-id="${id}"]`).dataset.systock);
+    const phyStock = parseFloat(physical) || 0;
+    const diff = phyStock - sysStock;
+    
+    const diffEl = document.getElementById(`diff_${id}`);
+    const statusEl = document.getElementById(`status_${id}`);
+    
+    diffEl.innerText = (diff > 0 ? '+' : '') + diff.toFixed(2);
+    
+    if (diff < 0) {
+        diffEl.style.color = '#ef4444';
+        statusEl.innerText = 'Shortage';
+        statusEl.style.background = '#fee2e2';
+        statusEl.style.color = '#ef4444';
+    } else if (diff > 0) {
+        diffEl.style.color = '#22c55e';
+        statusEl.innerText = 'Excess';
+        statusEl.style.background = '#dcfce7';
+        statusEl.style.color = '#22c55e';
+    } else {
+        diffEl.style.color = '#64748b';
+        statusEl.innerText = 'Matched';
+        statusEl.style.background = '#f1f5f9';
+        statusEl.style.color = '#64748b';
+    }
+}
+
+async function verifyStoreAdmin() {
+    const pass = prompt('Enter Admin Password to process stock adjustment:');
+    if (!pass) return false;
+    
+    // Find admin user password
+    const adminUser = users.find(u => (u.role === 'Admin' || u.username === 'admin'));
+    if (adminUser) {
+        if (pass === adminUser.password) return true;
+    } else {
+        // Fallback for safety during setup
+        if (pass === 'admin123' || pass === '1234') return true;
+    }
+    
+    alert('Invalid Password!');
+    return false;
+}
+
+async function adjustStoreStock(id) {
+    const input = document.querySelector(`.store-audit-input[data-id="${id}"]`);
+    const val = input.value.trim();
+    if (val === '') return alert('Please enter physical stock quantity first.');
+    
+    const phyVal = parseFloat(val);
+    const sysVal = parseFloat(input.dataset.systock);
+    const diff = phyVal - sysVal;
+    
+    if (diff === 0) return alert('No adjustment needed. Stock matches.');
+    
+    if (await verifyStoreAdmin()) {
+        const res = await saveStoreToDB('adjust_store_stock', {
+            adjustment: {
+                itemId: id,
+                targetStock: phyVal,
+                diff: diff,
+                notes: 'Manual Audit Adjustment'
+            }
+        });
+        if (res) {
+            alert('Stock adjusted successfully!');
+            refreshData().then(() => refreshStoreAudit());
+        }
+    }
+}
+
+async function adjustAllStoreStock() {
+    const inputs = document.querySelectorAll('.store-audit-input');
+    const adjustments = [];
+    
+    inputs.forEach(input => {
+        const val = input.value.trim();
+        if (val !== '') {
+            const phyVal = parseFloat(val);
+            const sysVal = parseFloat(input.dataset.systock);
+            const diff = phyVal - sysVal;
+            if (diff !== 0) {
+                adjustments.push({
+                    itemId: input.dataset.id,
+                    targetStock: phyVal,
+                    diff: diff,
+                    notes: 'Bulk Audit Adjustment'
+                });
+            }
+        }
+    });
+    
+    if (adjustments.length === 0) return alert('No items ready for adjustment (all physical counts are empty or match system stock).');
+    
+    if (await verifyStoreAdmin()) {
+        const res = await saveStoreToDB('bulk_adjust_store_stock', { adjustments });
+        if (res) {
+            alert(`Stock adjusted for ${adjustments.length} items successfully!`);
+            refreshData().then(() => refreshStoreAudit());
+        }
+    }
 }
 
 async function saveStoreAuditReport() {

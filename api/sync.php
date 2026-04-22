@@ -743,6 +743,34 @@ try {
             echo json_encode(['status' => 'success']);
         }
 
+        elseif ($action === 'adjust_store_stock' || $action === 'bulk_adjust_store_stock') {
+            $adjustments = ($action === 'adjust_store_stock') ? [$input['adjustment']] : $input['adjustments'];
+            $conn->beginTransaction();
+            try {
+                foreach ($adjustments as $adj) {
+                    $itemId = $adj['itemId'];
+                    $targetStock = $adj['targetStock'];
+                    $diff = $adj['diff'];
+                    $notes = $adj['notes'] ?? 'Audit Adjustment';
+                    $type = ($diff >= 0) ? 'INWARD' : 'OUTWARD';
+                    $absQty = abs($diff);
+
+                    // 1. Update item stock to target
+                    $stmt = $conn->prepare("UPDATE store_items SET stock = ? WHERE id = ?");
+                    $stmt->execute([$targetStock, $itemId]);
+
+                    // 2. Log transaction for history
+                    $stmt2 = $conn->prepare("INSERT INTO store_transactions (item_id, quantity, type, notes, source_or_person) VALUES (?, ?, ?, ?, ?)");
+                    $stmt2->execute([$itemId, $absQty, $type, $notes, 'Audit System']);
+                }
+                $conn->commit();
+                echo json_encode(['status' => 'success']);
+            } catch (Exception $e) {
+                $conn->rollBack();
+                throw $e;
+            }
+        }
+
         // --- NEW RAW MATERIALS ACTIONS ---
         elseif ($action === 'save_rm_main') {
             $m = $input['main'];
