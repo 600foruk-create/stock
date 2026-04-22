@@ -6248,22 +6248,20 @@ function updateRMOutMetrics() {
     const lastDateEl = document.getElementById('rmLastFormulaDate');
     const weightEl = document.getElementById('rmDailyFormulaWeight');
     const valueEl = document.getElementById('rmDailyFormulaValue');
-    const dateInput = document.getElementById('rmOutDate');
     if (!lastDateEl || !weightEl) return;
 
-    // Use the selected date from input, fallback to today
-    let filterDateStr = dateInput && dateInput.value ? new Date(dateInput.value).toDateString() : new Date().toDateString();
-    
+    // Filter only Formula outputs (tagged in notes) for Today
+    const todayStr = new Date().toDateString();
     let totalKg = 0;
     let totalValue = 0;
 
     rmTransactions.forEach(t => {
-        // Match transactions for the selected date
-        if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:') && new Date(t.date).toDateString() === filterDateStr) {
+        if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:') && new Date(t.date).toDateString() === todayStr) {
             const item = rmItems.find(i => i.id == t.rm_item_id);
             const qty = (parseFloat(t.quantity) || 0);
             let price = (parseFloat(t.price) || 0);
             
+            // Fallback for old transactions that had 0 price
             if (price <= 0 && item) {
                 price = getRMItemCurrentPrice(item);
             }
@@ -6273,12 +6271,11 @@ function updateRMOutMetrics() {
         }
     });
 
-    // Display the date being filtered
-    const displayDate = dateInput && dateInput.value ? new Date(dateInput.value) : new Date();
-    const day = String(displayDate.getDate()).padStart(2, '0');
+    // Display Today's date
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    lastDateEl.innerText = `${day}-${monthNames[displayDate.getMonth()]}-${displayDate.getFullYear()}`;
-    
+    lastDateEl.innerText = `${day}-${monthNames[today.getMonth()]}-${today.getFullYear()}`;
     weightEl.innerText = totalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
     if (valueEl) valueEl.innerText = 'Rs. ' + totalValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 }
