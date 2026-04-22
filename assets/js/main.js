@@ -30,7 +30,8 @@ let storeMasterLists = { issued_to: [], issued_by: [], purpose: [] };
 let archivedReports = []; // Global list of archived report metadata
 let rmPhysicalStockMap = JSON.parse(localStorage.getItem('rmPhysicalStockMap') || '{}'); // Persist between refreshes
 
-let auditSession = {}; // Correctly initialized global session
+let auditSession = {}; // Correctly initialized global session (FG)
+let storeAuditSession = {}; // Persistent session for Store Audit
 let auditRecords = [];
 let systemDateFormat = 'DD-MM-YYYY'; // Default format
 
@@ -53,6 +54,11 @@ async function initApp() {
     let savedAudit = localStorage.getItem('stock_auditSession');
     if (savedAudit) {
         try { auditSession = JSON.parse(savedAudit); } catch (e) { }
+    }
+    
+    let savedStoreAudit = localStorage.getItem('stock_storeAuditSession');
+    if (savedStoreAudit) {
+        try { storeAuditSession = JSON.parse(savedStoreAudit); } catch (e) { }
     }
 
     // Fetch all data from SQL with cache buster
@@ -117,6 +123,15 @@ async function initApp() {
                     }
                 });
                 localStorage.setItem('stock_auditSession', JSON.stringify(auditSession));
+            }
+
+            if (d.latestAuditStore) {
+                d.latestAuditStore.forEach(a => {
+                    if (!(a.item_id in storeAuditSession) || !storeAuditSession[a.item_id]) {
+                        storeAuditSession[a.item_id] = String(a.godown_qty);
+                    }
+                });
+                localStorage.setItem('stock_storeAuditSession', JSON.stringify(storeAuditSession));
             }
             
             // Map settings
@@ -8374,10 +8389,8 @@ function refreshStoreAudit() {
     storeItems.forEach(i => {
         const sysVal = parseFloat(i.stock) || 0;
         
-        // Get physical value from DB (latestAuditStore)
-        const dbRec = latestAuditStore.find(a => a.item_id == i.id);
-        const phyVal = dbRec ? parseFloat(dbRec.godown_qty) : 0;
-        
+        // Use persistent session value (which is synced with DB)
+        const phyVal = parseFloat(storeAuditSession[i.id]) || 0;
         const diff = phyVal - sysVal;
         
         let statusText = 'Matched';
@@ -8432,6 +8445,10 @@ function updateAuditRow(id, physical) {
     const phyStock = parseFloat(physical) || 0;
     const diff = phyStock - sysStock;
     
+    // Update persistent session
+    storeAuditSession[id] = String(physical);
+    localStorage.setItem('stock_storeAuditSession', JSON.stringify(storeAuditSession));
+
     const diffEl = document.getElementById(`diff_${id}`);
     const statusEl = document.getElementById(`status_${id}`);
     
@@ -8493,8 +8510,12 @@ async function adjustStoreStock(id) {
             }
         });
         if (res) {
-            // Clear draft record in database after successful adjustment
+            // Delete the draft record for this item after adjustment
             await saveStoreToDB('clear_audit', { item_id: id, report_type: 'STORE' });
+            
+            // Clear from local session too
+            delete storeAuditSession[id];
+            localStorage.setItem('stock_storeAuditSession', JSON.stringify(storeAuditSession));
             
             alert('Stock adjusted successfully!');
             refreshData().then(() => refreshStoreAudit());
@@ -8531,6 +8552,10 @@ async function adjustAllStoreStock() {
             // Clear all drafts for STORE after bulk adjustment
             await saveStoreToDB('clear_audit', { report_type: 'STORE' });
             
+            // Clear entire local session
+            storeAuditSession = {};
+            localStorage.setItem('stock_storeAuditSession', JSON.stringify(storeAuditSession));
+            
             alert(`Stock adjusted for ${adjustments.length} items successfully!`);
             refreshData().then(() => refreshStoreAudit());
         }
@@ -8540,7 +8565,11 @@ async function adjustAllStoreStock() {
 function resetStoreAudit() {
     if (confirm('Are you sure you want to completely clear these counts from the database?')) {
         saveStoreToDB('clear_audit', { report_type: 'STORE' })
-        .then(() => refreshData())
+        .then(() => {
+            storeAuditSession = {};
+            localStorage.setItem('stock_storeAuditSession', JSON.stringify(storeAuditSession));
+            return refreshData();
+        })
         .then(() => refreshStoreAudit());
     }
 }
