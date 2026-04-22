@@ -3010,11 +3010,10 @@ async function saveProduction() {
         
         // Auto-save consumption snapshot
         await autoSaveRMConsumption();
-        alert('✅ Production saved successfully!');
+        alert('ad sucsessfuly');
     } catch (err) {
         console.error('saveProduction Error:', err);
-        alert('❌ Note: Production saved to database, but there was a minor error updating the screen. Refreshing page...');
-        location.reload();
+        alert('❌ Note: Production saved to database, but there was a minor local error updating the screen.');
     } finally {
         if (saveBtn) {
             saveBtn.disabled = false;
@@ -6762,7 +6761,15 @@ async function saveRMTransaction(type) {
 
         // Auto-save consumption snapshot after RM transaction
         await autoSaveRMConsumption();
-        alert('✅ RM Transaction saved successfully!');
+        
+        // Refresh UI components directly without reloading everything
+        refreshRMInHistoryTable();
+        refreshRMOutHistoryTable();
+        refreshDashboard();
+        refreshRMInventoryBalance();
+        if (type === 'IN') refreshRMInFormControls();
+        
+        alert('ad sucsessfuly');
     } catch (err) {
         console.error('saveRMTransaction Error:', err);
         alert('❌ Error saving RM transaction.');
@@ -6989,11 +6996,29 @@ async function deleteAllRMInHistory() {
 
 async function recordSingleRMTransaction(itemId, qty, type, notes, price = 0) {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    await fetch('api/sync.php?action=save_rm_transaction', {
+    const response = await fetch('api/sync.php?action=save_rm_transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transaction: { rm_item_id: itemId, quantity: qty, price, type, notes, date: now } })
     });
+    const result = await response.json();
+    if (result.status === 'success') {
+        // Update local state for "Direct Save" experience
+        const item = rmItems.find(i => i.id == itemId);
+        if (item) {
+            item.stock = type === 'IN' ? (parseFloat(item.stock) + qty) : (parseFloat(item.stock) - qty);
+        }
+        rmTransactions.unshift({
+            id: result.id,
+            rm_item_id: itemId,
+            quantity: qty,
+            price: price,
+            type: type,
+            notes: notes,
+            date: now
+        });
+    }
+    return result;
 }
 
 function exportRMInToExcel() {

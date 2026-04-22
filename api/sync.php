@@ -270,8 +270,9 @@ try {
                 }
                 $stmt->execute([$t['quantity'], $t['rm_item_id']]);
                 
+                $insertId = $conn->lastInsertId();
                 $conn->commit();
-                echo json_encode(['status' => 'success']);
+                echo json_encode(['status' => 'success', 'id' => $insertId]);
             } catch (Exception $e) {
                 $conn->rollBack();
                 throw $e;
