@@ -29,7 +29,8 @@ let storeMasterLists = { issued_to: [], issued_by: [], purpose: [] };
 let archivedReports = []; // Global list of archived report metadata
 let rmPhysicalStockMap = JSON.parse(localStorage.getItem('rmPhysicalStockMap') || '{}'); // Persist between refreshes
 
-let auditSession = {}; // Correctly initialized global session
+let auditSession = {}; // Correctly initialized global session for Finish Goods
+let storeAuditSession = {}; // New global session for Store module
 let auditRecords = [];
 let systemDateFormat = 'DD-MM-YYYY'; // Default format
 
@@ -115,6 +116,16 @@ async function initApp() {
                     }
                 });
                 localStorage.setItem('stock_auditSession', JSON.stringify(auditSession));
+            }
+            
+            // Sync Store Audit Session from DB
+            if (d.storeLatestAudit) {
+                d.storeLatestAudit.forEach(a => {
+                    if (!(a.item_id in storeAuditSession) || !storeAuditSession[a.item_id]) {
+                        storeAuditSession[a.item_id] = String(a.godown_qty);
+                    }
+                });
+                localStorage.setItem('store_audit_session', JSON.stringify(storeAuditSession));
             }
             
             // Map settings
@@ -8371,10 +8382,11 @@ function refreshStoreAudit() {
     
     storeItems.forEach(i => {
         const sysVal = parseFloat(i.stock) || 0;
-        const diff = -sysVal; // Default since physical is 0
-        const statusText = sysVal === 0 ? 'Matched' : 'Shortage';
-        const color = sysVal === 0 ? '#10b981' : '#ef4444'; // Green for matched or starting zero
-        const bgColor = sysVal === 0 ? '#ecfdf5' : '#fee2e2';
+        const phyVal = parseFloat(storeAuditSession[i.id]) || 0;
+        const diff = phyVal - sysVal;
+        const statusText = diff === 0 ? 'Matched' : (diff < 0 ? 'Shortage' : 'Excess');
+        const color = diff === 0 ? '#10b981' : (diff < 0 ? '#ef4444' : '#059669');
+        const bgColor = diff === 0 ? '#ecfdf5' : (diff < 0 ? '#fee2e2' : '#d1fae5');
 
         html += `
             <tr style="background: white;" id="audit_row_${i.id}">
@@ -8389,11 +8401,11 @@ function refreshStoreAudit() {
                     <input type="number" class="form-control store-audit-input" 
                            data-id="${i.id}" data-systock="${i.stock}" 
                            oninput="updateAuditRow(${i.id}, this.value)"
-                           value="0" step="0.01" 
+                           value="${phyVal}" step="0.01" 
                            style="height: 40px; border-radius: 8px; text-align: center; font-weight: 700; border: 2px solid #e2e8f0;">
                 </td>
                 <td style="padding: 15px; border: 1px solid #f1f5f9; text-align: center;">
-                    <span id="diff_${i.id}" style="font-weight: 800; font-family: monospace; color: ${color};">${diff.toFixed(2)}</span>
+                    <span id="diff_${i.id}" style="font-weight: 800; font-family: monospace; color: ${color};">${(diff > 0 ? '+' : '') + diff.toFixed(2)}</span>
                 </td>
                 <td style="padding: 15px; border: 1px solid #f1f5f9; text-align: center;">
                     <span id="status_${i.id}" style="padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; background: ${bgColor}; color: ${color};">${statusText}</span>
@@ -8414,6 +8426,10 @@ function updateAuditRow(id, physical) {
     const phyStock = parseFloat(physical) || 0;
     const diff = phyStock - sysStock;
     
+    // Save to local session
+    storeAuditSession[id] = physical;
+    localStorage.setItem('store_audit_session', JSON.stringify(storeAuditSession));
+
     const diffEl = document.getElementById(`diff_${id}`);
     const statusEl = document.getElementById(`status_${id}`);
     
@@ -8434,6 +8450,36 @@ function updateAuditRow(id, physical) {
         statusEl.innerText = 'Matched';
         statusEl.style.background = '#ecfdf5';
         statusEl.style.color = '#10b981';
+    }
+
+    // Auto-save to SQL
+    autoSaveStoreAudit(id, sysStock, phyStock);
+}
+
+let storeAuditDebounce = {};
+function autoSaveStoreAudit(id, system, physical) {
+    if (storeAuditDebounce[id]) clearTimeout(storeAuditDebounce[id]);
+    storeAuditDebounce[id] = setTimeout(async () => {
+        await saveStoreToDB('save_audit', {
+            report_type: 'STORE',
+            records: [{
+                itemId: id,
+                systemQty: system,
+                godownQty: physical,
+                diffQty: physical - system
+            }]
+        });
+    }, 1000);
+}
+
+async function resetStoreAudit() {
+    if (!confirm('Are you sure you want to RESET the table? All physical counts will be cleared from SQL and local view.')) return;
+    
+    const res = await saveStoreToDB('clear_audit', { report_type: 'STORE' });
+    if (res) {
+        storeAuditSession = {};
+        localStorage.removeItem('store_audit_session');
+        refreshStoreAudit();
     }
 }
 
