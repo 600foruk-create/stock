@@ -141,12 +141,17 @@ try {
                     }
                 } catch(Exception $e) {}
 
-                // AUTO-REPAIR: Add price column to rm_transactions
+                // AUTO-REPAIR: Add price & brand columns to rm_transactions
                 try {
                     $rtCols = $conn->query("SHOW COLUMNS FROM rm_transactions")->fetchAll(PDO::FETCH_COLUMN);
-                    if (!in_array('price', $rtCols)) {
-                        $conn->exec("ALTER TABLE rm_transactions ADD COLUMN price DECIMAL(15,3) DEFAULT 0 AFTER quantity");
-                    }
+                    if (!in_array('price', $rtCols)) $conn->exec("ALTER TABLE rm_transactions ADD COLUMN price DECIMAL(15,3) DEFAULT 0 AFTER quantity");
+                    if (!in_array('brand_id', $rtCols)) $conn->exec("ALTER TABLE rm_transactions ADD COLUMN brand_id INT DEFAULT NULL");
+                } catch(Exception $e) {}
+
+                // AUTO-REPAIR: Add main_id to rm_formulas
+                try {
+                    $rfCols = $conn->query("SHOW COLUMNS FROM rm_formulas")->fetchAll(PDO::FETCH_COLUMN);
+                    if (!in_array('main_id', $rfCols)) $conn->exec("ALTER TABLE rm_formulas ADD COLUMN main_id INT DEFAULT NULL");
                 } catch(Exception $e) {}
 
             } catch (Exception $e) {}
@@ -259,8 +264,8 @@ try {
             $t = $input['transaction'];
             $conn->beginTransaction();
             try {
-                $stmt = $conn->prepare("INSERT INTO rm_transactions (rm_item_id, quantity, price, type, notes) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$t['rm_item_id'], $t['quantity'], $t['price'] ?? 0, $t['type'], $t['notes'] ?? '']);
+                $stmt = $conn->prepare("INSERT INTO rm_transactions (rm_item_id, quantity, price, type, notes, brand_id) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$t['rm_item_id'], $t['quantity'], $t['price'] ?? 0, $t['type'], $t['notes'] ?? '', $t['brand_id'] ?? null]);
                 
                 // Update stock
                 if ($t['type'] === 'IN') {
@@ -854,13 +859,13 @@ try {
             $f = $input['formula'];
             $items = $input['items'] ?? [];
             if (!empty($f['id'])) {
-                $stmt = $conn->prepare("UPDATE rm_formulas SET name=? WHERE id=?");
-                $stmt->execute([$f['name'], $f['id']]);
+                $stmt = $conn->prepare("UPDATE rm_formulas SET name=?, main_id=? WHERE id=?");
+                $stmt->execute([$f['name'], $f['main_id'] ?? null, $f['id']]);
                 $formulaId = $f['id'];
                 $conn->prepare("DELETE FROM rm_formula_items WHERE formula_id=?")->execute([$formulaId]);
             } else {
-                $stmt = $conn->prepare("INSERT INTO rm_formulas (name) VALUES (?)");
-                $stmt->execute([$f['name']]);
+                $stmt = $conn->prepare("INSERT INTO rm_formulas (name, main_id) VALUES (?, ?)");
+                $stmt->execute([$f['name'], $f['main_id'] ?? null]);
                 $formulaId = $conn->lastInsertId();
             }
             foreach ($items as $item) {

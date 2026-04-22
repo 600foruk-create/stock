@@ -5162,10 +5162,34 @@ function generateProductionReport() {
     let grandKg = 0;
     
     Object.keys(grouped).sort().forEach(brandName => {
+        const brandEntries = grouped[brandName];
+        const currentBrandId = brandEntries[0].mainId;
+        
+        // Calculate Total RM Cost for this brand in the period
+        const brandRMTransactions = rmTransactions.filter(t => {
+            if (t.type !== 'OUT' || !t.brand_id || t.brand_id != currentBrandId) return false;
+            const tDate = new Date(t.date).getTime();
+            return tDate >= start && tDate <= end;
+        });
+        
+        const totalRMCost = brandRMTransactions.reduce((sum, t) => sum + (parseFloat(t.quantity) * parseFloat(t.price || 0)), 0);
+        
+        // Calculate Total FG KG for the rate
+        let bPcs = 0;
+        let bKg = 0;
+        brandEntries.forEach(t => {
+            const w = parseFloat(t.weight || t.itemWeight) || 0;
+            const q = parseInt(t.quantity) || 0;
+            bKg += (w * q);
+            bPcs += q;
+        });
+        
+        const brandRate = bKg > 0 ? (totalRMCost / bKg) : 0;
+
         html += `<div class="audit-group" style="margin-bottom: 2.5rem;">
             <div style="background: var(--gray-800); color: white; padding: 0.8rem 1.2rem; border-radius: 8px 8px 0 0; font-weight: 600; font-size: 1.1rem; display: flex; justify-content: space-between;">
                 <span>Brand: ${brandName}</span>
-                <span>${grouped[brandName].length} Entries</span>
+                <span>${totalRMCost > 0 ? `Total RM Cost: ${totalRMCost.toFixed(2)} | Rate: ${brandRate.toFixed(2)}/KG` : 'No Formula Cost Linked'}</span>
             </div>
             <table class="audit-table" style="width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--gray-200);">
                 <thead>
@@ -5176,19 +5200,17 @@ function generateProductionReport() {
                         <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Unit KG</th>
                         <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Qty (Pcs)</th>
                         <th style="padding: 0.8rem; border: 1px solid var(--gray-200);">Total KG</th>
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200); background: #f0f9ff; color: #0369a1;">Rate/KG</th>
+                        <th style="padding: 0.8rem; border: 1px solid var(--gray-200); background: #f0f9ff; color: #0369a1;">Total Value</th>
                     </tr>
                 </thead>
                 <tbody>`;
-                
-        let bPcs = 0;
-        let bKg = 0;
         
-        grouped[brandName].sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(t => {
-            const w = parseFloat(t.itemWeight) || 0;
+        brandEntries.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(t => {
+            const w = parseFloat(t.weight || t.itemWeight) || 0;
             const q = parseInt(t.quantity) || 0;
-            const totalKg = w * q;
-            bPcs += q;
-            bKg += totalKg;
+            const entryKg = w * q;
+            const entryValue = entryKg * brandRate;
             
             html += `<tr style="font-size: 0.9rem;">
                 <td style="padding: 0.7rem; border: 1px solid var(--gray-200); text-align: center; color: var(--gray-500);">${new Date(t.date).toLocaleDateString()}</td>
@@ -5196,7 +5218,9 @@ function generateProductionReport() {
                 <td style="padding: 0.7rem; border: 1px solid var(--gray-200); text-align: center;">${t.itemLength || '-'} ft</td>
                 <td style="padding: 0.7rem; border: 1px solid var(--gray-200); text-align: center;">${w.toFixed(2)}</td>
                 <td style="padding: 0.7rem; border: 1px solid var(--gray-200); text-align: center; font-weight: 700;">${q}</td>
-                <td style="padding: 0.7rem; border: 1px solid var(--gray-200); text-align: center; font-weight: 700; color: var(--sky-600);">${totalKg.toFixed(2)}</td>
+                <td style="padding: 0.7rem; border: 1px solid var(--gray-200); text-align: center; font-weight: 700; color: var(--sky-600);">${entryKg.toFixed(2)}</td>
+                <td style="padding: 0.7rem; border: 1px solid var(--gray-200); text-align: center; color: #0369a1;">${brandRate.toFixed(2)}</td>
+                <td style="padding: 0.7rem; border: 1px solid var(--gray-200); text-align: center; font-weight: 700; color: #0369a1;">${entryValue.toFixed(2)}</td>
             </tr>`;
         });
         
@@ -5209,9 +5233,12 @@ function generateProductionReport() {
                     <td colspan="4" style="text-align: right; padding: 0.8rem; border: 1px solid var(--gray-200);">${brandName} Totals:</td>
                     <td style="text-align: center; border: 1px solid var(--gray-200); color: var(--gray-900);">${bPcs}</td>
                     <td style="text-align: center; border: 1px solid var(--gray-200); color: var(--sky-700);">${bKg.toFixed(2)}</td>
+                    <td style="text-align: right; padding: 0.8rem; border: 1px solid var(--gray-200); color: #0369a1;">Total Value:</td>
+                    <td style="text-align: center; border: 1px solid var(--gray-200); color: #0369a1; background: #e0f2fe;">${totalRMCost.toFixed(2)}</td>
                 </tr>
             </tfoot>
         </table></div>`;
+    });
     });
     
     // Grand Summary
@@ -5847,6 +5874,7 @@ function refreshRMFormulas() {
             <thead>
                 <tr>
                     <th>Formula Name</th>
+                    <th>Linked Brand</th>
                     <th>Composition (Ingredients)</th>
                     <th style="width: 120px;">Actions</th>
                 </tr>
@@ -5862,9 +5890,13 @@ function refreshRMFormulas() {
         });
         itemsHtml += '</ol>';
 
+        const linkedBrand = mainCategories.find(m => m.id == f.main_id);
+        const brandName = linkedBrand ? `<span class="badge" style="background:${linkedBrand.color || 'var(--sky-100)'}; color:${linkedBrand.color ? 'white' : 'var(--sky-700)'}; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.75rem;">${linkedBrand.name}</span>` : '<span style="color:var(--gray-400); font-size:0.75rem;">Not Linked</span>';
+
         html += `
         <tr>
             <td style="font-weight: bold; color: var(--sky-700); font-size: 1.1rem;">${f.name}</td>
+            <td>${brandName}</td>
             <td>${itemsHtml}</td>
             <td style="text-align: center;">
                 <div style="display: flex; gap: 0.5rem; justify-content: center;">
@@ -5882,6 +5914,18 @@ function refreshRMFormulas() {
 function showAddRMFormulaModal() {
     document.getElementById('editRMFormulaId').value = '';
     document.getElementById('rmFormulaName').value = '';
+    
+    // Populate and reset brand selector
+    const brandSelect = document.getElementById('rmFormulaBrand');
+    if (brandSelect) {
+        let options = '<option value="">-- No Brand Link --</option>';
+        mainCategories.sort((a,b) => a.name.localeCompare(b.name)).forEach(m => {
+            options += `<option value="${m.id}">${m.name}</option>`;
+        });
+        brandSelect.innerHTML = options;
+        brandSelect.value = '';
+    }
+
     document.getElementById('rmFormulaItemsContainer').innerHTML = '';
     document.getElementById('rmFormulaModalTitle').innerText = '➕ Add Production Formula';
     addRMFormulaItemRow(); // start with one row
@@ -5917,6 +5961,7 @@ function addRMFormulaItemRow(data = null) {
 async function saveRMFormula() {
     const id = document.getElementById('editRMFormulaId').value;
     const name = document.getElementById('rmFormulaName').value.trim();
+    const main_id = document.getElementById('rmFormulaBrand')?.value || null;
     if (!name) { alert('Please enter formula name'); return; }
 
     const rows = document.querySelectorAll('.formula-item-row');
@@ -5934,7 +5979,7 @@ async function saveRMFormula() {
     const response = await fetch('api/sync.php?action=save_rm_formula', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formula: { id, name }, items })
+        body: JSON.stringify({ formula: { id, name, main_id }, items })
     });
 
     if ((await response.json()).status === 'success') {
@@ -5946,6 +5991,18 @@ async function saveRMFormula() {
 function editRMFormula(id) {
     const f = rmFormulas.find(x => x.id == id);
     if (!f) return;
+    
+    // Ensure brand dropdown is populated before setting value
+    const brandSelect = document.getElementById('rmFormulaBrand');
+    if (brandSelect) {
+        let options = '<option value="">-- No Brand Link --</option>';
+        mainCategories.sort((a,b) => a.name.localeCompare(b.name)).forEach(m => {
+            options += `<option value="${m.id}">${m.name}</option>`;
+        });
+        brandSelect.innerHTML = options;
+        brandSelect.value = f.main_id || '';
+    }
+
     document.getElementById('editRMFormulaId').value = f.id;
     document.getElementById('rmFormulaName').value = f.name;
     document.getElementById('rmFormulaModalTitle').innerText = '✏️ Edit Production Formula';
@@ -6730,7 +6787,7 @@ async function saveRMTransaction(type) {
                 const totalQty = item.qty * multiplier;
                 const rmItem = rmItems.find(i => i.id == item.itemId);
                 const priceVal = getRMItemCurrentPrice(rmItem);
-                await recordSingleRMTransaction(item.itemId, totalQty, 'OUT', `[Formula: ${formula.name}] ${notes}`, priceVal);
+                await recordSingleRMTransaction(item.itemId, totalQty, 'OUT', `[Formula: ${formula.name}] ${notes}`, priceVal, formula.main_id);
             }
         }
 
@@ -6994,12 +7051,12 @@ async function deleteAllRMInHistory() {
     }
 }
 
-async function recordSingleRMTransaction(itemId, qty, type, notes, price = 0) {
+async function recordSingleRMTransaction(itemId, qty, type, notes, price = 0, brandId = null) {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     const response = await fetch('api/sync.php?action=save_rm_transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transaction: { rm_item_id: itemId, quantity: qty, price, type, notes, date: now } })
+        body: JSON.stringify({ transaction: { rm_item_id: itemId, quantity: qty, price, type, notes, date: now, brand_id: brandId } })
     });
     const result = await response.json();
     if (result.status === 'success') {
@@ -7015,7 +7072,8 @@ async function recordSingleRMTransaction(itemId, qty, type, notes, price = 0) {
             price: price,
             type: type,
             notes: notes,
-            date: now
+            date: now,
+            brand_id: brandId
         });
     }
     return result;

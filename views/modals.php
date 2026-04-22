@@ -466,6 +466,13 @@
                 <label>Formula Name (e.g. Master Flex Batch)</label>
                 <input type="text" id="rmFormulaName" class="form-control" placeholder="Enter name...">
             </div>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label>Link to Brand (Finished Good)</label>
+                <select id="rmFormulaBrand" class="form-control">
+                    <option value="">-- No Brand Link --</option>
+                </select>
+                <p style="font-size: 0.75rem; color: var(--gray-500); margin-top: 0.2rem;">Linking a formula to a brand allows automatic cost calculation in production reports.</p>
+            </div>
             
             <div style="margin-top: 1.5rem;">
                 <label style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem;">
