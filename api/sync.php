@@ -885,6 +885,58 @@ try {
             echo json_encode(['status' => 'success']);
         }
 
+        elseif ($action === 'revert_rm_transaction') {
+            $id = $input['id'] ?? $_GET['id'] ?? null;
+            if ($id) {
+                $conn->beginTransaction();
+                try {
+                    $stmt = $conn->prepare("SELECT rm_item_id, quantity, type FROM rm_transactions WHERE id = ?");
+                    $stmt->execute([$id]);
+                    $t = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($t) {
+                        $diff = ($t['type'] === 'IN') ? -1 * $t['quantity'] : $t['quantity'];
+                        $stmt = $conn->prepare("UPDATE rm_items SET stock = stock + ? WHERE id = ?");
+                        $stmt->execute([$diff, $t['rm_item_id']]);
+                        
+                        $stmt = $conn->prepare("DELETE FROM rm_transactions WHERE id = ?");
+                        $stmt->execute([$id]);
+                        $conn->commit();
+                        echo json_encode(['status' => 'success']);
+                    } else { throw new Exception("Transaction not found"); }
+                } catch (Exception $e) { $conn->rollBack(); echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); }
+            } else { echo json_encode(['status' => 'error', 'message' => 'No ID provided']); }
+        }
+
+        elseif ($action === 'revert_transaction') {
+            $id = $input['id'] ?? $_GET['id'] ?? null;
+            if ($id) {
+                $conn->beginTransaction();
+                try {
+                    $stmt = $conn->prepare("SELECT item_id, quantity, type FROM transactions WHERE id = ?");
+                    $stmt->execute([$id]);
+                    $t = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($t) {
+                        $diff = 0;
+                        if ($t['type'] === 'PRODUCTION' || $t['type'] === 'IN' || $t['type'] === 'ADJ_PLUS') {
+                            $diff = -1 * $t['quantity'];
+                        } elseif ($t['type'] === 'SALE' || $t['type'] === 'OUT' || $t['type'] === 'ADJ_MINUS') {
+                            $diff = $t['quantity'];
+                        }
+                        
+                        if ($diff !== 0) {
+                            $stmt = $conn->prepare("UPDATE items SET stock = stock + ? WHERE id = ?");
+                            $stmt->execute([$diff, $t['item_id']]);
+                        }
+                        
+                        $stmt = $conn->prepare("DELETE FROM transactions WHERE id = ?");
+                        $stmt->execute([$id]);
+                        $conn->commit();
+                        echo json_encode(['status' => 'success']);
+                    } else { throw new Exception("Transaction not found"); }
+                } catch (Exception $e) { $conn->rollBack(); echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); }
+            } else { echo json_encode(['status' => 'error', 'message' => 'No ID provided']); }
+        }
+
         elseif ($action === 'delete_rm_transaction') {
             $id = $input['id'] ?? $_GET['id'] ?? null;
             if ($id) {

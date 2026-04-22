@@ -26,7 +26,7 @@
                         <div id="productionRows"></div>
                         <button class="btn btn-info" onclick="addProductionRow()">➕ Add Item</button>
                         <br><br>
-                        <button class="btn btn-primary" onclick="saveProduction()">Save Production</button>
+                        <button id="saveProdBtn" class="btn btn-primary" onclick="saveProduction()">Save Production</button>
                         <button class="btn btn-danger" onclick="hideAllForms()">Cancel</button>
                     </div>
                     

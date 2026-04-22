@@ -2921,8 +2921,18 @@ function hideAllForms() {
 }
 
 async function saveProduction() {
+    const saveBtn = document.getElementById('saveProdBtn');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'Saving...';
+    }
+
     let rows = document.getElementById('productionRows').children;
-    if (rows.length === 0) { alert('Add at least one item'); return; }
+    if (rows.length === 0) { 
+        alert('Add at least one item'); 
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Save Production'; }
+        return; 
+    }
     let errors = [];
     let prodDate = document.getElementById('prodDate').value;
 
@@ -2982,9 +2992,13 @@ async function saveProduction() {
 
     if (errors.length > 0) alert('Errors:\n' + errors.join('\n'));
     saveData(); refreshTransactions(); refreshDashboard(); refreshStockList(); refreshLowStockReport(); hideAllForms();
-    // Auto-save consumption snapshot
+    // Auto-save consumption snapshot after production transaction
     autoSaveRMConsumption();
 
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerText = 'Save Production';
+    }
     alert('Process complete.');
 }
 
@@ -4752,8 +4766,9 @@ function refreshTransactions() {
                         <td style="padding:0.5rem; border-bottom:1px solid #eee;"><strong>${t.quantity}</strong></td>
                         <td style="padding:0.5rem; border-bottom:1px solid #eee;">${t.customer || '-'}</td>
                         <td style="padding:0.5rem; border-bottom:1px solid #eee;">
-                            <div style="display:flex; gap:0.3rem;">
-                                <button class="btn btn-danger btn-sm" onclick="deleteTransaction(${t.id})" title="Delete from history"><i class="fas fa-trash"></i> Delete</button>
+                            <div style="display:flex; gap:0.3rem; flex-wrap: wrap;">
+                                <button class="btn btn-primary btn-sm" onclick="revertTransaction(${t.id})" style="background:#0ea5e9; border:none; padding: 4px 8px; font-size: 0.75rem;" title="Remove & Revert Stock"><i class="fas fa-undo"></i> Remove</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteTransaction(${t.id})" style="padding: 4px 8px; font-size: 0.75rem;" title="Delete record only"><i class="fas fa-trash"></i> Delete</button>
                             </div>
                         </td>
                     </tr>`;
@@ -6184,8 +6199,9 @@ function refreshRMOutHistoryTable() {
             <td><span class="badge" style="background: #fff5f5; color: var(--error); border: 1px solid #feb2b2;">CONSUMPTION</span></td>
             <td style="font-weight: bold;">${t.quantity} ${item ? item.unit : ''}</td>
             <td style="color: var(--gray-500); font-style: italic; font-size: 0.85rem;">${t.notes || ''}</td>
-            <td style="text-align: center;">
-                <button class="btn btn-icon text-error" onclick="deleteRMTransaction(${t.id})" title="Delete Record">🗑️</button>
+            <td style="text-align: center; display: flex; gap: 4px; justify-content: center;">
+                <button class="btn btn-sm" onclick="revertRMTransaction(${t.id})" style="background:#0ea5e9; color:white; padding: 3px 6px; font-size: 0.7rem;" title="Remove & Revert RM Stock">🔄 Remove</button>
+                <button class="btn btn-icon text-error" onclick="deleteRMTransaction(${t.id})" title="Delete record only">🗑️</button>
             </td>
         `;
         tbody.appendChild(row);
@@ -6621,6 +6637,12 @@ async function clearRMConsumptionHistory() {
 }
 
 async function saveRMTransaction(type) {
+    const saveBtn = type === 'IN' ? document.getElementById('rmInSaveBtn') : document.getElementById('rmOutSaveBtn');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'Saving...';
+    }
+
     const mode = type === 'OUT' ? (document.querySelector('input[name="rmOutMode"]:checked')?.value || 'SINGLE') : 'SINGLE';
     const notes = type === 'IN' ? document.getElementById('rmInNotes').value : document.getElementById('rmOutNotes').value;
     const qtyInput = type === 'IN' ? document.getElementById('rmInQty') : document.getElementById('rmOutQty');
@@ -6628,7 +6650,11 @@ async function saveRMTransaction(type) {
     const multiplier = parseFloat(qtyInput.value);
     const unitPriceUser = priceInput ? (parseFloat(priceInput.value) || 0) : 0;
 
-    if (isNaN(multiplier) || multiplier <= 0) { alert('Enter a valid quantity'); return; }
+    if (isNaN(multiplier) || multiplier <= 0) { 
+        alert('Enter a valid quantity'); 
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Save'; }
+        return; 
+    }
 
     let actualKg = multiplier;
     if (mode === 'SINGLE') {
@@ -6636,12 +6662,12 @@ async function saveRMTransaction(type) {
         const unitSelectId = type === 'IN' ? 'rmInUnitSelect' : 'rmOutUnitSelect';
         const selectedUnit = document.getElementById(unitSelectId).value;
         
-        if (!itemId) { alert('Select a material'); return; }
+        if (!itemId) { alert('Select a material'); if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Save'; } return; }
         const item = rmItems.find(i => i.id == itemId);
         
         if (selectedUnit === 'Bags') {
             const kgPerBag = parseFloat(item.kgPerBag) || 0;
-            if (kgPerBag <= 0) { alert('Please set "KG per Bag" for this item in Inventory before using Bags.'); return; }
+            if (kgPerBag <= 0) { alert('Please set "KG per Bag" for this item in Inventory before using Bags.'); if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Save'; } return; }
             actualKg = multiplier * kgPerBag;
         } else if (selectedUnit === 'Grams') {
             actualKg = multiplier / 1000;
@@ -6659,7 +6685,7 @@ async function saveRMTransaction(type) {
     } else {
         // Formula Mode
         const formulaId = document.getElementById('rmOutFormulaSelect').value;
-        if (!formulaId) { alert('Select a formula'); return; }
+        if (!formulaId) { alert('Select a formula'); if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Save'; } return; }
         
         const formula = rmFormulas.find(f => f.id == formulaId);
         
@@ -6674,9 +6700,12 @@ async function saveRMTransaction(type) {
             }
         });
 
-        if (customItems.length === 0) { alert('No valid items to consume'); return; }
+        if (customItems.length === 0) { alert('No valid items to consume'); if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Save'; } return; }
         
-        if (!confirm(`Using "${formula.name}" x ${multiplier}. Total of ${customItems.length} items will be consumed with your adjusted quantities. Proceed?`)) return;
+        if (!confirm(`Using "${formula.name}" x ${multiplier}. Total of ${customItems.length} items will be consumed with your adjusted quantities. Proceed?`)) {
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Save'; }
+            return;
+        }
 
         for (const item of customItems) {
             const totalQty = item.qty * multiplier;
@@ -6713,6 +6742,12 @@ async function saveRMTransaction(type) {
 
     // Auto-save consumption snapshot after RM transaction
     autoSaveRMConsumption();
+
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerText = 'Save';
+    }
+    alert('RM Transaction saved successfully!');
 }
 
 /**
@@ -6906,8 +6941,9 @@ function refreshRMInHistoryTable() {
             <td style="text-align: right;">${pricePerKg.toLocaleString(undefined, {minimumFractionDigits: 1})} / KG</td>
             <td style="text-align: right; font-weight: bold; color: var(--sky-600);">Rs. ${totalAmount.toLocaleString(undefined, {minimumFractionDigits: 1})}</td>
             <td style="color: var(--gray-500); font-style: italic; font-size: 0.85rem;">${t.notes || ''}</td>
-            <td style="text-align: center;">
-                <button class="btn btn-icon text-error" onclick="deleteRMTransaction(${t.id})" title="Delete Record">🗑️</button>
+            <td style="text-align: center; display: flex; gap: 4px; justify-content: center;">
+                <button class="btn btn-sm" onclick="revertRMTransaction(${t.id})" style="background:#0ea5e9; color:white; padding: 3px 6px; font-size: 0.7rem;" title="Remove & Revert RM Stock">🔄 Remove</button>
+                <button class="btn btn-icon text-error" onclick="deleteRMTransaction(${t.id})" title="Delete record only">🗑️</button>
             </td>
         `;
         tbody.appendChild(row);
@@ -8725,3 +8761,43 @@ document.addEventListener('input', (e) => {
     if (e.target.id === 'storeItemsSearch') refreshStoreItems();
 });
 
+
+async function revertTransaction(id) {
+    if (!confirm('Are you sure you want to remove this record AND revert the stock impact?')) return;
+    try {
+        const response = await fetch('api/sync.php?action=revert_transaction', {
+            method: 'POST',
+            body: JSON.stringify({ id })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            alert('✅ Record removed and stock reverted successfully!');
+            initApp();
+        } else {
+            alert('❌ Error: ' + (result.message || 'Unknown error occurred.'));
+        }
+    } catch (e) {
+        console.error('Failed to revert:', e);
+        alert('❌ Network error. Check your connection.');
+    }
+}
+
+async function revertRMTransaction(id) {
+    if (!confirm('Are you sure you want to remove this record AND revert the RM stock impact?')) return;
+    try {
+        const response = await fetch('api/sync.php?action=revert_rm_transaction', {
+            method: 'POST',
+            body: JSON.stringify({ id })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            alert('✅ RM Record removed and stock reverted successfully!');
+            initApp();
+        } else {
+            alert('❌ Error: ' + (result.message || 'Unknown error occurred.'));
+        }
+    } catch (e) {
+        console.error('Failed to revert RM:', e);
+        alert('❌ Network error. Check your connection.');
+    }
+}
