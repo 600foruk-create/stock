@@ -8544,7 +8544,7 @@ async function saveStoreAuditReport() {
         const res = await saveStoreToDB('archive_report', payload);
         if (res) {
             alert('Audit report saved to archives successfully!');
-            refreshStoreAudit();
+            // Removed refreshStoreAudit() to keep physical counts on screen as requested
             refreshStoreReports();
         }
     } catch (e) {
