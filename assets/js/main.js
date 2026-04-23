@@ -5244,6 +5244,7 @@ function generateProductionReport() {
         
         grandPcs += bPcs;
         grandKg += bKg;
+        grandValue += totalRMCost;
         
         html += `</tbody>
             <tfoot style="background: var(--sky-50); font-weight: 800; font-size: 1rem;">
@@ -5258,27 +5259,60 @@ function generateProductionReport() {
         </table></div>`;
     });
     
-    // Grand Summary
+    // Grand Summary with Cost Analysis
     html += `
-        <div style="margin-top: 2rem; background: white; color: var(--gray-800); padding: 1.2rem; border-radius: 10px; border: 2px solid var(--sky-500); box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gray-200); padding-bottom: 0.6rem; margin-bottom: 1rem;">
-                <h3 style="margin: 0; letter-spacing: 0.5px; font-size: 1.1rem; color: var(--gray-700);">OVERALL PRODUCTION SUMMARY</h3>
-                <span style="font-size: 0.75rem; color: var(--gray-400);">Generated: ${new Date().toLocaleString()}</span>
+        <div style="margin-top: 2rem; background: white; color: var(--gray-800); padding: 1.5rem; border-radius: 12px; border: 2px solid var(--sky-500); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--gray-100); padding-bottom: 0.8rem; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0; letter-spacing: 0.5px; font-size: 1.2rem; color: var(--gray-800); font-weight: 800;">🚀 OVERALL PRODUCTION SUMMARY</h3>
+                <span style="font-size: 0.75rem; color: var(--gray-400); font-weight: 600;">Generated: ${new Date().toLocaleString()}</span>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; text-align: center;">
-                <div style="background: var(--gray-50); padding: 1rem; border-radius: 8px; border: 1px solid var(--gray-100);">
-                    <label style="display: block; font-size: 0.85rem; margin-bottom: 0.4rem; color: var(--gray-500); text-transform: uppercase;">Total Production Pieces</label>
-                    <strong style="font-size: 2rem; display: block; color: var(--gray-900);">${grandPcs} <span style="font-size: 1rem; font-weight: 500; opacity: 0.6;">Pcs</span></strong>
+            
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem;">
+                <div style="background: #f8fafc; padding: 1rem; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center;">
+                    <label style="display: block; font-size: 0.7rem; margin-bottom: 0.5rem; color: var(--gray-500); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Total Pieces</label>
+                    <strong style="font-size: 1.6rem; color: var(--gray-900);">${grandPcs.toLocaleString()}</strong>
+                    <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 2px;">Pcs</div>
                 </div>
-                <div style="background: var(--gray-50); padding: 1rem; border-radius: 8px; border: 1px solid var(--gray-100);">
-                    <label style="display: block; font-size: 0.85rem; margin-bottom: 0.4rem; color: var(--gray-500); text-transform: uppercase;">Total Production Weight</label>
-                    <strong style="font-size: 2rem; display: block; color: var(--sky-700);">${grandKg.toFixed(2)} <span style="font-size: 1rem; font-weight: 500; opacity: 0.6;">KG</span></strong>
+                <div style="background: #f8fafc; padding: 1rem; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center;">
+                    <label style="display: block; font-size: 0.7rem; margin-bottom: 0.5rem; color: var(--gray-500); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Total Weight</label>
+                    <strong style="font-size: 1.6rem; color: var(--sky-700);">${grandKg.toLocaleString(undefined, {minimumFractionDigits: 1})}</strong>
+                    <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 2px;">KG</div>
+                </div>
+                <div style="background: #f0f9ff; padding: 1rem; border-radius: 10px; border: 1px solid #bae6fd; text-align: center;">
+                    <label style="display: block; font-size: 0.7rem; margin-bottom: 0.5rem; color: #0369a1; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">RM Total Value</label>
+                    <strong id="summaryRMValue" data-value="${grandValue}" style="font-size: 1.6rem; color: #0369a1;">${grandValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</strong>
+                    <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 2px;">Rs.</div>
+                </div>
+                <div style="background: #fffbeb; padding: 1rem; border-radius: 10px; border: 1px solid #fef3c7; text-align: center;">
+                    <label style="display: block; font-size: 0.7rem; margin-bottom: 0.5rem; color: #b45309; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Other Expenses</label>
+                    <input type="number" id="summaryOtherExpenses" value="0" oninput="updateReportNetValue()" style="width: 100%; border: 1px solid #fde68a; border-radius: 6px; padding: 4px 8px; font-size: 1.2rem; font-weight: 800; text-align: center; color: #b45309; background: white;">
+                    <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 2px;">(Labor, Power, etc.)</div>
+                </div>
+                <div style="background: #f0fdf4; padding: 1rem; border-radius: 10px; border: 1px solid #dcfce7; text-align: center;">
+                    <label style="display: block; font-size: 0.7rem; margin-bottom: 0.5rem; color: #15803d; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Total Net Value</label>
+                    <strong id="summaryNetValue" style="font-size: 1.6rem; color: #15803d;">${grandValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</strong>
+                    <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 2px;">Rs. Total Cost</div>
                 </div>
             </div>
         </div>
     `;
     
     document.getElementById('prodReportContent').innerHTML = html;
+}
+
+// Helper to update net value in report summary
+function updateReportNetValue() {
+    const rmValueEl = document.getElementById('summaryRMValue');
+    const expensesEl = document.getElementById('summaryOtherExpenses');
+    const netEl = document.getElementById('summaryNetValue');
+    
+    if (!rmValueEl || !expensesEl || !netEl) return;
+    
+    const rmVal = parseFloat(rmValueEl.getAttribute('data-value')) || 0;
+    const expenses = parseFloat(expensesEl.value) || 0;
+    const total = rmVal + expenses;
+    
+    netEl.innerText = total.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 }
 
 function exportProductionReport(format) {
