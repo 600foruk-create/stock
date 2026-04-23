@@ -5166,6 +5166,7 @@ function generateProductionReport() {
     
     let grandPcs = 0;
     let grandKg = 0;
+    let grandValue = 0;
     
     Object.keys(grouped).sort().forEach(brandName => {
         const brandEntries = grouped[brandName];
