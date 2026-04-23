@@ -6250,18 +6250,38 @@ function updateRMOutMetrics() {
     const valueEl = document.getElementById('rmDailyFormulaValue');
     if (!lastDateEl || !weightEl) return;
 
-    // Filter only Formula outputs (tagged in notes) for Today
-    const todayStr = new Date().toDateString();
+    // 1. Find all formula transactions
+    const formulaTransactions = rmTransactions.filter(t => t.type === 'OUT' && t.notes && t.notes.includes('[Formula:'));
+    
+    if (formulaTransactions.length === 0) {
+        lastDateEl.innerText = '--';
+        weightEl.innerText = '0.0 KG';
+        if (valueEl) valueEl.innerText = 'Rs. 0';
+        return;
+    }
+
+    // 2. Find the LATEST date in history
+    let maxDateVal = 0;
+    let latestT = null;
+    formulaTransactions.forEach(t => {
+        const d = new Date(t.date).getTime();
+        if (d > maxDateVal) {
+            maxDateVal = d;
+            latestT = t;
+        }
+    });
+
+    const latestDateStr = new Date(latestT.date).toDateString();
     let totalKg = 0;
     let totalValue = 0;
 
-    rmTransactions.forEach(t => {
-        if (t.type === 'OUT' && t.notes && t.notes.includes('[Formula:') && new Date(t.date).toDateString() === todayStr) {
+    // 3. Sum up all formulas for THAT specific latest date
+    formulaTransactions.forEach(t => {
+        if (new Date(t.date).toDateString() === latestDateStr) {
             const item = rmItems.find(i => i.id == t.rm_item_id);
             const qty = (parseFloat(t.quantity) || 0);
             let price = (parseFloat(t.price) || 0);
             
-            // Fallback for old transactions that had 0 price
             if (price <= 0 && item) {
                 price = getRMItemCurrentPrice(item);
             }
@@ -6271,11 +6291,12 @@ function updateRMOutMetrics() {
         }
     });
 
-    // Display Today's date
-    const today = new Date();
-    const day = String(today.getDate()).padStart(2, '0');
+    // 4. Display the date from history
+    const dObj = new Date(latestT.date);
+    const day = String(dObj.getDate()).padStart(2, '0');
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    lastDateEl.innerText = `${day}-${monthNames[today.getMonth()]}-${today.getFullYear()}`;
+    lastDateEl.innerText = `${day}-${monthNames[dObj.getMonth()]}-${dObj.getFullYear()}`;
+    
     weightEl.innerText = totalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
     if (valueEl) valueEl.innerText = 'Rs. ' + totalValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
 }
