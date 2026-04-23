@@ -561,7 +561,7 @@ function login() {
     if (user) {
         currentUser = user;
         localStorage.setItem('stock_currentUser', JSON.stringify(user));
-        loadLocalData();
+
         
         const loginPage = document.getElementById('loginPage');
         const appPage = document.getElementById('app');
@@ -592,7 +592,12 @@ document.addEventListener('keypress', function (e) {
 
 (function () {
     if (currentUser) {
-        loadLocalData();
+        // Find most recent user record to get updated permissions
+        const freshUser = users.find(u => u.id == currentUser.id);
+        if (freshUser) {
+            currentUser = freshUser;
+            localStorage.setItem('stock_currentUser', JSON.stringify(freshUser));
+        }
         document.getElementById('loginPage').style.display = 'none';
         document.getElementById('app').style.display = 'block';
         updateCompanyDisplay();
@@ -4529,9 +4534,11 @@ function editUser(userId) {
 }
 
 function refreshUsersList() {
-    let html = '';
+    let listHtml = '';
+    let selectHtml = '<option value="">-- Choose a user --</option>';
+
     users.forEach(user => {
-        html += `<tr>
+        listHtml += `<tr>
                     <td style="padding:0.5rem; border-bottom:1px solid #eee;">${user.name}</td>
                     <td style="padding:0.5rem; border-bottom:1px solid #eee;">${user.username}</td>
                     <td style="padding:0.5rem; border-bottom:1px solid #eee;">${user.role}</td>
@@ -4541,7 +4548,8 @@ function refreshUsersList() {
                     </td>
                 </tr>`;
     });
-    document.getElementById('usersList').innerHTML = html;
+    if (listHtml && document.getElementById('usersList')) document.getElementById('usersList').innerHTML = listHtml;
+    if (selectHtml && document.getElementById('userRightsSelector')) document.getElementById('userRightsSelector').innerHTML = selectHtml;
 }
 
 // Data Management
@@ -9166,106 +9174,246 @@ function applyPermissionsToUI(permsJson) {
 }
 
 function checkPermission(module, type = "view") {
-    // If no logged in user or admin, true
-    const user = window.currentUser || JSON.parse(localStorage.getItem("currentUser") || "null");
-    if (!user) return true; 
-    if (user.role === "admin") return true;
-
-    try {
-        const perms = typeof user.permissions === "string" ? JSON.parse(user.permissions) : user.permissions;
-        if (!perms || !perms[module]) return false;
-        return perms[module][type] === true;
-    } catch(e) { return false; }
+    // Admins have absolute power
+    if (currentUser && currentUser.role === 'admin') return true;
+    
+    // Safely parse permissions
+    let perms = {};
+    if (currentUser && currentUser.permissions) {
+        try {
+            perms = typeof currentUser.permissions === 'string' ? JSON.parse(currentUser.permissions) : currentUser.permissions;
+        } catch(e) { console.error("Permission parse error", e); }
+    }
+    
+    if (!perms[module]) return false;
+    return perms[module][type] === true;
 }
 
 function enforceGlobalPermissions() {
-    const user = window.currentUser || JSON.parse(localStorage.getItem("currentUser") || "null");
-    if (!user) return;
-
-    console.log("Enforcing permissions for:", user.username);
+    if (!currentUser) return;
     
-    // 1. Hide Sidebar/Navigation Tabs
+    console.log("Applying strict security for:", currentUser.username, `(${currentUser.role})`);
+    
+    // 1. Module Accessibility (Sidebar & Content Tabs)
     const navMapping = {
-        "fg_dashboard": "#nav_dashboard",
-        "fg_production": "#nav_dataentry",
-        "fg_orders": "#nav_orders",
-        "fg_inventory": "#nav_stocklist",
-        "fg_customers": "#nav_customers",
-        "rm_dashboard": "#side_rm_dash",
-        "rm_purchase": "#side_rm_in",
-        "rm_formula": "#side_rm_formulas",
-        "rm_consumption": "#side_rm_consumption",
-        "store_dashboard": "#side_store_dash",
-        "store_inward": "#side_store_in",
-        "store_outward": "#side_store_out",
-        "settings": "#nav_settings, .sidebar-btn[onclick*=\"settings\"]"
+        "fg_dashboard": ".nav-tab[onclick*=\"'dashboard'\"], #dashboard",
+        "fg_production": ".nav-tab[onclick*=\"'dataEntry'\"], #dataEntry",
+        "fg_orders": ".nav-tab[onclick*=\"'orders'\"], #orders",
+        "fg_inventory": ".nav-tab[onclick*=\"'stockList'\"], #stockList",
+        "fg_customers": ".nav-tab[onclick*=\"'customers'\"], #customers",
+        "rm_dashboard": ".nav-tab[onclick*=\"'rm_dashboard'\"], #rm_dashboard",
+        "rm_purchase": ".nav-tab[onclick*=\"'rm_in'\"], #rm_in",
+        "rm_formula": ".nav-tab[onclick*=\"'rm_formulas'\"], #rm_formulas",
+        "rm_consumption": ".nav-tab[onclick*=\"'rm_out'\"], #rm_out",
+        "store_dashboard": ".nav-tab[onclick*=\"'store_dashboard'\"], #store_dashboard",
+        "store_inward": ".nav-tab[onclick*=\"'store_inwards'\"], #store_inwards",
+        "store_outward": ".nav-tab[onclick*=\"'store_outwards'\"], #store_outwards",
+        "settings": ".sidebar-btn[onclick*=\"'settings'\"], #settingsPanel"
     };
 
+    // Main Module Buttons (Finish Good, RM, Store, Settings)
+    const moduleMap = {
+        "fg": { ids: ["fg_dashboard", "fg_production", "fg_orders", "fg_inventory", "fg_customers"], selector: ".menu-item:nth-child(1)" },
+        "rm": { ids: ["rm_dashboard", "rm_purchase", "rm_formula", "rm_consumption"], selector: ".menu-item:nth-child(2)" },
+        "st": { ids: ["store_dashboard", "store_inward", "store_outward"], selector: ".menu-item:nth-child(3)" },
+        "se": { ids: ["settings"], selector: ".menu-item:nth-child(4)" }
+    };
+
+    // First, check top-level module visibility
+    Object.keys(moduleMap).forEach(key => {
+        const m = moduleMap[key];
+        const anyAccess = m.ids.some(id => checkPermission(id, "view"));
+        const btn = document.querySelector(m.selector);
+        if (btn) {
+            if (anyAccess) {
+                btn.style.opacity = "1";
+                btn.style.filter = "none";
+                btn.style.pointerEvents = "auto";
+                btn.style.display = "flex";
+            } else {
+                btn.style.opacity = "0.4";
+                btn.style.filter = "blur(1.5px) grayscale(1)";
+                btn.style.pointerEvents = "none";
+                // Only hide completely if it's settings and not admin
+                if (key === 'se' && currentUser.role !== 'admin') btn.style.display = "none";
+            }
+        }
+    });
+
+    // Handle internal tabs and content areas
     systemModules.forEach(m => {
         const hasView = checkPermission(m.id, "view");
         const selector = navMapping[m.id];
         if (selector) {
             document.querySelectorAll(selector).forEach(el => {
-                el.style.display = hasView ? "" : "none";
+                if (hasView) {
+                    el.style.opacity = "1";
+                    el.style.filter = "none";
+                    el.style.pointerEvents = "auto";
+                } else {
+                    el.style.opacity = "0.4";
+                    el.style.filter = "blur(1.5px) grayscale(1)";
+                    el.style.pointerEvents = "none";
+                }
             });
         }
     });
 
-    // 2. Hide Action Buttons for non-editors
-    const actionButtons = [
-        "button[onclick*=\"save\"]", 
-        "button[onclick*=\"Add\"]", 
-        "button[onclick*=\"delete\"]", 
-        "button[onclick*=\"remove\"]",
-        ".btn-success",
-        ".text-error",
-        ".fa-edit",
-        ".fa-trash-alt"
-    ];
-
-    // Determine current module
-    const currentModule = determineCurrentModule();
-    if (currentModule) {
-        const canEdit = checkPermission(currentModule, "edit");
-        if (!canEdit) {
-            document.querySelectorAll(actionButtons.join(",")).forEach(el => {
-                // Settings page is high risk, hide EVERYTHING that isn't viewing
-                el.style.visibility = "hidden";
-                el.style.pointerEvents = "none";
-            });
-        }
+    // 2. Editor Actions (Action Buttons)
+    const curMod = determineCurrentModule();
+    if (curMod) {
+        const canEdit = checkPermission(curMod, "edit");
+        // Buttons that usually perform WRITE actions
+        const editorElements = document.querySelectorAll("button[onclick*='save'], button[onclick*='Add'], button[onclick*='delete'], button[onclick*='edit'], button[onclick*='remove'], .btn-success, .btn-danger, .text-error");
+        
+        editorElements.forEach(btn => {
+            // Special exemption: allow closing modals or generic UI toggles
+            const onclick = btn.getAttribute('onclick') || '';
+            if (onclick.toLowerCase().includes('close') || onclick.toLowerCase().includes('toggle')) return;
+            
+            if (canEdit) {
+                btn.style.display = "";
+                btn.style.visibility = "visible";
+                btn.style.pointerEvents = "auto";
+            } else {
+                btn.style.display = "none";
+                btn.style.pointerEvents = "none";
+            }
+        });
     }
 }
 
 function determineCurrentModule() {
-    // Determine based on visible panels
-    if (document.getElementById("finishGoodPanel")?.style.display !== "none") {
-        if (currentPage === "dashboard") return "fg_dashboard";
-        if (currentPage === "dataentry") return "fg_production";
-        if (currentPage === "orders") return "fg_orders";
-        if (currentPage === "stocklist") return "fg_inventory";
-        if (currentPage === "customers") return "fg_customers";
-    }
-    if (document.getElementById("rawMaterialsPanel")?.style.display !== "none") {
-        const activeTab = document.querySelector("#rawMaterialsPanel .tab-content:not([style*=\"none\"])");
+    // Finish Good Panels
+    if (document.getElementById('finishGoodPanel') && document.getElementById('finishGoodPanel').style.display !== 'none') {
+        const activeTab = document.querySelector('#finishGoodPanel .tab-content.active');
         if (activeTab) {
             const id = activeTab.id;
-            if (id === "rm_dashboard") return "rm_dashboard";
-            if (id === "rm_in") return "rm_purchase";
-            if (id === "rm_out") return "rm_consumption";
-            if (id === "rm_formulas") return "rm_formula";
+            if (id === 'dashboard') return 'fg_dashboard';
+            if (id === 'dataEntry') return 'fg_production';
+            if (id === 'orders') return 'fg_orders';
+            if (id === 'stockList') return 'fg_inventory';
+            if (id === 'customers') return 'fg_customers';
         }
     }
-    if (document.getElementById("storePanel")?.style.display !== "none") {
-        const activeTab = document.querySelector("#storePanel .tab-content:not([style*=\"none\"])");
+    // RM Panels
+    if (document.getElementById('rawMaterialsPanel') && document.getElementById('rawMaterialsPanel').style.display !== 'none') {
+        const activeTab = document.querySelector('#rawMaterialsPanel .tab-content.active');
         if (activeTab) {
             const id = activeTab.id;
-            if (id === "store_dashboard") return "store_dashboard";
-            if (id === "store_inwards") return "store_inward";
-            if (id === "store_outwards") return "store_outward";
+            if (id === 'rm_dashboard') return 'rm_dashboard';
+            if (id === 'rm_in') return 'rm_purchase';
+            if (id === 'rm_formulas') return 'rm_formula';
+            if (id === 'rm_out') return 'rm_consumption';
         }
     }
-    if (document.getElementById("settingsPanel")?.style.display !== "none") return "settings";
+    // Store Panels
+    if (document.getElementById('storePanel') && document.getElementById('storePanel').style.display !== 'none') {
+        const activeTab = document.querySelector('#storePanel .tab-content.active');
+        if (activeTab) {
+            const id = activeTab.id;
+            if (id === 'store_dashboard') return 'store_dashboard';
+            if (id === 'store_inwards') return 'store_inward';
+            if (id === 'store_outwards') return 'store_outward';
+        }
+    }
+    // Settings
+    if (document.getElementById('settingsPanel') && document.getElementById('settingsPanel').style.display !== 'none') {
+        return 'settings';
+    }
     return null;
+}
+
+// ==================== NEW USER RIGHTS LOGIC ====================
+
+let currentlyEditingRightsId = null;
+
+function handleUserRightsSelect(userId) {
+    if (!userId) {
+        document.getElementById('rightsMatrixContent').style.display = 'none';
+        document.getElementById('noUserSelectedState').style.display = 'block';
+        currentlyEditingRightsId = null;
+        return;
+    }
+    
+    const user = users.find(u => u.id == userId);
+    if (!user) return;
+    
+    currentlyEditingRightsId = userId;
+    document.getElementById('noUserSelectedState').style.display = 'none';
+    document.getElementById('rightsMatrixContent').style.display = 'block';
+    
+    // Set admin status in the interface
+    const isAdmin = user.role === 'admin';
+    document.getElementById('makeAdminBtn').innerText = isAdmin ? 'Revoke Admin Status' : 'Promote to Admin';
+    document.getElementById('makeAdminBtn').style.background = isAdmin ? 'var(--orange-50)' : 'var(--gray-50)';
+    document.getElementById('makeAdminBtn').style.color = isAdmin ? 'var(--orange-600)' : 'var(--gray-600)';
+
+    renderPermissionsTable(); // Ensure it's clean
+    handleRoleChange(user.role || 'user');
+    if (user.role !== 'admin') {
+        applyPermissionsToUI(user.permissions);
+    }
+}
+
+async function savePermissionsForSelectedUser() {
+    if (!currentlyEditingRightsId) return alert('No user selected!');
+    
+    const user = users.find(u => u.id == currentlyEditingRightsId);
+    if (!user) return;
+
+    const role = user.role; // Keep current role (Admin or User)
+    const permissions = collectPermissions();
+
+    try {
+        const response = await fetch('api/sync.php?action=save_user', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                user: { 
+                    id: user.id, 
+                    name: user.name, 
+                    username: user.username, 
+                    password: user.password, 
+                    role: user.role, 
+                    permissions: permissions 
+                } 
+            })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            alert(`Rights updated for ${user.name} successfully!`);
+            initApp(); // Refresh local data
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (e) {
+        alert('Could not save rights. Check server connection.');
+    }
+}
+
+async function toggleAdminRoleForSelectedUser() {
+    if (!currentlyEditingRightsId) return;
+    const user = users.find(u => u.id == currentlyEditingRightsId);
+    if (!user) return;
+    
+    const newRole = user.role === 'admin' ? 'user' : 'admin';
+    if (!confirm(`Are you sure you want to ${newRole === 'admin' ? 'Promote' : 'Demote'} ${user.name}?`)) return;
+
+    try {
+        const response = await fetch('api/sync.php?action=save_user', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                user: { 
+                    ...user,
+                    role: newRole
+                } 
+            })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            alert(`${user.name} is now a ${newRole.toUpperCase()}.`);
+            initApp().then(() => handleUserRightsSelect(currentlyEditingRightsId));
+        }
+    } catch (e) { alert('Failed to change role.'); }
 }
 

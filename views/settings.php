@@ -3,7 +3,8 @@
     <div class="settings-nav-header no-print" style="background: var(--sky-500); padding: 0.4rem; border-radius: 50px; display: flex; gap: 5px; box-shadow: var(--shadow-sm); width: max-content; align-self: center;">
         <button class="settings-tab active" onclick="switchSettingsTab('companyTab', this)">Company Profile</button>
         <button class="settings-tab" onclick="switchSettingsTab('systemTab', this)">System Preferences</button>
-        <button class="settings-tab" onclick="switchSettingsTab('usersTab', this)">User Management</button>
+        <button class="settings-tab" onclick="switchSettingsTab('usersTab', this)">User Accounts</button>
+        <button class="settings-tab" onclick="switchSettingsTab('rightsTab', this)">User Access Rights</button>
         <button class="settings-tab" onclick="switchSettingsTab('dataTab', this)">Database & Backup</button>
     </div>
 
@@ -86,7 +87,55 @@
             </div>
         </div>
 
-        <!-- Tab 4: Database & Backup -->
+        <!-- Tab 4: User Access Rights -->
+        <div id="rightsTab" class="settings-section" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2.5rem; border-bottom: 2px solid var(--gray-100); padding-bottom: 1rem;">
+                <div>
+                    <h2 style="color: var(--sky-600); font-weight: 800; margin: 0;">Access Control Matrix</h2>
+                    <p style="color: var(--gray-500); font-size: 0.85rem; margin-top: 0.5rem;">Select a user to configure their specific viewing and editing rights.</p>
+                </div>
+                <div style="width: 300px;">
+                    <label style="font-weight: 800; font-size: 0.75rem; color: var(--gray-400); text-transform: uppercase; margin-bottom: 5px; display: block;">Select Staff User</label>
+                    <select id="userRightsSelector" class="form-control" onchange="handleUserRightsSelect(this.value)" style="border: 2px solid var(--sky-200); border-radius: 12px; font-weight: 700; height: 50px;">
+                        <option value="">-- Choose a user --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="rightsMatrixContent" style="display: none;">
+                <div style="background: var(--gray-50); border-radius: 20px; border: 1px solid var(--gray-200); overflow: hidden;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: var(--sky-600); color: white;">
+                                <th style="padding: 1.2rem; text-align: left; font-weight: 800; text-transform: uppercase; font-size: 0.8rem;">Module / Feature Domain</th>
+                                <th style="padding: 1.2rem; text-align: center; font-weight: 800; text-transform: uppercase; font-size: 0.8rem; width: 120px;">Viewer Only</th>
+                                <th style="padding: 1.2rem; text-align: center; font-weight: 800; text-transform: uppercase; font-size: 0.8rem; width: 120px;">Full Editor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="permissionsTableBody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                    <button class="btn" onclick="savePermissionsForSelectedUser()" style="background: var(--sky-600); color: white; padding: 1.2rem 3rem; border-radius: 15px; font-weight: 800; box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3);">
+                        💾 Save All Permissions
+                    </button>
+                    <button class="btn" onclick="handleRoleChange('admin')" id="makeAdminBtn" style="background: var(--gray-100); color: var(--gray-600); border: 1.5px solid var(--gray-200); border-radius: 15px; font-weight: 700; padding: 1.2rem 2rem;">
+                        Grant Admin Rights
+                    </button>
+                </div>
+            </div>
+            
+            <div id="noUserSelectedState" style="text-align: center; padding: 5rem 2rem;">
+                <div style="font-size: 4rem; margin-bottom: 1.5rem; opacity: 0.3;">👤</div>
+                <h3 style="color: var(--gray-400); font-weight: 700;">Please select a user from the dropdown above to manage their access.</h3>
+            </div>
+
+            </div>
+        </div>
+
+        <!-- Tab 5: Database & Backup -->
         <div id="dataTab" class="settings-section" style="display: none;">
             <h2 style="color: var(--sky-600); font-weight: 800; margin-bottom: 2.5rem; border-bottom: 2px solid var(--gray-100); padding-bottom: 0.5rem; display: inline-block;">Database & Safety</h2>
             
