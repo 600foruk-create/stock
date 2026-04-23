@@ -687,6 +687,23 @@
             border: 1px solid var(--gray-200);
         }
 
+        .data-table tbody tr:nth-child(odd), 
+        .stock-grid-table tbody tr:nth-child(odd),
+        .audit-table tbody tr:nth-child(odd) {
+            background-color: #f0fdf4 !important; /* Light Green */
+        }
+        .data-table tbody tr:nth-child(even), 
+        .stock-grid-table tbody tr:nth-child(even),
+        .audit-table tbody tr:nth-child(even) {
+            background-color: #fefce8 !important; /* Light Yellow */
+        }
+        .data-table tbody tr:hover, 
+        .stock-grid-table tbody tr:hover,
+        .audit-table tbody tr:hover {
+            background-color: #e2e8f0 !important;
+            transition: background 0.1s ease;
+        }
+
         /* Stock Grid Table */
         .table-responsive {
             overflow-x: auto;

@@ -131,18 +131,6 @@
 </div>
 
 <style>
-.striped-rows tr:nth-child(odd) {
-    background-color: #f0fdf4; /* Very Light Green */
-}
-.striped-rows tr:nth-child(even) {
-    background-color: #fefce8; /* Very Light Yellow */
-}
-.striped-rows tr:hover {
-    background-color: #e2e8f0 !important;
-    transition: background 0.1s ease;
-}
-.striped-rows td {
-    border-bottom: 1px solid #e2e8f0;
-    color: var(--gray-800);
-}
+/* Header/Footer specific to this report are handled by inline styles above */
+/* Row colors are now handled globally in style.css */
 </style>
