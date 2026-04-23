@@ -92,31 +92,22 @@
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem;">
                 <!-- Full SQL Backup -->
-                <div style="background: white; border: 1.5px solid var(--sky-100); border-radius: 24px; padding: 2rem; text-align: center; transition: all 0.3s ease;">
-                    <div style="background: var(--sky-50); width: 80px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: var(--sky-600); font-size: 2.5rem;">
-                        <i class="fas fa-database"></i>
-                    </div>
+                <div style="background: white; border: 1.5px solid var(--sky-100); border-radius: 24px; padding: 2.5rem 2rem; text-align: center; transition: all 0.3s ease;">
                     <h3 style="margin-bottom: 0.8rem; color: var(--gray-800); font-weight: 800;">Global System Backup</h3>
                     <p style="font-size: 0.85rem; color: var(--gray-500); margin-bottom: 2rem; line-height: 1.5;">Create a complete snapshot of your entire database including all stocks, formulas, and history.</p>
-                    <button class="btn" onclick="window.location.href='api/backup.php'" style="background: var(--sky-600); color: white; width: 100%; border-radius: 12px; font-weight: 800; padding: 1rem;">⬇️ Download SQL Backup</button>
+                    <button class="btn" onclick="window.location.href='api/backup.php'" style="background: var(--sky-600); color: white; width: 100%; border-radius: 12px; font-weight: 800; padding: 1rem;">Download SQL Backup</button>
                 </div>
 
                 <!-- Database Restore -->
-                <div style="background: white; border: 1.5px solid #fecdd3; border-radius: 24px; padding: 2rem; text-align: center; transition: all 0.3s ease;">
-                    <div style="background: #fff1f2; width: 80px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: #e11d48; font-size: 2.5rem;">
-                        <i class="fas fa-undo-alt"></i>
-                    </div>
+                <div style="background: white; border: 1.5px solid #fecdd3; border-radius: 24px; padding: 2.5rem 2rem; text-align: center; transition: all 0.3s ease;">
                     <h3 style="margin-bottom: 0.8rem; color: var(--gray-800); font-weight: 800;">Restore Data</h3>
                     <p style="font-size: 0.85rem; color: var(--gray-500); margin-bottom: 2rem; line-height: 1.5;">Roll back your entire system to a previous state by uploading a backup file (.sql).</p>
-                    <button class="btn" onclick="document.getElementById('restoreFile').click()" style="background: #e11d48; color: white; width: 100%; border-radius: 12px; font-weight: 800; padding: 1rem;">⬆️ Restore System Data</button>
+                    <button class="btn" onclick="document.getElementById('restoreFile').click()" style="background: #e11d48; color: white; width: 100%; border-radius: 12px; font-weight: 800; padding: 1rem;">Restore System Data</button>
                     <input type="file" id="restoreFile" accept=".sql" style="display:none;" onchange="handleRestore(event)">
                 </div>
 
                 <!-- CSV Data Exchange -->
-                <div style="background: white; border: 1.5px solid #bbf7d0; border-radius: 24px; padding: 2rem; text-align: center;">
-                    <div style="background: #f0fdf4; width: 80px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: #16a34a; font-size: 2.5rem;">
-                        <i class="fas fa-file-csv"></i>
-                    </div>
+                <div style="background: white; border: 1.5px solid #bbf7d0; border-radius: 24px; padding: 2.5rem 2rem; text-align: center;">
                     <h3 style="margin-bottom: 0.8rem; color: var(--gray-800); font-weight: 800;">CSV Data Exchange</h3>
                     <p style="font-size: 0.85rem; color: var(--gray-500); margin-bottom: 1.5rem;">Bulk import or export master data lists.</p>
                     <div style="display: flex; flex-direction: column; gap: 0.8rem;">
