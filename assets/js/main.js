@@ -625,28 +625,34 @@ function hideLogin() {
     if (appPage) appPage.style.display = 'block';
 }
 
-function formatDate(dateString) {
+function formatDate(dateString, includeTime = true) {
     if (!dateString) return '';
-    let date = new Date(dateString);
-    return (function() {
-        const d = new Date(dateString);
-        if (isNaN(d.getTime())) return dateString;
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const monthShort = monthNames[d.getMonth()];
-        const time = d.toLocaleTimeString().slice(0, 5);
-        let formatted = '';
-        switch (window.systemDateFormat || 'DD-MM-YYYY') {
-            case 'DD-MMM-YYYY': formatted = `${day}-${monthShort}-${year}`; break;
-            case 'DD-MM-YYYY': formatted = `${day}-${month}-${year}`; break;
-            case 'DD/MM/YYYY': formatted = `${day}/${month}/${year}`; break;
-            case 'YYYY-MM-DD': formatted = `${year}-${month}-${day}`; break;
-            default: formatted = d.toLocaleDateString();
-        }
-        return formatted + ' ' + time;
-    })();
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    
+    // Always use manual formatting to be safe across all browsers
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthShort = monthNames[d.getMonth()];
+    
+    let formattedDate = "";
+    switch (window.systemDateFormat) {
+        case 'DD-MMM-YYYY': formattedDate = `${day}-${monthShort}-${year}`; break;
+        case 'DD-MM-YYYY':  formattedDate = `${day}-${month}-${year}`; break;
+        case 'DD/MM/YYYY':  formattedDate = `${day}/${month}/${year}`; break;
+        case 'YYYY-MM-DD':  formattedDate = `${year}-${month}-${day}`; break;
+        default:            formattedDate = `${day}-${month}-${year}`;
+    }
+    
+    if (includeTime) {
+        const hours = String(d.getHours() % 12 || 12).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const ampm = d.getHours() >= 12 ? 'PM' : 'AM';
+        return `${formattedDate} ${hours}:${minutes} ${ampm}`;
+    }
+    return formattedDate;
 }
 
 function filterTable(tableId, searchText) {
@@ -6330,7 +6336,7 @@ function updateRMOutMetrics() {
     const dObj = new Date(latestT.date);
     const day = String(dObj.getDate()).padStart(2, '0');
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    lastDateEl.innerText = `${day}-${monthNames[dObj.getMonth()]}-${dObj.getFullYear()}`;
+    lastDateEl.innerText = formatDate(latestT.date, false);
     
     weightEl.innerText = totalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1}) + ' KG';
     if (valueEl) valueEl.innerText = 'Rs. ' + totalValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
@@ -6348,7 +6354,7 @@ function refreshRMOutHistoryTable() {
         const item = rmItems.find(i => i.id == t.rm_item_id);
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${t.date ? t.date.split(' ')[0] : '---'}</td>
+            <td>${formatDate(t.date)}</td>
             <td style="font-weight: 600;">${item ? item.name : 'Unknown'}</td>
             <td><span class="badge" style="background: #fff5f5; color: var(--error); border: 1px solid #feb2b2;">CONSUMPTION</span></td>
             <td style="font-weight: bold;">${t.quantity} ${item ? item.unit : ''}</td>
@@ -6394,7 +6400,7 @@ function exportRMOutToExcel() {
     let csv = 'Date,Material,Type,Quantity,Unit,Notes\n';
     consumption.forEach(t => {
         const item = rmItems.find(i => i.id == t.rm_item_id);
-        const date = t.date ? t.date.split(' ')[0] : '---';
+        const date = formatDate(t.date);
         const name = item ? item.name : 'Unknown';
         const unit = item ? item.unit : '';
         const notes = (t.notes || '').replace(/,/g, ' '); // simple sanitization
@@ -8059,7 +8065,7 @@ function refreshStoreDashboard() {
 
     const activityHtml = storeTransactions.slice(0, 10).map(t => `
         <div style="padding: 0.8rem; border-bottom: 1px solid var(--gray-100); font-size: 0.9rem; display: flex; justify-content: space-between;">
-            <span><strong>${t.date.split(' ')[0]}</strong>: ${t.type === 'INWARD' ? '📥' : '📤'} ${t.itemName} (${t.quantity})</span>
+            <span><strong>${formatDate(t.date, false)}</strong>: ${t.type === 'INWARD' ? '📥' : '📤'} ${t.itemName} (${t.quantity})</span>
             <span style="color: var(--gray-400);">By: ${t.source_or_person || 'N/A'}</span>
         </div>
     `).join('') || '<p style="text-align: center; color: var(--gray-400); padding: 2rem;">No recent activities.</p>';
@@ -8239,8 +8245,8 @@ function refreshStoreInwardHistory() {
     tbody.innerHTML = filtered.map(t => `
         <tr style="background: white; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
             <td style="padding: 15px; border-radius: 10px 0 0 10px;">
-                <div style="font-weight: 700; color: #1e293b;">${t.date.split(' ')[0]}</div>
-                <div style="font-size: 0.7rem; color: #64748b;">${t.date.split(' ')[1] || ''}</div>
+                <div style="font-weight: 700; color: #1e293b;">${formatDate(t.date)}</div>
+
             </td>
             <td style="padding: 15px; font-family: monospace; font-weight: 700; color: #0ea5e9;">${t.itemCode}</td>
             <td style="padding: 15px; font-weight: 600;">${t.itemName}</td>
@@ -8273,8 +8279,8 @@ function refreshStoreOutwardHistory() {
     tbody.innerHTML = filtered.map(t => `
         <tr style="background: white; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
             <td style="padding: 15px; border-radius: 10px 0 0 10px;">
-                <div style="font-weight: 700; color: #1e293b;">${t.date.split(' ')[0]}</div>
-                <div style="font-size: 0.7rem; color: #64748b;">${t.date.split(' ')[1] || ''}</div>
+                <div style="font-weight: 700; color: #1e293b;">${formatDate(t.date)}</div>
+
             </td>
             <td style="padding: 15px; font-family: monospace; font-weight: 700; color: #f43f5e;">${t.itemCode}</td>
             <td style="padding: 15px; font-weight: 600;">${t.itemName}</td>
