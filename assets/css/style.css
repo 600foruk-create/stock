@@ -667,24 +667,58 @@
         }
 
         /* Tables */
-        .data-table {
+        /* Modern Colorful Tables - Global Theme */
+        .data-table, .stock-grid-table, .audit-table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
             margin: 1rem 0;
+            background: white;
+            border: 1px solid var(--gray-200) !important;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
         }
-
-        .data-table th {
-            background: var(--gray-100);
-            padding: 0.8rem;
+        
+        .data-table thead th, .stock-grid-table thead th, .audit-table thead th {
+            background: var(--sky-600) !important;
+            color: white !important;
+            padding: 1rem 0.8rem !important;
             text-align: left;
-            font-weight: 600;
-            color: var(--gray-700);
-            border: 1px solid var(--gray-200);
+            font-weight: 700 !important;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            border: none !important;
+            border-bottom: 2px solid var(--sky-700) !important;
         }
-
-        .data-table td {
-            padding: 0.6rem 0.8rem;
-            border: 1px solid var(--gray-200);
+        
+        .data-table tfoot td, .stock-grid-table tfoot td, .audit-table tfoot td {
+            background: var(--sky-600) !important;
+            color: white !important;
+            padding: 0.8rem !important;
+            font-weight: 800 !important;
+            border: none !important;
+        }
+        
+        .data-table tbody tr:nth-child(odd), .stock-grid-table tbody tr:nth-child(odd), .audit-table tbody tr:nth-child(odd) {
+            background-color: #f0fdf4 !important; /* Light Green */
+        }
+        
+        .data-table tbody tr:nth-child(even), .stock-grid-table tbody tr:nth-child(even), .audit-table tbody tr:nth-child(even) {
+            background-color: #fefce8 !important; /* Light Yellow */
+        }
+        
+        .data-table tbody tr:hover, .stock-grid-table tbody tr:hover, .audit-table tbody tr:hover {
+            background-color: #e2e8f0 !important;
+            transition: background 0.1s ease;
+        }
+        
+        .data-table td, .stock-grid-table td, .audit-table td {
+            padding: 0.7rem 0.8rem !important;
+            border: 1px solid rgba(0,0,0,0.03) !important;
+            color: var(--gray-800) !important;
+            font-weight: 500;
         }
 
         /* Stock Grid Table */
@@ -693,20 +727,6 @@
             width: 100%;
         }
         
-        .stock-grid-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1rem 0;
-            background: white;
-            font-size: 0.9rem;
-            border: 1px solid var(--gray-200);
-        }
-
-        .stock-grid-table th, .stock-grid-table td {
-            border: 1px solid var(--gray-200);
-            padding: 0.5rem;
-        }
-
         .stock-grid-table th {
             position: sticky;
             top: 0;
