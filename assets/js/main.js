@@ -9033,3 +9033,11 @@ async function revertRMTransaction(id) {
         alert('❌ Network error. Check your connection.');
     }
 }
+
+function switchSettingsTab(tabId, btn) {
+    document.querySelectorAll('.settings-section').forEach(s => s.style.display = 'none');
+    document.getElementById(tabId).style.display = 'block';
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+}
+
