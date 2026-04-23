@@ -92,7 +92,7 @@
         <!-- Scrollable Table Container -->
         <div style="overflow-x: auto; max-height: 700px; overflow-y: auto; position: relative;">
             <table class="data-table" style="margin-bottom: 0; min-width: 1300px; border-collapse: separate; border-spacing: 0;">
-                <thead style="position: sticky; top: 0; z-index: 20; background: var(--gray-50); box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                <thead style="position: sticky; top: 0; z-index: 20; background: var(--gray-100); box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
                     <tr>
                         <th style="padding: 1rem 0.8rem; border-bottom: 1px solid var(--gray-200);">Date & Time</th>
                         <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 1px solid var(--gray-200);">FG Produced (KG)</th>
@@ -105,10 +105,10 @@
                         <th style="padding: 1rem 0.8rem; text-align: center; border-bottom: 1px solid var(--gray-200);">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="rmConsumptionHistoryTable">
+                <tbody id="rmConsumptionHistoryTable" class="striped-rows">
                     <!-- Data will be injected here -->
                 </tbody>
-                <tfoot id="rmConsumptionHistoryFooter" style="background: var(--gray-50); font-weight: bold; position: sticky; bottom: 0; z-index: 10; box-shadow: 0 -1px 2px rgba(0,0,0,0.05);">
+                <tfoot id="rmConsumptionHistoryFooter" style="background: var(--gray-100); font-weight: bold; position: sticky; bottom: 0; z-index: 10; box-shadow: 0 -1px 2px rgba(0,0,0,0.05);">
                     <!-- Totals will be injected here -->
                 </tfoot>
             </table>
@@ -129,3 +129,16 @@
         </table>
     </div>
 </div>
+
+<style>
+.striped-rows tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+.striped-rows tr:hover {
+    background-color: #f1f5f9 !important;
+    transition: background 0.1s ease;
+}
+.striped-rows td {
+    border-bottom: 1px solid var(--gray-100);
+}
+</style>
