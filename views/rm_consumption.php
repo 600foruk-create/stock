@@ -92,23 +92,23 @@
         <!-- Scrollable Table Container -->
         <div style="overflow-x: auto; max-height: 700px; overflow-y: auto; position: relative;">
             <table class="data-table" style="margin-bottom: 0; min-width: 1300px; border-collapse: separate; border-spacing: 0;">
-                <thead style="position: sticky; top: 0; z-index: 20; background: var(--gray-100); box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                <thead style="position: sticky; top: 0; z-index: 20; background: var(--sky-600); color: white; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
                     <tr>
-                        <th style="padding: 1rem 0.8rem; border-bottom: 1px solid var(--gray-200);">Date & Time</th>
-                        <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 1px solid var(--gray-200);">FG Produced (KG)</th>
-                        <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 1px solid var(--gray-200);">RM Issued (KG)</th>
-                        <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 1px solid var(--gray-200);">Issuance Value (Rs.)</th>
-                        <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 1px solid var(--gray-200);">Other Expenses (Rs.)</th>
-                        <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 1px solid var(--gray-200);">Grand Total (Rs.)</th>
-                        <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 1px solid var(--gray-200);">In Process (KG)</th>
-                        <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 1px solid var(--gray-200);">Gap / WIP (Net)</th>
-                        <th style="padding: 1rem 0.8rem; text-align: center; border-bottom: 1px solid var(--gray-200);">Actions</th>
+                        <th style="padding: 1rem 0.8rem; border-bottom: 2px solid var(--sky-700);">Date & Time</th>
+                        <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 2px solid var(--sky-700);">FG Produced (KG)</th>
+                        <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 2px solid var(--sky-700);">RM Issued (KG)</th>
+                        <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 2px solid var(--sky-700);">Issuance Value (Rs.)</th>
+                        <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 2px solid var(--sky-700);">Other Expenses (Rs.)</th>
+                        <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 2px solid var(--sky-700);">Grand Total (Rs.)</th>
+                        <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 2px solid var(--sky-700);">In Process (KG)</th>
+                        <th style="padding: 1rem 0.8rem; text-align: left; border-bottom: 2px solid var(--sky-700);">Gap / WIP (Net)</th>
+                        <th style="padding: 1rem 0.8rem; text-align: center; border-bottom: 2px solid var(--sky-700);">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="rmConsumptionHistoryTable" class="striped-rows">
                     <!-- Data will be injected here -->
                 </tbody>
-                <tfoot id="rmConsumptionHistoryFooter" style="background: var(--gray-100); font-weight: bold; position: sticky; bottom: 0; z-index: 10; box-shadow: 0 -1px 2px rgba(0,0,0,0.05);">
+                <tfoot id="rmConsumptionHistoryFooter" style="background: var(--sky-600); color: white; font-weight: bold; position: sticky; bottom: 0; z-index: 10; box-shadow: 0 -1px 2px rgba(0,0,0,0.2);">
                     <!-- Totals will be injected here -->
                 </tfoot>
             </table>
@@ -131,14 +131,18 @@
 </div>
 
 <style>
+.striped-rows tr:nth-child(odd) {
+    background-color: #f0fdf4; /* Very Light Green */
+}
 .striped-rows tr:nth-child(even) {
-    background-color: #f8fafc;
+    background-color: #fefce8; /* Very Light Yellow */
 }
 .striped-rows tr:hover {
-    background-color: #f1f5f9 !important;
+    background-color: #e2e8f0 !important;
     transition: background 0.1s ease;
 }
 .striped-rows td {
-    border-bottom: 1px solid var(--gray-100);
+    border-bottom: 1px solid #e2e8f0;
+    color: var(--gray-800);
 }
 </style>
