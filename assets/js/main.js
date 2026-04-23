@@ -9126,7 +9126,7 @@ function handleRoleChange(role) {
     const checks = document.querySelectorAll(".perm-check");
     const tag = document.getElementById("permissionStatusTag");
 
-    if (role === "admin") {
+    if (String(role).toLowerCase() === "admin") {
         checks.forEach(c => {
             c.checked = true;
             c.disabled = true;
@@ -9175,7 +9175,7 @@ function applyPermissionsToUI(permsJson) {
 
 function checkPermission(module, type = "view") {
     // Admins have absolute power
-    if (currentUser && currentUser.role === 'admin') return true;
+    if (currentUser && String(currentUser.role).toLowerCase() === 'admin') return true;
     
     // Safely parse permissions
     let perms = {};
@@ -9219,6 +9219,8 @@ function enforceGlobalPermissions() {
         "se": { ids: ["settings"], selector: ".menu-item:nth-child(4)" }
     };
 
+    const isAdm = currentUser && String(currentUser.role).toLowerCase() === 'admin';
+
     // First, check top-level module visibility
     Object.keys(moduleMap).forEach(key => {
         const m = moduleMap[key];
@@ -9235,7 +9237,7 @@ function enforceGlobalPermissions() {
                 btn.style.filter = "blur(1.5px) grayscale(1)";
                 btn.style.pointerEvents = "none";
                 // Only hide completely if it's settings and not admin
-                if (key === 'se' && currentUser.role !== 'admin') btn.style.display = "none";
+                if (key === 'se' && !isAdm) btn.style.display = "none";
             }
         }
     });
@@ -9344,7 +9346,7 @@ function handleUserRightsSelect(userId) {
     document.getElementById('rightsMatrixContent').style.display = 'block';
     
     // Set admin status in the interface
-    const isAdmin = user.role === 'admin';
+    const isAdmin = String(user.role).toLowerCase() === 'admin';
     document.getElementById('makeAdminBtn').innerText = isAdmin ? 'Revoke Admin Status' : 'Promote to Admin';
     document.getElementById('makeAdminBtn').style.background = isAdmin ? 'var(--orange-50)' : 'var(--gray-50)';
     document.getElementById('makeAdminBtn').style.color = isAdmin ? 'var(--orange-600)' : 'var(--gray-600)';
@@ -9396,7 +9398,8 @@ async function toggleAdminRoleForSelectedUser() {
     const user = users.find(u => u.id == currentlyEditingRightsId);
     if (!user) return;
     
-    const newRole = user.role === 'admin' ? 'user' : 'admin';
+    const isAdm = String(user.role).toLowerCase() === 'admin';
+    const newRole = isAdm ? 'user' : 'admin';
     if (!confirm(`Are you sure you want to ${newRole === 'admin' ? 'Promote' : 'Demote'} ${user.name}?`)) return;
 
     try {
