@@ -121,8 +121,8 @@
                     <button class="btn" onclick="savePermissionsForSelectedUser()" style="background: var(--sky-600); color: white; padding: 1.2rem 3rem; border-radius: 15px; font-weight: 800; box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3);">
                         💾 Save All Permissions
                     </button>
-                    <button class="btn" onclick="handleRoleChange('admin')" id="makeAdminBtn" style="background: var(--gray-100); color: var(--gray-600); border: 1.5px solid var(--gray-200); border-radius: 15px; font-weight: 700; padding: 1.2rem 2rem;">
-                        Grant Admin Rights
+                    <button class="btn" onclick="toggleAdminRoleForSelectedUser()" id="makeAdminBtn" style="background: var(--gray-100); color: var(--gray-600); border: 1.5px solid var(--gray-200); border-radius: 15px; font-weight: 700; padding: 1.2rem 2rem;">
+                        Promote to Admin
                     </button>
                 </div>
             </div>

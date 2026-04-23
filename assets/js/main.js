@@ -4547,6 +4547,8 @@ function refreshUsersList() {
                         ${user.id != 1 ? `<button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">Delete</button>` : ''}
                     </td>
                 </tr>`;
+        // Sync dropdown
+        selectHtml += `<option value="${user.id}">${user.name} (@${user.username})</option>`;
     });
     if (listHtml && document.getElementById('usersList')) document.getElementById('usersList').innerHTML = listHtml;
     if (selectHtml && document.getElementById('userRightsSelector')) document.getElementById('userRightsSelector').innerHTML = selectHtml;
@@ -9353,7 +9355,7 @@ function handleUserRightsSelect(userId) {
 
     renderPermissionsTable(); // Ensure it's clean
     handleRoleChange(user.role || 'user');
-    if (user.role !== 'admin') {
+    if (!isAdmin) {
         applyPermissionsToUI(user.permissions);
     }
 }
