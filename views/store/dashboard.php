@@ -1,23 +1,28 @@
 <div class="store-dashboard">
-    <h2 style="color: var(--sky-600); margin-bottom: 2rem; font-size: 2rem; font-weight: 800;">📈 Store Dashboard</h2>
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
-        <div style="background: var(--blue-50); border: 2px solid var(--blue-100); border-radius: 24px; padding: 1.5rem; text-align: center; box-shadow: var(--shadow-sm);">
-            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🏷️</div>
-            <h3 style="color: var(--blue-700); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">Categories</h3>
-            <p id="storeDashCatCount" style="font-size: 2.2rem; font-weight: 900; color: var(--blue-900); margin: 0;">0</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+        <div style="background: var(--blue-50); border: 2px solid var(--blue-100); border-radius: 20px; padding: 1.5rem; text-align: center; box-shadow: var(--shadow-sm);">
+            <h3 style="color: var(--blue-700); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; font-weight: 800;">Categories</h3>
+            <p id="storeDashCatCount" style="font-size: 2.5rem; font-weight: 900; color: var(--blue-900); margin: 0;">0</p>
         </div>
         
-        <div style="background: var(--green-50); border: 2px solid var(--green-100); border-radius: 24px; padding: 1.5rem; text-align: center; box-shadow: var(--shadow-sm);">
-            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📦</div>
-            <h3 style="color: var(--green-700); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">Total Items</h3>
-            <p id="storeDashItemCount" style="font-size: 2.2rem; font-weight: 900; color: var(--green-900); margin: 0;">0</p>
+        <div style="background: var(--green-50); border: 2px solid var(--green-100); border-radius: 20px; padding: 1.5rem; text-align: center; box-shadow: var(--shadow-sm);">
+            <h3 style="color: var(--green-700); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; font-weight: 800;">Total Items</h3>
+            <p id="storeDashItemCount" style="font-size: 2.5rem; font-weight: 900; color: var(--green-900); margin: 0;">0</p>
         </div>
         
-        <div style="background: var(--orange-50); border: 2px solid var(--orange-100); border-radius: 24px; padding: 1.5rem; text-align: center; box-shadow: var(--shadow-sm);">
-            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⚠️</div>
-            <h3 style="color: var(--orange-700); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">Low Stock</h3>
-            <p id="storeDashLowStock" style="font-size: 2.2rem; font-weight: 900; color: var(--orange-900); margin: 0;">0</p>
+        <div style="background: var(--orange-50); border: 2px solid var(--orange-100); border-radius: 20px; padding: 1.5rem; text-align: center; box-shadow: var(--shadow-sm);">
+            <h3 style="color: var(--orange-700); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; font-weight: 800;">Low Stock</h3>
+            <p id="storeDashLowStock" style="font-size: 2.5rem; font-weight: 900; color: var(--orange-900); margin: 0;">0</p>
+        </div>
+    </div>
+
+    <!-- Low Stock Alert Section -->
+    <div id="storeLowStockAlertSection" style="margin-bottom: 2.5rem; display: none;">
+        <h3 style="color: #991b1b; font-size: 1.25rem; font-weight: 800; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.8rem;">
+            <i class="fas fa-exclamation-triangle"></i> Store Low Stock Alerts
+        </h3>
+        <div id="storeLowStockAlerts" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; max-height: 400px; overflow-y: auto; padding: 5px;">
+            <!-- Alerts injected by JS -->
         </div>
     </div>
 

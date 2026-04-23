@@ -8016,12 +8016,47 @@ async function saveStoreOutward() {
 function refreshStoreDashboard() {
     const catCount = storeMainCategories.length;
     const itemCount = storeItems.length;
-    const lowStockCount = storeItems.filter(i => parseFloat(i.stock) <= parseFloat(i.low_stock_threshold)).length;
+    const lowStockItems = storeItems.filter(i => parseFloat(i.stock) <= parseFloat(i.low_stock_threshold));
+    const lowStockCount = lowStockItems.length;
     
     if (document.getElementById('storeDashCatCount')) document.getElementById('storeDashCatCount').innerText = catCount;
     if (document.getElementById('storeDashItemCount')) document.getElementById('storeDashItemCount').innerText = itemCount;
     if (document.getElementById('storeDashLowStock')) document.getElementById('storeDashLowStock').innerText = lowStockCount;
     
+    // Low Stock Alerts
+    const alertSection = document.getElementById('storeLowStockAlertSection');
+    const alertContainer = document.getElementById('storeLowStockAlerts');
+    if (alertSection && alertContainer) {
+        if (lowStockCount > 0) {
+            alertSection.style.display = 'block';
+            alertContainer.innerHTML = lowStockItems.map(i => {
+                const isCritical = parseFloat(i.stock) <= 0;
+                const bgColor = isCritical ? '#fef2f2' : '#fffbeb';
+                const borderColor = isCritical ? '#fee2e2' : '#fef3c7';
+                const textColor = isCritical ? '#991b1b' : '#92400e';
+                const tagColor = isCritical ? '#ef4444' : '#f59e0b';
+                
+                return `
+                    <div style="background: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 16px; padding: 1.2rem; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="background: ${tagColor}; width: 10px; height: 40px; border-radius: 5px;"></div>
+                            <div>
+                                <h4 style="margin: 0; font-size: 1rem; color: ${textColor}; font-weight: 800;">${i.name}</h4>
+                                <span style="font-size: 0.7rem; color: var(--gray-500); font-weight: 700; text-transform: uppercase;">CODE: ${i.code}</span>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.2rem; font-weight: 900; color: ${textColor};">${i.stock}</div>
+                            <div style="font-size: 0.65rem; color: var(--gray-400); font-weight: 700;">Threshold: ${i.low_stock_threshold}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            alertSection.style.display = 'none';
+        }
+    }
+
     const activityHtml = storeTransactions.slice(0, 10).map(t => `
         <div style="padding: 0.8rem; border-bottom: 1px solid var(--gray-100); font-size: 0.9rem; display: flex; justify-content: space-between;">
             <span><strong>${t.date.split(' ')[0]}</strong>: ${t.type === 'INWARD' ? '📥' : '📤'} ${t.itemName} (${t.quantity})</span>
