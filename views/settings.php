@@ -1,60 +1,62 @@
-<div class="settings-container" style="display: flex; gap: 2rem; height: 100%; min-height: 600px;">
-    <!-- Settings Sidebar -->
-    <div class="settings-nav" style="width: 220px; flex-shrink: 0; background: var(--gray-50); border-radius: 20px; padding: 1.5rem; border: 1px solid var(--gray-200);">
-        <h3 style="font-size: 0.8rem; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1.5rem; font-weight: 800;">System Settings</h3>
-        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <button class="settings-tab active" onclick="switchSettingsTab('companyTab', this)">Company Profile</button>
-            <button class="settings-tab" onclick="switchSettingsTab('systemTab', this)">System Preferences</button>
-            <button class="settings-tab" onclick="switchSettingsTab('usersTab', this)">User Management</button>
-            <button class="settings-tab" onclick="switchSettingsTab('dataTab', this)">Database & Backup</button>
-        </div>
+<div class="settings-container" style="height: 100%; display: flex; flex-direction: column; gap: 1.5rem;">
+    <!-- Settings Header Navigation -->
+    <div class="settings-nav-header no-print" style="background: var(--sky-500); padding: 0.4rem; border-radius: 50px; display: flex; gap: 5px; box-shadow: var(--shadow-sm); width: max-content; align-self: center;">
+        <button class="settings-tab active" onclick="switchSettingsTab('companyTab', this)">Company Profile</button>
+        <button class="settings-tab" onclick="switchSettingsTab('systemTab', this)">System Preferences</button>
+        <button class="settings-tab" onclick="switchSettingsTab('usersTab', this)">User Management</button>
+        <button class="settings-tab" onclick="switchSettingsTab('dataTab', this)">Database & Backup</button>
     </div>
 
     <!-- Settings Content Area -->
-    <div class="settings-content" style="flex: 1; background: white; border-radius: 24px; padding: 2rem; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); overflow-y: auto;">
+    <div class="settings-content" style="flex: 1; background: white; border-radius: 24px; padding: 2.5rem; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); overflow-y: auto;">
         
         <!-- Tab 1: Company Profile -->
         <div id="companyTab" class="settings-section">
-            <h2 style="color: var(--sky-600); font-weight: 800; margin-bottom: 2rem;">Company Profile</h2>
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 3rem;">
+            <h2 style="color: var(--sky-600); font-weight: 800; margin-bottom: 2.5rem; border-bottom: 2px solid var(--gray-100); padding-bottom: 0.5rem; display: inline-block;">Business Profile</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4rem;">
                 <div>
                     <div class="form-group" style="margin-bottom: 2rem;">
-                        <label style="font-weight: 700; color: var(--gray-600);">Business Name</label>
-                        <input type="text" id="companyNameInput" class="form-control" style="border-radius: 12px; padding: 1rem;" placeholder="Enter Company Name">
+                        <label style="font-weight: 700; color: var(--gray-600); font-size: 0.9rem; margin-bottom: 0.8rem; display: block;">OFFICIAL BUSINESS NAME</label>
+                        <input type="text" id="companyNameInput" class="form-control" style="border-radius: 12px; padding: 1.2rem; border: 2px solid var(--gray-200); font-size: 1.1rem; font-weight: 600;" placeholder="Enter Company Name">
                     </div>
-                    <button class="btn" onclick="saveCompanySettings()" style="background: var(--sky-600); color: white; padding: 1rem 2rem; border-radius: 12px; font-weight: 700; width: 100%;">
-                        Save Business Profile
+                    <button class="btn" onclick="saveCompanySettings()" style="background: var(--sky-600); color: white; padding: 1.2rem 2.5rem; border-radius: 12px; font-weight: 800; width: 100%; transition: all 0.3s ease;">
+                        💾 Update Business Profile
                     </button>
                 </div>
-                <div style="text-align: center;">
-                    <label style="font-weight: 700; color: var(--gray-600); display: block; margin-bottom: 1rem;">Business Logo</label>
-                    <div class="logo-preview" id="logoPreview" onclick="document.getElementById('logoFile').click()" style="width: 150px; height: 150px; background: var(--gray-50); border: 2px dashed var(--gray-300); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; cursor: pointer; overflow: hidden; font-size: 3rem; color: var(--gray-300);">
-                        <i class="fas fa-camera"></i>
+                <div style="text-align: center; background: var(--gray-50); padding: 2rem; border-radius: 24px; border: 1px solid var(--gray-200);">
+                    <label style="font-weight: 800; color: var(--gray-600); display: block; margin-bottom: 1.5rem; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;">Company Logo</label>
+                    <div class="logo-preview" id="logoPreview" onclick="document.getElementById('logoFile').click()" style="width: 180px; height: 180px; background: white; border: 3px dashed var(--sky-200); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; cursor: pointer; overflow: hidden; box-shadow: var(--shadow-sm); transition: all 0.3s ease;">
+                        <span style="font-size: 3rem; color: var(--sky-200);">LOGO</span>
                     </div>
                     <input type="file" id="logoFile" accept="image/*" style="display:none;" onchange="handleLogoUpload(event)">
-                    <p style="font-size: 0.8rem; color: var(--gray-400);">Click to change logo</p>
+                    <button class="btn" onclick="document.getElementById('logoFile').click()" style="background: white; border: 1px solid var(--gray-300); color: var(--gray-600); font-size: 0.85rem; border-radius: 8px; padding: 0.5rem 1rem; font-weight: 600;">
+                        Change Logo
+                    </button>
                 </div>
             </div>
         </div>
 
         <!-- Tab 2: System Preferences -->
         <div id="systemTab" class="settings-section" style="display: none;">
-            <h2 style="color: var(--sky-600); font-weight: 800; margin-bottom: 2rem;">System Preferences</h2>
-            <div style="max-width: 500px;">
-                <div class="form-group" style="margin-bottom: 2rem;">
-                    <label style="font-weight: 700; color: var(--gray-600);">System Date Format</label>
-                    <select id="systemDateFormat" class="form-control" style="border-radius: 12px; padding: 1rem;" onchange="updateDateFormat()">
+            <h2 style="color: var(--sky-600); font-weight: 800; margin-bottom: 2.5rem; border-bottom: 2px solid var(--gray-100); padding-bottom: 0.5rem; display: inline-block;">System Preferences</h2>
+            <div style="max-width: 600px;">
+                <div class="form-group" style="margin-bottom: 3rem;">
+                    <label style="font-weight: 800; color: var(--gray-600); margin-bottom: 1rem; display: block; font-size: 0.9rem;">DATE DISPLAY FORMAT</label>
+                    <select id="systemDateFormat" class="form-control" style="border-radius: 15px; padding: 1.2rem; border: 2px solid var(--gray-200); font-size: 1rem; font-weight: 600; background: white;" onchange="updateDateFormat()">
                         <option value="DD-MMM-YYYY">11-Apr-2026 (DD-MMM-YYYY)</option>
                         <option value="DD-MM-YYYY">11-04-2026 (DD-MM-YYYY)</option>
                         <option value="DD/MM/YYYY">11/04/2026 (DD/MM/YYYY)</option>
                         <option value="YYYY-MM-DD">2026-04-11 (YYYY-MM-DD)</option>
                     </select>
-                    <p style="color: var(--gray-400); font-size: 0.8rem; margin-top: 0.8rem;">This format will be applied to all lists, reports, and printouts.</p>
+                    <div style="display: flex; gap: 0.8rem; align-items: center; margin-top: 1rem; background: var(--sky-50); padding: 0.8rem 1.2rem; border-radius: 10px; border: 1px solid var(--sky-100);">
+                        <i class="fas fa-info-circle" style="color: var(--sky-500);"></i>
+                        <p style="color: var(--sky-700); font-size: 0.85rem; margin: 0; font-weight: 500;">This preference will be applied across all modules, reports, and printouts.</p>
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <label style="font-weight: 700; color: var(--gray-600);">Brand Low Stock Limits</label>
-                    <div id="brandLowStockSettings" style="background: var(--gray-50); border-radius: 16px; padding: 1rem; border: 1px solid var(--gray-100); margin-top: 1rem;">
+                    <label style="font-weight: 800; color: var(--gray-600); margin-bottom: 1.5rem; display: block; font-size: 0.9rem;">BRAND ALERT THRESHOLDS (Stock Limits)</label>
+                    <div id="brandLowStockSettings" style="background: var(--gray-50); border-radius: 20px; padding: 2rem; border: 1px solid var(--gray-200); min-height: 100px;">
                         <!-- JS Dynamic content -->
                     </div>
                 </div>
@@ -63,18 +65,20 @@
 
         <!-- Tab 3: User Management -->
         <div id="usersTab" class="settings-section" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; border-bottom: 2px solid var(--gray-100); padding-bottom: 0.5rem;">
                 <h2 style="color: var(--sky-600); font-weight: 800; margin: 0;">User Management</h2>
-                <button class="btn btn-primary" onclick="showAddUserModal()" style="border-radius: 12px;">Add New User</button>
+                <button class="btn" onclick="showAddUserModal()" style="background: var(--green-600); color: white; border-radius: 12px; font-weight: 700; padding: 0.8rem 1.5rem;">
+                    ➕ Create New User Account
+                </button>
             </div>
-            <div style="background: var(--gray-50); border-radius: 16px; overflow: hidden; border: 1px solid var(--gray-200);">
-                <table class="data-table" style="margin: 0;">
-                    <thead>
+            <div style="background: white; border-radius: 20px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); overflow: hidden;">
+                <table class="data-table" style="margin: 0; width: 100%;">
+                    <thead style="background: var(--gray-50);">
                         <tr>
-                            <th>Name</th>
-                            <th>Username</th>
-                            <th>Role</th>
-                            <th style="text-align: right;">Actions</th>
+                            <th style="padding: 1.2rem; color: var(--gray-500); font-weight: 800; text-transform: uppercase; font-size: 0.8rem;">Full Name</th>
+                            <th style="padding: 1.2rem; color: var(--gray-500); font-weight: 800; text-transform: uppercase; font-size: 0.8rem;">Username</th>
+                            <th style="padding: 1.2rem; color: var(--gray-500); font-weight: 800; text-transform: uppercase; font-size: 0.8rem;">Access Level</th>
+                            <th style="padding: 1.2rem; color: var(--gray-500); font-weight: 800; text-transform: uppercase; font-size: 0.8rem; text-align: right;">Control</th>
                         </tr>
                     </thead>
                     <tbody id="usersList"></tbody>
@@ -84,36 +88,49 @@
 
         <!-- Tab 4: Database & Backup -->
         <div id="dataTab" class="settings-section" style="display: none;">
-            <h2 style="color: var(--sky-600); font-weight: 800; margin-bottom: 2rem;">Database & Backup</h2>
+            <h2 style="color: var(--sky-600); font-weight: 800; margin-bottom: 2.5rem; border-bottom: 2px solid var(--gray-100); padding-bottom: 0.5rem; display: inline-block;">Database & Safety</h2>
             
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem;">
                 <!-- Full SQL Backup -->
-                <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 20px; padding: 1.5rem; text-align: center;">
-                    <div style="font-size: 2.5rem; margin-bottom: 1rem;">📀</div>
-                    <h3 style="margin-bottom: 0.5rem; color: #0369a1;">Full System Backup</h3>
-                    <p style="font-size: 0.85rem; color: #0c4a6e; margin-bottom: 1.5rem;">Download a complete SQL dump of your entire database.</p>
-                    <button class="btn" onclick="window.location.href='api/backup.php'" style="background: #0ea5e9; color: white; width: 100%; border-radius: 10px; font-weight: 700;">Export SQL Backup</button>
+                <div style="background: white; border: 1.5px solid var(--sky-100); border-radius: 24px; padding: 2rem; text-align: center; transition: all 0.3s ease;">
+                    <div style="background: var(--sky-50); width: 80px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: var(--sky-600); font-size: 2.5rem;">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <h3 style="margin-bottom: 0.8rem; color: var(--gray-800); font-weight: 800;">Global System Backup</h3>
+                    <p style="font-size: 0.85rem; color: var(--gray-500); margin-bottom: 2rem; line-height: 1.5;">Create a complete snapshot of your entire database including all stocks, formulas, and history.</p>
+                    <button class="btn" onclick="window.location.href='api/backup.php'" style="background: var(--sky-600); color: white; width: 100%; border-radius: 12px; font-weight: 800; padding: 1rem;">⬇️ Download SQL Backup</button>
                 </div>
 
                 <!-- Database Restore -->
-                <div style="background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 20px; padding: 1.5rem; text-align: center;">
-                    <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔄</div>
-                    <h3 style="margin-bottom: 0.5rem; color: #9d174d;">System Restore</h3>
-                    <p style="font-size: 0.85rem; color: #831843; margin-bottom: 1.5rem;">Upload a previously saved SQL file to restore data.</p>
-                    <button class="btn" onclick="document.getElementById('restoreFile').click()" style="background: #db2777; color: white; width: 100%; border-radius: 10px; font-weight: 700;">Restore from SQL</button>
+                <div style="background: white; border: 1.5px solid #fecdd3; border-radius: 24px; padding: 2rem; text-align: center; transition: all 0.3s ease;">
+                    <div style="background: #fff1f2; width: 80px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: #e11d48; font-size: 2.5rem;">
+                        <i class="fas fa-undo-alt"></i>
+                    </div>
+                    <h3 style="margin-bottom: 0.8rem; color: var(--gray-800); font-weight: 800;">Restore Data</h3>
+                    <p style="font-size: 0.85rem; color: var(--gray-500); margin-bottom: 2rem; line-height: 1.5;">Roll back your entire system to a previous state by uploading a backup file (.sql).</p>
+                    <button class="btn" onclick="document.getElementById('restoreFile').click()" style="background: #e11d48; color: white; width: 100%; border-radius: 12px; font-weight: 800; padding: 1rem;">⬆️ Restore System Data</button>
                     <input type="file" id="restoreFile" accept=".sql" style="display:none;" onchange="handleRestore(event)">
                 </div>
 
-                <!-- CSV Export/Import -->
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 20px; padding: 1.5rem; text-align: center;">
-                    <div style="font-size: 2.5rem; margin-bottom: 1rem;">📊</div>
-                    <h3 style="margin-bottom: 0.5rem; color: #15803d;">CSV Data Exchange</h3>
-                    <p style="font-size: 0.85rem; color: #14532d; margin-bottom: 1rem;">Import or Export Items and Customers via CSV.</p>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn" onclick="exportData('items')" style="flex: 1; background: #22c55e; color: white; border-radius: 8px;">Export Items</button>
-                        <button class="btn" onclick="document.getElementById('importItemsFile').click()" style="flex: 1; background: #eab308; color: white; border-radius: 8px;">Import Items</button>
+                <!-- CSV Data Exchange -->
+                <div style="background: white; border: 1.5px solid #bbf7d0; border-radius: 24px; padding: 2rem; text-align: center;">
+                    <div style="background: #f0fdf4; width: 80px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: #16a34a; font-size: 2.5rem;">
+                        <i class="fas fa-file-csv"></i>
+                    </div>
+                    <h3 style="margin-bottom: 0.8rem; color: var(--gray-800); font-weight: 800;">CSV Data Exchange</h3>
+                    <p style="font-size: 0.85rem; color: var(--gray-500); margin-bottom: 1.5rem;">Bulk import or export master data lists.</p>
+                    <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn" onclick="exportData('items')" style="flex: 1; background: #f0fdf4; color: #16a34a; border: 1.5px solid #16a34a; border-radius: 10px; font-weight: 700; font-size: 0.8rem;">Export Items</button>
+                            <button class="btn" onclick="document.getElementById('importItemsFile').click()" style="flex: 1; background: #fefce8; color: #854d0e; border: 1.5px solid #eab308; border-radius: 10px; font-weight: 700; font-size: 0.8rem;">Import Items</button>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn" onclick="exportData('customers')" style="flex: 1; background: #f0fdf4; color: #16a34a; border: 1.5px solid #16a34a; border-radius: 10px; font-weight: 700; font-size: 0.8rem;">Export Customers</button>
+                            <button class="btn" onclick="document.getElementById('importCustomersFile').click()" style="flex: 1; background: #fefce8; color: #854d0e; border: 1.5px solid #eab308; border-radius: 10px; font-weight: 700; font-size: 0.8rem;">Import Customers</button>
+                        </div>
                     </div>
                     <input type="file" id="importItemsFile" accept=".csv" style="display:none;" onchange="importData('items', event)">
+                    <input type="file" id="importCustomersFile" accept=".csv" style="display:none;" onchange="importData('customers', event)">
                 </div>
             </div>
         </div>
@@ -122,24 +139,31 @@
 
 <style>
 .settings-tab {
-    padding: 1rem 1.2rem;
+    padding: 0.6rem 1.5rem;
     border: none;
     background: transparent;
-    border-radius: 12px;
-    text-align: left;
+    border-radius: 50px;
+    text-align: center;
     font-weight: 700;
-    color: var(--gray-600);
+    color: white;
     cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.95rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.85rem;
+    white-space: nowrap;
 }
 .settings-tab:hover {
-    background: white;
-    color: var(--sky-600);
+    background: rgba(255, 255, 255, 0.15);
 }
 .settings-tab.active {
     background: white;
     color: var(--sky-600);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.logo-preview:hover {
+    border-color: var(--sky-500) !important;
+    transform: scale(1.02);
+}
+#logoPreview img {
+    box-shadow: var(--shadow-md);
 }
 </style>
