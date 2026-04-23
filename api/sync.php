@@ -264,8 +264,10 @@ try {
             $t = $input['transaction'];
             $conn->beginTransaction();
             try {
-                $stmt = $conn->prepare("INSERT INTO rm_transactions (rm_item_id, quantity, price, type, notes, brand_id) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$t['rm_item_id'], $t['quantity'], $t['price'] ?? 0, $t['type'], $t['notes'] ?? '', $t['brand_id'] ?? null]);
+                $dateVal = $t['date'] ?? date('Y-m-d H:i:s');
+                $dateVal = str_replace('T', ' ', $dateVal);
+                $stmt = $conn->prepare("INSERT INTO rm_transactions (rm_item_id, quantity, price, type, notes, brand_id, date) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$t['rm_item_id'], $t['quantity'], $t['price'] ?? 0, $t['type'], $t['notes'] ?? '', $t['brand_id'] ?? null, $dateVal]);
                 
                 // Update stock
                 if ($t['type'] === 'IN') {
@@ -717,7 +719,9 @@ try {
             $t = $input['transaction'];
             $conn->beginTransaction();
             try {
-                $stmt = $conn->prepare("INSERT INTO store_transactions (item_id, quantity, type, ref, source_or_person, issued_by, issued_to, purpose, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $dateVal = $t['date'] ?? date('Y-m-d H:i:s');
+                $dateVal = str_replace('T', ' ', $dateVal);
+                $stmt = $conn->prepare("INSERT INTO store_transactions (item_id, quantity, type, ref, source_or_person, issued_by, issued_to, purpose, notes, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $stmt->execute([
                     $t['item_id'], 
                     $t['quantity'], 
@@ -727,7 +731,8 @@ try {
                     $t['issued_by'] ?? '',
                     $t['issued_to'] ?? '',
                     $t['purpose'] ?? '',
-                    $t['notes'] ?? ''
+                    $t['notes'] ?? '',
+                    $dateVal
                 ]);
                 
                 if ($t['type'] === 'INWARD') {
