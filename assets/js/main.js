@@ -217,8 +217,9 @@ async function initApp() {
         refreshRMInFormControls();
         refreshRMOutFormControls();
         refreshRMInventoryBalance();
-        refreshRMConsumptionReport();
         populateRMHistoryYearFilter();
+        enforceGlobalPermissions();
+        refreshRMConsumptionReport();
     }
 }
 
@@ -273,6 +274,7 @@ function showTab(tabName) {
         if (tabName === 'store_audit') if (typeof refreshStoreAudit === 'function') refreshStoreAudit();
         if (tabName === 'store_reports') if (typeof refreshStoreReports === 'function') refreshStoreReports();
     }
+    enforceGlobalPermissions();
 }
 
 
@@ -466,7 +468,6 @@ function sortItems(itemsList) {
 function switchModule(module) {
     currentModule = module;
     console.log('StockFlow: Switching to module:', module);
-    currentModule = module;
     document.querySelectorAll('.menu-item').forEach((btn, index) => {
         btn.classList.remove('active');
         if (module === 'finishGood' && index === 0) btn.classList.add('active');
@@ -530,6 +531,7 @@ function switchModule(module) {
             showTab('store_dashboard');
         }
     }
+    enforceGlobalPermissions();
 }
 
 function togglePassword(fieldId) {
@@ -576,6 +578,7 @@ function login() {
         refreshUsersList();
         refreshCustomersList();
         switchModule('finishGood');
+        enforceGlobalPermissions();
     } else {
         alert('Invalid entry or account not found. Loaded Users: ' + (users ? users.length : 0));
     }
@@ -602,6 +605,7 @@ document.addEventListener('keypress', function (e) {
         refreshUsersList();
         refreshCustomersList();
         switchModule('finishGood');
+        enforceGlobalPermissions();
     }
 })();
 
@@ -4455,9 +4459,13 @@ function showAddUserModal() {
     document.getElementById('newUserName').value = '';
     document.getElementById('newUserUsername').value = '';
     document.getElementById('newUserPassword').value = '';
-    document.getElementById('newUserRole').value = 'admin';
-    document.getElementById('userModalTitle').innerText = '➕ Add User';
-    document.getElementById('userSaveBtn').innerText = 'Create User';
+    document.getElementById('newUserRole').value = 'user';
+    document.getElementById('userModalTitle').innerText = '➕ Create New User Account';
+    document.getElementById('userSaveBtn').innerText = 'Create User Account';
+    
+    renderPermissionsTable();
+    handleRoleChange('user');
+    
     document.getElementById('addUserModal').style.display = 'block';
 }
 
@@ -4471,21 +4479,22 @@ async function saveNewUser() {
     let username = document.getElementById('newUserUsername').value;
     let password = document.getElementById('newUserPassword').value;
     let role = document.getElementById('newUserRole').value;
+    const permissions = collectPermissions();
     if (!name || !username || !password) { alert('Please fill all fields'); return; }
 
     try {
         const response = await fetch('api/sync.php?action=save_user', {
             method: 'POST',
-            body: JSON.stringify({ user: { id: editId, name, username, password, role } })
+            body: JSON.stringify({ user: { id: editId, name, username, password, role, permissions } })
         });
         const result = await response.json();
         if (result.status === 'success') {
             if (editId) {
                 let idx = users.findIndex(u => u.id == editId);
-                if (idx !== -1) users[idx] = { id: editId, name, username, password, role, permissions: users[idx].permissions || [] };
+                if (idx !== -1) users[idx] = { id: editId, name, username, password, role, permissions };
                 alert('User updated successfully!');
             } else {
-                users.push({ id: result.id, name, username, password, role, permissions: [] });
+                users.push({ id: result.id, name, username, password, role, permissions });
                 alert('User created successfully!');
             }
             refreshUsersList();
@@ -4506,10 +4515,16 @@ function editUser(userId) {
     document.getElementById('newUserName').value = user.name;
     document.getElementById('newUserUsername').value = user.username;
     document.getElementById('newUserPassword').value = user.password;
-    document.getElementById('newUserRole').value = user.role || 'admin';
+    document.getElementById('newUserRole').value = user.role || 'user';
     
-    document.getElementById('userModalTitle').innerText = '✏️ Edit User';
-    document.getElementById('userSaveBtn').innerText = 'Update User';
+    renderPermissionsTable();
+    handleRoleChange(user.role || 'user');
+    if (user.role !== 'admin') {
+        applyPermissionsToUI(user.permissions);
+    }
+    
+    document.getElementById('userModalTitle').innerText = '✏️ Edit User Profile';
+    document.getElementById('userSaveBtn').innerText = 'Update User Profile';
     document.getElementById('addUserModal').style.display = 'block';
 }
 
@@ -9045,5 +9060,212 @@ function switchSettingsTab(tabId, btn) {
     document.getElementById(tabId).style.display = 'block';
     document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
+}
+
+
+// ==================== USER PERMISSIONS SYSTEM ====================
+
+const systemModules = [
+    { id: "fg_dashboard", name: "Finish Goods: Dashboard" },
+    { id: "fg_production", name: "Finish Goods: Production Entry" },
+    { id: "fg_orders", name: "Finish Goods: Orders & Invoicing" },
+    { id: "fg_inventory", name: "Finish Goods: Inventory Summary" },
+    { id: "fg_customers", name: "Finish Goods: Customers Database" },
+    { id: "rm_dashboard", name: "Raw Materials: Dashboard" },
+    { id: "rm_purchase", name: "Raw Materials: Purchase/Inward" },
+    { id: "rm_formula", name: "Raw Materials: Production Formulas" },
+    { id: "rm_consumption", name: "Raw Materials: Consumption History" },
+    { id: "store_dashboard", name: "Store: Dashboard & Alerts" },
+    { id: "store_inward", name: "Store: Inward Transactions" },
+    { id: "store_outward", name: "Store: Outward/Issuance" },
+    { id: "settings", name: "System Settings & Database" }
+];
+
+function renderPermissionsTable() {
+    const tbody = document.getElementById("permissionsTableBody");
+    if (!tbody) return;
+    
+    tbody.innerHTML = systemModules.map(m => `
+        <tr style="border-bottom: 1px solid var(--gray-100);">
+            <td style="padding: 10px; font-size: 0.85rem; font-weight: 600; color: var(--gray-700);">${m.name}</td>
+            <td style="padding: 10px; text-align: center;">
+                <input type="checkbox" class="perm-check perm-view" data-module="${m.id}" onchange="syncEditorCheck(this)">
+            </td>
+            <td style="padding: 10px; text-align: center;">
+                <input type="checkbox" class="perm-check perm-edit" data-module="${m.id}" onchange="syncViewerCheck(this)">
+            </td>
+        </tr>
+    `).join("");
+}
+
+function syncEditorCheck(el) {
+    // If viewer is unchecked, editor must be unchecked
+    if (!el.checked) {
+        const mod = el.dataset.module;
+        document.querySelector(`.perm-edit[data-module="${mod}"]`).checked = false;
+    }
+}
+
+function syncViewerCheck(el) {
+    // If editor is checked, viewer must be checked
+    if (el.checked) {
+        const mod = el.dataset.module;
+        document.querySelector(`.perm-view[data-module="${mod}"]`).checked = true;
+    }
+}
+
+function handleRoleChange(role) {
+    const checks = document.querySelectorAll(".perm-check");
+    const tag = document.getElementById("permissionStatusTag");
+
+    if (role === "admin") {
+        checks.forEach(c => {
+            c.checked = true;
+            c.disabled = true;
+        });
+        if (tag) {
+            tag.innerText = "FULL ACCESS (Admin)";
+            tag.style.background = "var(--green-50)";
+            tag.style.color = "var(--green-600)";
+        }
+    } else {
+        checks.forEach(c => {
+            c.checked = false;
+            c.disabled = false;
+        });
+        if (tag) {
+            tag.innerText = "CUSTOM RIGHTS (User)";
+            tag.style.background = "var(--sky-50)";
+            tag.style.color = "var(--sky-600)";
+        }
+    }
+}
+
+function collectPermissions() {
+    const perms = {};
+    systemModules.forEach(m => {
+        perms[m.id] = {
+            view: document.querySelector(`.perm-view[data-module="${m.id}"]`).checked,
+            edit: document.querySelector(`.perm-edit[data-module="${m.id}"]`).checked
+        };
+    });
+    return JSON.stringify(perms);
+}
+
+function applyPermissionsToUI(permsJson) {
+    if (!permsJson) return;
+    try {
+        const perms = JSON.parse(permsJson);
+        systemModules.forEach(m => {
+            if (perms[m.id]) {
+                document.querySelector(`.perm-view[data-module="${m.id}"]`).checked = perms[m.id].view;
+                document.querySelector(`.perm-edit[data-module="${m.id}"]`).checked = perms[m.id].edit;
+            }
+        });
+    } catch(e) { console.error("Error parsing permissions", e); }
+}
+
+function checkPermission(module, type = "view") {
+    // If no logged in user or admin, true
+    const user = window.currentUser || JSON.parse(localStorage.getItem("currentUser") || "null");
+    if (!user) return true; 
+    if (user.role === "admin") return true;
+
+    try {
+        const perms = typeof user.permissions === "string" ? JSON.parse(user.permissions) : user.permissions;
+        if (!perms || !perms[module]) return false;
+        return perms[module][type] === true;
+    } catch(e) { return false; }
+}
+
+function enforceGlobalPermissions() {
+    const user = window.currentUser || JSON.parse(localStorage.getItem("currentUser") || "null");
+    if (!user) return;
+
+    console.log("Enforcing permissions for:", user.username);
+    
+    // 1. Hide Sidebar/Navigation Tabs
+    const navMapping = {
+        "fg_dashboard": "#nav_dashboard",
+        "fg_production": "#nav_dataentry",
+        "fg_orders": "#nav_orders",
+        "fg_inventory": "#nav_stocklist",
+        "fg_customers": "#nav_customers",
+        "rm_dashboard": "#side_rm_dash",
+        "rm_purchase": "#side_rm_in",
+        "rm_formula": "#side_rm_formulas",
+        "rm_consumption": "#side_rm_consumption",
+        "store_dashboard": "#side_store_dash",
+        "store_inward": "#side_store_in",
+        "store_outward": "#side_store_out",
+        "settings": "#nav_settings, .sidebar-btn[onclick*=\"settings\"]"
+    };
+
+    systemModules.forEach(m => {
+        const hasView = checkPermission(m.id, "view");
+        const selector = navMapping[m.id];
+        if (selector) {
+            document.querySelectorAll(selector).forEach(el => {
+                el.style.display = hasView ? "" : "none";
+            });
+        }
+    });
+
+    // 2. Hide Action Buttons for non-editors
+    const actionButtons = [
+        "button[onclick*=\"save\"]", 
+        "button[onclick*=\"Add\"]", 
+        "button[onclick*=\"delete\"]", 
+        "button[onclick*=\"remove\"]",
+        ".btn-success",
+        ".text-error",
+        ".fa-edit",
+        ".fa-trash-alt"
+    ];
+
+    // Determine current module
+    const currentModule = determineCurrentModule();
+    if (currentModule) {
+        const canEdit = checkPermission(currentModule, "edit");
+        if (!canEdit) {
+            document.querySelectorAll(actionButtons.join(",")).forEach(el => {
+                // Settings page is high risk, hide EVERYTHING that isn't viewing
+                el.style.visibility = "hidden";
+                el.style.pointerEvents = "none";
+            });
+        }
+    }
+}
+
+function determineCurrentModule() {
+    // Determine based on visible panels
+    if (document.getElementById("finishGoodPanel")?.style.display !== "none") {
+        if (currentPage === "dashboard") return "fg_dashboard";
+        if (currentPage === "dataentry") return "fg_production";
+        if (currentPage === "orders") return "fg_orders";
+        if (currentPage === "stocklist") return "fg_inventory";
+        if (currentPage === "customers") return "fg_customers";
+    }
+    if (document.getElementById("rawMaterialsPanel")?.style.display !== "none") {
+        const activeTab = document.querySelector("#rawMaterialsPanel .tab-content:not([style*=\"none\"])");
+        if (activeTab) {
+            const id = activeTab.id;
+            if (id === "rm_dashboard") return "rm_dashboard";
+            if (id === "rm_in") return "rm_purchase";
+            if (id === "rm_out") return "rm_consumption";
+            if (id === "rm_formulas") return "rm_formula";
+        }
+    }
+    if (document.getElementById("storePanel")?.style.display !== "none") {
+        const activeTab = document.querySelector("#storePanel .tab-content:not([style*=\"none\"])");
+        if (activeTab) {
+            const id = activeTab.id;
+            if (id === "store_dashboard") return "store_dashboard";
+            if (id === "store_inwards") return "store_inward";
+            if (id === "store_outwards") return "store_outward";
+        }
+    }
+    if (document.getElementById("settingsPanel")?.style.display !== "none") return "settings";
+    return null;
 }
 

@@ -148,6 +148,12 @@ try {
                     if (!in_array('brand_id', $rtCols)) $conn->exec("ALTER TABLE rm_transactions ADD COLUMN brand_id INT DEFAULT NULL");
                 } catch(Exception $e) {}
 
+                // AUTO-REPAIR: Users Table for Permissions
+                try {
+                    $userCols = $conn->query("SHOW COLUMNS FROM users")->fetchAll(PDO::FETCH_COLUMN);
+                    if (!in_array('permissions', $userCols)) $conn->exec("ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT NULL");
+                } catch(Exception $e) {}
+
                 // AUTO-REPAIR: Add main_id to rm_formulas
                 try {
                     $rfCols = $conn->query("SHOW COLUMNS FROM rm_formulas")->fetchAll(PDO::FETCH_COLUMN);
@@ -157,7 +163,7 @@ try {
             } catch (Exception $e) {}
 
             $data = [
-                'users' => $conn->query("SELECT id, name, username, password, role FROM users")->fetchAll(PDO::FETCH_ASSOC),
+                'users' => $conn->query("SELECT id, name, username, password, role, permissions FROM users")->fetchAll(PDO::FETCH_ASSOC),
                 'mainCategories' => $conn->query("SELECT id, name, code, color, low_stock_limit AS lowStockLimit FROM main_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'subCategories' => $conn->query("SELECT id, main_id AS mainId, name FROM sub_categories")->fetchAll(PDO::FETCH_ASSOC),
                 'items' => $conn->query("SELECT id, main_id AS mainId, sub_id AS subId, name, length, weight, stock, low_stock_limit AS lowStockLimit FROM items")->fetchAll(PDO::FETCH_ASSOC),
@@ -228,11 +234,11 @@ try {
         elseif ($action === 'save_user') {
             $user = $input['user'];
             if (isset($user['id']) && !empty($user['id'])) {
-                $stmt = $conn->prepare("UPDATE users SET name = ?, username = ?, password = ?, role = ? WHERE id = ?");
-                $stmt->execute([$user['name'], $user['username'], $user['password'], $user['role'] ?? 'User', $user['id']]);
+                $stmt = $conn->prepare("UPDATE users SET name = ?, username = ?, password = ?, role = ?, permissions = ? WHERE id = ?");
+                $stmt->execute([$user['name'], $user['username'], $user['password'], $user['role'] ?? 'User', $user['permissions'] ?? null, $user['id']]);
             } else {
-                $stmt = $conn->prepare("INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$user['name'], $user['username'], $user['password'], $user['role'] ?? 'User']);
+                $stmt = $conn->prepare("INSERT INTO users (name, username, password, role, permissions) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$user['name'], $user['username'], $user['password'], $user['role'] ?? 'User', $user['permissions'] ?? null]);
                 $user['id'] = $conn->lastInsertId();
             }
             echo json_encode(['status' => 'success', 'id' => $user['id']]);

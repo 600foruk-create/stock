@@ -147,34 +147,60 @@
     </div>
 
     <div id="addUserModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
-                <h3 id="userModalTitle">➕ Add User</h3>
+                <h3 id="userModalTitle">➕ Manage User Account</h3>
                 <span class="close-modal" onclick="closeAddUserModal()">&times;</span>
             </div>
             <input type="hidden" id="editUserId">
-            <div class="form-group">
-                <label>Full Name</label>
-                <input type="text" id="newUserName" class="form-control">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label style="font-weight: 700; font-size: 0.85rem;">Full Name</label>
+                    <input type="text" id="newUserName" class="form-control" placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: 700; font-size: 0.85rem;">Username</label>
+                    <input type="text" id="newUserUsername" class="form-control" placeholder="john123">
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: 700; font-size: 0.85rem;">Password</label>
+                    <input type="password" id="newUserPassword" class="form-control" placeholder="********">
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: 700; font-size: 0.85rem;">User Role</label>
+                    <select id="newUserRole" class="form-control" onchange="handleRoleChange(this.value)" style="font-weight: 700; color: var(--sky-600);">
+                        <option value="admin">Admin (Full Access)</option>
+                        <option value="user">User (Restricted)</option>
+                    </select>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="newUserUsername" class="form-control">
+
+            <!-- Permissions Matrix -->
+            <div style="margin-top: 1.5rem; border-top: 2px solid var(--gray-100); padding-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h4 style="margin: 0; color: var(--gray-700); font-weight: 800; font-size: 0.9rem;">MODULE PERMISSIONS</h4>
+                    <span id="permissionStatusTag" style="font-size: 0.75rem; font-weight: 700; background: var(--gray-100); padding: 4px 10px; border-radius: 20px;">Role-Based</span>
+                </div>
+                
+                <div style="max-height: 250px; overflow-y: auto; border: 1px solid var(--gray-200); border-radius: 12px; background: white;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead style="position: sticky; top: 0; z-index: 10;">
+                            <tr style="background: var(--gray-50); border-bottom: 1px solid var(--gray-200);">
+                                <th style="padding: 12px; font-size: 0.7rem; text-transform: uppercase; color: var(--gray-500); text-align: left;">System Domain / Feature</th>
+                                <th style="padding: 12px; font-size: 0.7rem; text-transform: uppercase; color: var(--gray-500); text-align: center; width: 80px;">Viewer</th>
+                                <th style="padding: 12px; font-size: 0.7rem; text-transform: uppercase; color: var(--gray-500); text-align: center; width: 80px;">Editor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="permissionsTableBody">
+                            <!-- Modules will be dynamically injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="newUserPassword" class="form-control">
-            </div>
-            <div class="form-group">
-                <label>Role</label>
-                <select id="newUserRole" class="form-control">
-                    <option value="admin">Admin</option>
-                    <option value="manager">Manager</option>
-                    <option value="data_entry">Data Entry</option>
-                    <option value="viewer">Viewer</option>
-                </select>
-            </div>
-            <button id="userSaveBtn" class="btn btn-success" onclick="saveNewUser()" style="width:100%;">Create User</button>
+
+            <button id="userSaveBtn" class="btn btn-success" onclick="saveNewUser()" style="width:100%; margin-top: 1.5rem; padding: 1rem; font-weight: 800; border-radius: 12px; box-shadow: var(--shadow-sm);">
+                Save Changes & Apply Permissions
+            </button>
         </div>
     </div>
 
