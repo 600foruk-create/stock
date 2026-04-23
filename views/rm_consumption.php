@@ -105,10 +105,10 @@
                         <th style="padding: 1rem 0.8rem; text-align: center; border-bottom: 2px solid var(--sky-700);">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="rmConsumptionHistoryTable">
+                <tbody id="rmConsumptionHistoryTable" class="striped-rows">
                     <!-- Data will be injected here -->
                 </tbody>
-                <tfoot id="rmConsumptionHistoryFooter" style="position: sticky; bottom: 0; z-index: 10;">
+                <tfoot id="rmConsumptionHistoryFooter" style="background: var(--sky-600); color: white; font-weight: bold; position: sticky; bottom: 0; z-index: 10; box-shadow: 0 -1px 2px rgba(0,0,0,0.2);">
                     <!-- Totals will be injected here -->
                 </tfoot>
             </table>
@@ -129,3 +129,20 @@
         </table>
     </div>
 </div>
+
+<style>
+.striped-rows tr:nth-child(odd) {
+    background-color: #f0fdf4; /* Very Light Green */
+}
+.striped-rows tr:nth-child(even) {
+    background-color: #fefce8; /* Very Light Yellow */
+}
+.striped-rows tr:hover {
+    background-color: #e2e8f0 !important;
+    transition: background 0.1s ease;
+}
+.striped-rows td {
+    border-bottom: 1px solid #e2e8f0;
+    color: var(--gray-800);
+}
+</style>
