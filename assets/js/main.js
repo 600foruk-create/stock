@@ -9300,17 +9300,18 @@ function enforceGlobalPermissions() {
     if (curMod) {
         const canEdit = isAdmin || checkPermission(curMod, "edit");
         
-        // Scan all buttons and action links
-        const editorElements = document.querySelectorAll("button, .btn, .btn-sm, .text-error, a.action-link");
+        // Scan all buttons, action links, and interactive icons
+        const editorElements = document.querySelectorAll("button, .btn, .btn-sm, .text-error, a.action-link, i[onclick], span[onclick]");
         
         editorElements.forEach(btn => {
             const onclick = (btn.getAttribute('onclick') || '').toLowerCase();
             const text = (btn.innerText || '').toLowerCase();
             const id = (btn.id || '').toLowerCase();
+            const className = (btn.className || '').toLowerCase();
             
             // List of keywords that indicate an EDIT/SAVE/DELETE action
-            const editKeywords = ['save', 'add', 'delete', 'edit', 'remove', 'update', 'revert', 'sync', 'create', 'insert', 'modify', 'clear', 'resequence'];
-            const isEditAction = editKeywords.some(k => onclick.includes(k) || text.includes(k) || id.includes(k));
+            const editKeywords = ['save', 'add', 'delete', 'edit', 'remove', 'update', 'revert', 'sync', 'create', 'insert', 'modify', 'clear', 'resequence', 'trash'];
+            const isEditAction = editKeywords.some(k => onclick.includes(k) || text.includes(k) || id.includes(k) || className.includes(k));
             
             if (isEditAction) {
                 // Special exemption: allow closing modals, generic UI toggles, or VIEWING actions
@@ -9324,13 +9325,40 @@ function enforceGlobalPermissions() {
                     btn.style.visibility = "visible";
                     btn.style.pointerEvents = "auto";
                 } else {
-                    // Force hide for non-editors
                     btn.style.display = "none";
                     btn.style.pointerEvents = "none";
                 }
             }
         });
+
+        // 3. Inputs & Forms (Read-Only Enforcement)
+        if (!canEdit) {
+            const inputs = document.querySelectorAll("input, select, textarea");
+            inputs.forEach(input => {
+                const id = (input.id || '').toLowerCase();
+                const placeholder = (input.placeholder || '').toLowerCase();
+                const type = (input.type || '').toLowerCase();
+                
+                // Keep search bars and filters active for navigation
+                if (id.includes('search') || placeholder.includes('search') || id.includes('filter') || type === 'search') return;
+                
+                input.disabled = true;
+                input.style.opacity = "0.7";
+                input.style.cursor = "not-allowed";
+            });
+        } else {
+            // Re-enable if they might have been disabled previously
+            const inputs = document.querySelectorAll("input, select, textarea");
+            inputs.forEach(input => {
+                if (input.disabled && !input.classList.contains('always-disabled')) {
+                    input.disabled = false;
+                    input.style.opacity = "1";
+                    input.style.cursor = "auto";
+                }
+            });
+        }
     }
+}
 }
 
 function determineCurrentModule() {
