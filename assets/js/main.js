@@ -247,6 +247,9 @@ function showTab(tabName) {
     if (tabName === 'lowStockReport') refreshLowStockReport();
     if (tabName === 'audit') refreshAuditList();
     if (tabName === 'reports') refreshArchivedReportsList();
+    
+    // Crucially enforce permissions after tab change
+    enforceGlobalPermissions();
 
     // Raw Material refreshers
     if (tabName.startsWith('rm_')) {
@@ -9056,14 +9059,7 @@ async function revertRMTransaction(id) {
         if (result.status === 'success') {
             alert('✅ RM Record removed and stock reverted successfully!');
             initApp();
-        } else {
-            alert('❌ Error: ' + (result.message || 'Unknown error occurred.'));
-        }
-    } catch (e) {
-        console.error('Failed to revert RM:', e);
-        alert('❌ Network error. Check your connection.');
-    }
-}
+
 
 function switchSettingsTab(tabId, btn) {
     document.querySelectorAll('.settings-section').forEach(s => s.style.display = 'none');
@@ -9296,21 +9292,35 @@ function enforceGlobalPermissions() {
     const curMod = determineCurrentModule();
     if (curMod) {
         const canEdit = checkPermission(curMod, "edit");
-        // Buttons that usually perform WRITE actions
-        const editorElements = document.querySelectorAll("button[onclick*='save'], button[onclick*='Add'], button[onclick*='delete'], button[onclick*='edit'], button[onclick*='remove'], .btn-success, .btn-danger, .text-error");
+        
+        // Scan all buttons and action links
+        const editorElements = document.querySelectorAll("button, .btn, .btn-sm, .text-error, a.action-link");
         
         editorElements.forEach(btn => {
-            // Special exemption: allow closing modals or generic UI toggles
-            const onclick = btn.getAttribute('onclick') || '';
-            if (onclick.toLowerCase().includes('close') || onclick.toLowerCase().includes('toggle')) return;
+            const onclick = (btn.getAttribute('onclick') || '').toLowerCase();
+            const text = (btn.innerText || '').toLowerCase();
+            const id = (btn.id || '').toLowerCase();
             
-            if (canEdit) {
-                btn.style.display = "";
-                btn.style.visibility = "visible";
-                btn.style.pointerEvents = "auto";
-            } else {
-                btn.style.display = "none";
-                btn.style.pointerEvents = "none";
+            // List of keywords that indicate an EDIT/SAVE/DELETE action
+            const editKeywords = ['save', 'add', 'delete', 'edit', 'remove', 'update', 'revert', 'sync', 'create', 'insert', 'modify', 'clear', 'resequence'];
+            const isEditAction = editKeywords.some(k => onclick.includes(k) || text.includes(k) || id.includes(k));
+            
+            if (isEditAction) {
+                // Special exemption: allow closing modals, generic UI toggles, or VIEWING actions
+                const safeKeywords = ['close', 'toggle', 'print', 'view', 'show', 'cancel', 'back', 'dismiss'];
+                const isSafe = safeKeywords.some(k => onclick.includes(k) || text.includes(k));
+                
+                if (isSafe && !onclick.includes('save') && !onclick.includes('delete')) return; 
+                
+                if (canEdit) {
+                    btn.style.display = "";
+                    btn.style.visibility = "visible";
+                    btn.style.pointerEvents = "auto";
+                } else {
+                    // Force hide for non-editors
+                    btn.style.display = "none";
+                    btn.style.pointerEvents = "none";
+                }
             }
         });
     }
