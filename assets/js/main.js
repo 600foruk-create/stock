@@ -9079,8 +9079,12 @@ const systemModules = [
     { id: "fg_dashboard", name: "Finish Goods: Dashboard" },
     { id: "fg_production", name: "Finish Goods: Production Entry" },
     { id: "fg_orders", name: "Finish Goods: Orders & Invoicing" },
-    { id: "fg_inventory", name: "Finish Goods: Inventory Summary" },
+    { id: "fg_inventory", name: "Finish Goods: Inventory Summary (Cats)" },
     { id: "fg_customers", name: "Finish Goods: Customers Database" },
+    { id: "fg_stocklist", name: "Finish Goods: Detailed Stock List" },
+    { id: "fg_audit", name: "Finish Goods: Monthly Audit" },
+    { id: "fg_low_stock", name: "Finish Goods: Low Stock Alert Report" },
+    { id: "fg_reports", name: "Finish Goods: Reports Archive" },
     { id: "rm_dashboard", name: "Raw Materials: Dashboard" },
     { id: "rm_purchase", name: "Raw Materials: Purchase/Inward" },
     { id: "rm_formula", name: "Raw Materials: Production Formulas" },
@@ -9201,8 +9205,12 @@ function enforceGlobalPermissions() {
         "fg_dashboard": ".nav-tab[onclick*=\"'dashboard'\"], #dashboard",
         "fg_production": ".nav-tab[onclick*=\"'dataEntry'\"], #dataEntry",
         "fg_orders": ".nav-tab[onclick*=\"'orders'\"], #orders",
-        "fg_inventory": ".nav-tab[onclick*=\"'stockList'\"], #stockList",
+        "fg_inventory": ".nav-tab[onclick*=\"'categories'\"], #categories",
         "fg_customers": ".nav-tab[onclick*=\"'customers'\"], #customers",
+        "fg_stocklist": ".nav-tab[onclick*=\"'stockList'\"], #stockList",
+        "fg_audit": ".nav-tab[onclick*=\"'audit'\"], #audit",
+        "fg_low_stock": ".nav-tab[onclick*=\"'lowStockReport'\"], #lowStockReport",
+        "fg_reports": ".nav-tab[onclick*=\"'reports'\"], #reports",
         "rm_dashboard": ".nav-tab[onclick*=\"'rm_dashboard'\"], #rm_dashboard",
         "rm_purchase": ".nav-tab[onclick*=\"'rm_in'\"], #rm_in",
         "rm_formula": ".nav-tab[onclick*=\"'rm_formulas'\"], #rm_formulas",
@@ -9215,7 +9223,7 @@ function enforceGlobalPermissions() {
 
     // Main Module Buttons (Finish Good, RM, Store, Settings)
     const moduleMap = {
-        "fg": { ids: ["fg_dashboard", "fg_production", "fg_orders", "fg_inventory", "fg_customers"], selector: ".menu-item:nth-child(1)" },
+        "fg": { ids: ["fg_dashboard", "fg_production", "fg_orders", "fg_inventory", "fg_customers", "fg_stocklist", "fg_audit", "fg_low_stock", "fg_reports"], selector: ".menu-item:nth-child(1)" },
         "rm": { ids: ["rm_dashboard", "rm_purchase", "rm_formula", "rm_consumption"], selector: ".menu-item:nth-child(2)" },
         "st": { ids: ["store_dashboard", "store_inward", "store_outward"], selector: ".menu-item:nth-child(3)" },
         "se": { ids: ["settings"], selector: ".menu-item:nth-child(4)" }
@@ -9236,7 +9244,7 @@ function enforceGlobalPermissions() {
                 btn.style.display = "flex";
             } else {
                 btn.style.opacity = "0.4";
-                btn.style.filter = "blur(1.5px) grayscale(1)";
+                btn.style.filter = "blur(12px) grayscale(1)";
                 btn.style.pointerEvents = "none";
                 // Only hide completely if it's settings and not admin
                 if (key === 'se' && !isAdm) btn.style.display = "none";
@@ -9256,7 +9264,7 @@ function enforceGlobalPermissions() {
                     el.style.pointerEvents = "auto";
                 } else {
                     el.style.opacity = "0.4";
-                    el.style.filter = "blur(1.5px) grayscale(1)";
+                    el.style.filter = "blur(12px) grayscale(1)";
                     el.style.pointerEvents = "none";
                 }
             });
@@ -9296,8 +9304,12 @@ function determineCurrentModule() {
             if (id === 'dashboard') return 'fg_dashboard';
             if (id === 'dataEntry') return 'fg_production';
             if (id === 'orders') return 'fg_orders';
-            if (id === 'stockList') return 'fg_inventory';
+            if (id === 'categories') return 'fg_inventory';
             if (id === 'customers') return 'fg_customers';
+            if (id === 'stockList') return 'fg_stocklist';
+            if (id === 'audit') return 'fg_audit';
+            if (id === 'lowStockReport') return 'fg_low_stock';
+            if (id === 'reports') return 'fg_reports';
         }
     }
     // RM Panels
