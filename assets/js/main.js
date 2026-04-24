@@ -511,8 +511,7 @@ function switchModule(module) {
         }
     } else if (module === 'settings') {
         document.getElementById('settingsPanel').style.display = 'block';
-        refreshUsersList();
-        refreshBrandLowStockSettings();
+        if (typeof refreshUsersList === 'function') refreshUsersList();
     } else if (module === 'rawMaterials') {
         document.getElementById('rawMaterialsPanel').style.display = 'block';
         document.getElementById('rawMaterialsTabs').style.display = 'flex';
@@ -9059,7 +9058,14 @@ async function revertRMTransaction(id) {
         if (result.status === 'success') {
             alert('✅ RM Record removed and stock reverted successfully!');
             initApp();
-
+        } else {
+            alert('❌ Error: ' + (result.message || 'Unknown error occurred.'));
+        }
+    } catch (e) {
+        console.error('Failed to revert RM:', e);
+        alert('❌ Network error. Check your connection.');
+    }
+}
 
 function switchSettingsTab(tabId, btn) {
     document.querySelectorAll('.settings-section').forEach(s => s.style.display = 'none');
