@@ -9085,13 +9085,25 @@ const systemModules = [
     { id: "fg_audit", name: "Finish Goods: Monthly Audit" },
     { id: "fg_low_stock", name: "Finish Goods: Low Stock Alert Report" },
     { id: "fg_reports", name: "Finish Goods: Reports Archive" },
+    
     { id: "rm_dashboard", name: "Raw Materials: Dashboard" },
-    { id: "rm_purchase", name: "Raw Materials: Purchase/Inward" },
+    { id: "rm_purchase", name: "Raw Materials: Purchase (IN)" },
+    { id: "rm_consumption", name: "Raw Materials: Usage (OUT)" },
     { id: "rm_formula", name: "Raw Materials: Production Formulas" },
-    { id: "rm_consumption", name: "Raw Materials: Consumption History" },
+    { id: "rm_inventory", name: "Raw Materials: RM Inventory" },
+    { id: "rm_balance", name: "Raw Materials: Inventory Balance" },
+    { id: "rm_audit", name: "Raw Materials: Monthly Audit" },
+    { id: "rm_reports", name: "Raw Materials: Reports" },
+    { id: "rm_pr_vs_rm", name: "Raw Materials: PR vs RM Consumption" },
+    
     { id: "store_dashboard", name: "Store: Dashboard & Alerts" },
-    { id: "store_inward", name: "Store: Inward Transactions" },
-    { id: "store_outward", name: "Store: Outward/Issuance" },
+    { id: "store_inward", name: "Store: Inwards" },
+    { id: "store_outward", name: "Store: Outwards" },
+    { id: "store_inventory", name: "Store: Inventory" },
+    { id: "store_items", name: "Store: Item Records" },
+    { id: "store_audit", name: "Store: Monthly Audit" },
+    { id: "store_reports", name: "Store: Reports" },
+    
     { id: "settings", name: "System Settings & Database" }
 ];
 
@@ -9213,19 +9225,28 @@ function enforceGlobalPermissions() {
         "fg_reports": ".nav-tab[onclick*=\"'reports'\"], #reports",
         "rm_dashboard": ".nav-tab[onclick*=\"'rm_dashboard'\"], #rm_dashboard",
         "rm_purchase": ".nav-tab[onclick*=\"'rm_in'\"], #rm_in",
-        "rm_formula": ".nav-tab[onclick*=\"'rm_formulas'\"], #rm_formulas",
         "rm_consumption": ".nav-tab[onclick*=\"'rm_out'\"], #rm_out",
+        "rm_formula": ".nav-tab[onclick*=\"'rm_formulas'\"], #rm_formulas",
+        "rm_inventory": ".nav-tab[onclick*=\"'rm_inventory'\"], #rm_inventory",
+        "rm_balance": ".nav-tab[onclick*=\"'rm_balance'\"], #rm_balance",
+        "rm_audit": ".nav-tab[onclick*=\"'rm_audit'\"], #rm_audit",
+        "rm_reports": ".nav-tab[onclick*=\"'rm_reports'\"], #rm_reports",
+        "rm_pr_vs_rm": ".nav-tab[onclick*=\"'rm_consumption'\"], #rm_consumption",
         "store_dashboard": ".nav-tab[onclick*=\"'store_dashboard'\"], #store_dashboard",
         "store_inward": ".nav-tab[onclick*=\"'store_inwards'\"], #store_inwards",
         "store_outward": ".nav-tab[onclick*=\"'store_outwards'\"], #store_outwards",
+        "store_inventory": ".nav-tab[onclick*=\"'store_inventory'\"], #store_inventory",
+        "store_items": ".nav-tab[onclick*=\"'store_items'\"], #store_items",
+        "store_audit": ".nav-tab[onclick*=\"'store_audit'\"], #store_audit",
+        "store_reports": ".nav-tab[onclick*=\"'store_reports'\"], #store_reports",
         "settings": ".sidebar-btn[onclick*=\"'settings'\"], #settingsPanel"
     };
 
     // Main Module Buttons (Finish Good, RM, Store, Settings)
     const moduleMap = {
         "fg": { ids: ["fg_dashboard", "fg_production", "fg_orders", "fg_inventory", "fg_customers", "fg_stocklist", "fg_audit", "fg_low_stock", "fg_reports"], selector: ".menu-item:nth-child(1)" },
-        "rm": { ids: ["rm_dashboard", "rm_purchase", "rm_formula", "rm_consumption"], selector: ".menu-item:nth-child(2)" },
-        "st": { ids: ["store_dashboard", "store_inward", "store_outward"], selector: ".menu-item:nth-child(3)" },
+        "rm": { ids: ["rm_dashboard", "rm_purchase", "rm_formula", "rm_consumption", "rm_inventory", "rm_balance", "rm_audit", "rm_reports", "rm_pr_vs_rm"], selector: ".menu-item:nth-child(2)" },
+        "st": { ids: ["store_dashboard", "store_inward", "store_outward", "store_inventory", "store_items", "store_audit", "store_reports"], selector: ".menu-item:nth-child(3)" },
         "se": { ids: ["settings"], selector: ".menu-item:nth-child(4)" }
     };
 
@@ -9321,6 +9342,11 @@ function determineCurrentModule() {
             if (id === 'rm_in') return 'rm_purchase';
             if (id === 'rm_formulas') return 'rm_formula';
             if (id === 'rm_out') return 'rm_consumption';
+            if (id === 'rm_inventory') return 'rm_inventory';
+            if (id === 'rm_balance') return 'rm_balance';
+            if (id === 'rm_audit') return 'rm_audit';
+            if (id === 'rm_reports') return 'rm_reports';
+            if (id === 'rm_consumption') return 'rm_pr_vs_rm';
         }
     }
     // Store Panels
@@ -9331,6 +9357,10 @@ function determineCurrentModule() {
             if (id === 'store_dashboard') return 'store_dashboard';
             if (id === 'store_inwards') return 'store_inward';
             if (id === 'store_outwards') return 'store_outward';
+            if (id === 'store_inventory') return 'store_inventory';
+            if (id === 'store_items') return 'store_items';
+            if (id === 'store_audit') return 'store_audit';
+            if (id === 'store_reports') return 'store_reports';
         }
     }
     // Settings
