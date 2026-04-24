@@ -1769,11 +1769,380 @@
     box-shadow: 0 0 5px rgba(14, 165, 233, 0.2);
 }
 .diff-plus { color: var(--green-600); font-weight: bold; }
+.chart-main-wrapper {
+    margin-top: 1rem;
+}
+
+.chart-box {
+    background: var(--gray-50);
+    padding: 1.5rem;
+    border-radius: 1rem;
+    border: 1px solid var(--gray-200);
+}
+
+.dashboard-section h3 {
+    margin-bottom: 1.5rem;
+    color: var(--sky-600);
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+/* Custom CSS Charts */
+.chart-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.chart-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.chart-label {
+    width: 100px;
+    font-weight: 600;
+    color: var(--gray-700);
+    font-size: 0.9rem;
+}
+
+.chart-bar-wrapper {
+    flex: 1;
+    height: 24px;
+    background: var(--gray-100);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.chart-bar-fill {
+    height: 100%;
+    transition: width 1s ease-in-out;
+}
+
+.chart-value {
+    margin-left: 1rem;
+    font-weight: 700;
+    color: var(--sky-600);
+    font-size: 0.9rem;
+    min-width: 60px;
+}
+
+/* Alert Cards */
+.alerts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.alert-card {
+    background: #fef2f2;
+    border-left: 5px solid #ef4444;
+    padding: 1rem;
+    border-radius: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: pulse-border 2s infinite;
+}
+
+/* Yellowish/Amber for Low Stock */
+.alert-card.warning {
+    background: #fffbeb;
+    border-left-color: #f59e0b;
+    animation: pulse-yellow 2s infinite;
+}
+
+.alert-card.warning .alert-info h4 { color: #92400e; }
+.alert-card.warning .alert-info p { color: #b45309; }
+.alert-card.warning .alert-qty { background: #f59e0b; }
+
+.alert-info h4 {
+    color: #911b1b;
+    font-size: 0.95rem;
+    margin-bottom: 0.2rem;
+}
+
+.alert-info p {
+    color: #b91c1c;
+    font-size: 0.8rem;
+}
+
+.alert-qty {
+    background: #ef4444;
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+/* Scrollable Container */
+.alerts-grid-scroll {
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 0.8rem;
+    border: 1px solid var(--gray-100);
+    border-radius: 1.2rem;
+    background: var(--gray-50);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.alert-group-header {
+    grid-column: 1 / -1;
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: var(--gray-500);
+    margin: 1.2rem 0 0.6rem 0;
+    padding: 0.2rem 0.5rem;
+    border-bottom: 2.5px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+@keyframes pulse-border {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+@keyframes pulse-yellow {
+    0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+/* Monthly Audit Styles */
+.audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 2rem;
+    background: white;
+    font-size: 0.9rem;
+}
+.audit-table th {
+    background: var(--gray-100);
+    color: var(--gray-700);
+    padding: 10px;
+    border: 1px solid var(--gray-300);
+    text-align: center;
+    font-weight: 600;
+}
+.audit-table td {
+    padding: 8px;
+    border: 1px solid var(--gray-200);
+    text-align: center;
+}
+.audit-brand-header {
+    background: var(--sky-600);
+    color: white;
+    padding: 12px 20px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.godown-input {
+    width: 80px;
+    padding: 5px;
+    border: 2px solid var(--sky-200);
+    border-radius: 4px;
+    text-align: center;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+.godown-input:focus {
+    border-color: var(--sky-500);
+    outline: none;
+    box-shadow: 0 0 5px rgba(14, 165, 233, 0.2);
+}
+.diff-plus { color: var(--green-600); font-weight: bold; }
 .diff-minus { color: #ef4444; font-weight: bold; }
 
 .group-row-end, .group-row-end td {
     border-bottom: 3px solid #64748b !important; /* Bolder, darker slate color */
 }
+
+/* ==================== MOBILE RESPONSIVE STYLES ==================== */
+@media screen and (max-width: 768px) {
+    body {
+        padding: 0;
+        height: auto;
+        overflow-y: auto;
+        display: block;
+    }
+
+    #app {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+        max-width: 100%;
+        padding: 0;
+    }
+
+    .app-wrapper {
+        flex-direction: column;
+        gap: 0;
+        height: auto;
+    }
+
+    /* Transform Sidebar into Bottom Nav */
+    .sidebar {
+        width: 100% !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        z-index: 1000;
+        border-radius: 20px 20px 0 0;
+        padding: 0.2rem 0.5rem;
+        height: 65px;
+        flex-direction: row !important;
+        justify-content: space-around;
+        box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+        overflow: hidden;
+        border: none;
+    }
+
+    .sidebar-header, .sidebar-footer {
+        display: none !important;
+    }
+
+    .sidebar-menu {
+        flex-direction: row !important;
+        width: 100%;
+        justify-content: space-around;
+        gap: 2px;
+        padding: 0;
+    }
+
+    .menu-item {
+        flex-direction: column;
+        gap: 2px;
+        padding: 8px 5px !important;
+        font-size: 0.65rem !important;
+        align-items: center;
+        width: auto !important;
+        text-align: center;
+        border-radius: 12px !important;
+        background: transparent;
+        flex: 1;
+    }
+
+    .menu-item i {
+        font-size: 1.3rem;
+        margin: 0;
+    }
+
+    .menu-item:hover {
+        transform: none !important;
+    }
+    
+    .menu-item.active {
+        background: rgba(255,255,255,0.15) !important;
+        color: white !important;
+    }
+
+    /* Main Content Adjustments */
+    .main-content {
+        border-radius: 0;
+        padding: 1rem;
+        padding-bottom: 85px; /* Space for bottom nav */
+        min-height: 100vh;
+        width: 100% !important;
+        box-shadow: none;
+    }
+
+    .top-bar {
+        padding: 0.6rem 1rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+
+    .page-title {
+        font-size: 1rem;
+    }
+    
+    .user-badge span {
+        display: none; /* Hide name, keep icon */
+    }
+
+    /* Navigation Tabs - Compact Scrollable */
+    .nav-tabs {
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        padding: 3px;
+    }
+
+    .nav-tab {
+        padding: 8px 14px;
+        font-size: 0.7rem;
+    }
+
+    /* Grids to Single Column */
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.8rem;
+    }
+
+    .brands-container, .lowstock-container {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .brand-card.static .brand-header h4 {
+        font-size: 1rem;
+    }
+
+    /* Form Fields */
+    .form-row {
+        grid-template-columns: 1fr !important;
+        gap: 0.5rem;
+    }
+
+    /* Table Fixes */
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -1rem;
+        width: calc(100% + 2rem);
+        padding: 0 1rem;
+    }
+
+    .data-table, .stock-grid-table, .audit-table {
+        font-size: 0.75rem;
+        min-width: 650px; /* Force scroll for data visibility */
+    }
+
+    /* Card adjustments */
+    .brand-total {
+        font-size: 0.9rem;
+    }
+
+    /* Modals */
+    .modal-content {
+        width: 95% !important;
+        margin: 10% auto;
+        padding: 1.2rem;
+        border-radius: 1.5rem;
+    }
+    
+    .modal-footer {
+        flex-direction: column-reverse;
+        gap: 0.8rem;
+    }
+    
+    .modal-footer button {
+        width: 100%;
+    }
+}
+
 /* Fix for Print Truncation */
 @media print {
     #printableAudit, #auditListContainer, .audit-group, .audit-table {
