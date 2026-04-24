@@ -9212,7 +9212,9 @@ function checkPermission(module, type = "view") {
 function enforceGlobalPermissions() {
     if (!currentUser) return;
     
-    console.log("Applying strict security for:", currentUser.username, `(${currentUser.role})`);
+    // Admin check - case insensitive
+    const isAdmin = currentUser && String(currentUser.role).toLowerCase() === 'admin';
+    console.log("Applying strict security for:", currentUser.username, `(Admin: ${isAdmin})`);
     
     // 1. Module Accessibility (Sidebar & Content Tabs)
     const navMapping = {
@@ -9225,6 +9227,7 @@ function enforceGlobalPermissions() {
         "fg_audit": ".nav-tab[onclick*=\"'audit'\"], #audit",
         "fg_low_stock": ".nav-tab[onclick*=\"'lowStockReport'\"], #lowStockReport",
         "fg_reports": ".nav-tab[onclick*=\"'reports'\"], #reports",
+        
         "rm_dashboard": ".nav-tab[onclick*=\"'rm_dashboard'\"], #rm_dashboard",
         "rm_purchase": ".nav-tab[onclick*=\"'rm_in'\"], #rm_in",
         "rm_consumption": ".nav-tab[onclick*=\"'rm_out'\"], #rm_out",
@@ -9234,6 +9237,7 @@ function enforceGlobalPermissions() {
         "rm_audit": ".nav-tab[onclick*=\"'rm_audit'\"], #rm_audit",
         "rm_reports": ".nav-tab[onclick*=\"'rm_reports'\"], #rm_reports",
         "rm_pr_vs_rm": ".nav-tab[onclick*=\"'rm_consumption'\"], #rm_consumption",
+        
         "store_dashboard": ".nav-tab[onclick*=\"'store_dashboard'\"], #store_dashboard",
         "store_inward": ".nav-tab[onclick*=\"'store_inwards'\"], #store_inwards",
         "store_outward": ".nav-tab[onclick*=\"'store_outwards'\"], #store_outwards",
@@ -9241,7 +9245,7 @@ function enforceGlobalPermissions() {
         "store_items": ".nav-tab[onclick*=\"'store_items'\"], #store_items",
         "store_audit": ".nav-tab[onclick*=\"'store_audit'\"], #store_audit",
         "store_reports": ".nav-tab[onclick*=\"'store_reports'\"], #store_reports",
-        "settings": ".sidebar-btn[onclick*=\"'settings'\"], #settingsPanel"
+        "settings": ".menu-item:nth-child(4), .sidebar-btn[onclick*=\"'settings'\"], #settingsPanel"
     };
 
     // Main Module Buttons (Finish Good, RM, Store, Settings)
@@ -9252,12 +9256,10 @@ function enforceGlobalPermissions() {
         "se": { ids: ["settings"], selector: ".menu-item:nth-child(4)" }
     };
 
-    const isAdm = currentUser && String(currentUser.role).toLowerCase() === 'admin';
-
     // First, check top-level module visibility
     Object.keys(moduleMap).forEach(key => {
         const m = moduleMap[key];
-        const anyAccess = m.ids.some(id => checkPermission(id, "view"));
+        const anyAccess = isAdmin || m.ids.some(id => checkPermission(id, "view"));
         const btn = document.querySelector(m.selector);
         if (btn) {
             if (anyAccess) {
@@ -9269,15 +9271,14 @@ function enforceGlobalPermissions() {
                 btn.style.opacity = "0.4";
                 btn.style.filter = "blur(12px) grayscale(1)";
                 btn.style.pointerEvents = "none";
-                // Only hide completely if it's settings and not admin
-                if (key === 'se' && !isAdm) btn.style.display = "none";
+                if (key === 'se') btn.style.display = "none";
             }
         }
     });
 
     // Handle internal tabs and content areas
     systemModules.forEach(m => {
-        const hasView = checkPermission(m.id, "view");
+        const hasView = isAdmin || checkPermission(m.id, "view");
         const selector = navMapping[m.id];
         if (selector) {
             document.querySelectorAll(selector).forEach(el => {
@@ -9297,7 +9298,7 @@ function enforceGlobalPermissions() {
     // 2. Editor Actions (Action Buttons)
     const curMod = determineCurrentModule();
     if (curMod) {
-        const canEdit = checkPermission(curMod, "edit");
+        const canEdit = isAdmin || checkPermission(curMod, "edit");
         
         // Scan all buttons and action links
         const editorElements = document.querySelectorAll("button, .btn, .btn-sm, .text-error, a.action-link");

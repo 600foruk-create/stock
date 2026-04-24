@@ -103,17 +103,24 @@
             </div>
 
             <div id="rightsMatrixContent" style="display: none;">
-                <div style="background: var(--gray-50); border-radius: 20px; border: 1px solid var(--gray-200); overflow: hidden;">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="background: var(--sky-600); color: white;">
-                                <th style="padding: 1.2rem; text-align: left; font-weight: 800; text-transform: uppercase; font-size: 0.8rem;">Module / Feature Domain</th>
-                                <th style="padding: 1.2rem; text-align: center; font-weight: 800; text-transform: uppercase; font-size: 0.8rem; width: 120px;">Viewer Only</th>
-                                <th style="padding: 1.2rem; text-align: center; font-weight: 800; text-transform: uppercase; font-size: 0.8rem; width: 120px;">Full Editor</th>
+                <div style="background: var(--gray-50); padding: 12px; border-radius: 12px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <span id="permissionStatusTag" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 50px; font-weight: 700;">USER RIGHTS CONFIG</span>
+                    </div>
+                    <button id="makeAdminBtn" class="btn btn-sm" onclick="toggleAdminRoleForSelectedUser()" style="border-radius: 8px; font-size: 0.75rem; font-weight: 700;">Promote to Admin</button>
+                </div>
+
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto; border: 1px solid var(--gray-200); border-radius: 12px;">
+                    <table class="data-table" style="margin: 0; font-size: 0.75rem;">
+                        <thead style="position: sticky; top: 0; z-index: 10;">
+                            <tr>
+                                <th style="background: var(--gray-100); width: 60%;">Module / Menu</th>
+                                <th style="background: var(--gray-100); text-align: center;">Viewer</th>
+                                <th style="background: var(--gray-100); text-align: center;">Editor</th>
                             </tr>
                         </thead>
                         <tbody id="permissionsTableBody">
-                            <!-- Injected by JS -->
+                            <!-- Dynamic UI -->
                         </tbody>
                     </table>
                 </div>
