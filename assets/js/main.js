@@ -3360,6 +3360,9 @@ function refreshOrdersList(filter = null) {
         return statusMatch && searchMatch && dateMatch;
     });
 
+    // Ensure latest orders are always at the top
+    filteredOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
+
     if (filteredOrders.length === 0) {
         html = '<div style="text-align:center; padding:2rem;">No orders found matching your filters</div>';
     } else {
@@ -3567,7 +3570,8 @@ async function completeOrder(orderId) {
         return;
     }
 
-    if (!confirm(`Are you sure you want to complete Order #${orderId}? This will deduct remaining stock and record sales.`)) return;
+    // Removed confirmation for direct completion as requested
+    // if (!confirm(`Are you sure you want to complete Order #${orderId}? This will deduct remaining stock and record sales.`)) return;
 
     // Track if any stock was actually deducted
     let stockDeducted = false;
@@ -4805,6 +4809,9 @@ function refreshTransactions() {
 
         return searchMatch && dateMatch;
     });
+
+    // Ensure latest transactions are always at the top
+    filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     if (filtered.length === 0) {
         rows = '<tr><td colspan="7" style="text-align:center; padding:1rem;">No transactions found matching your filters</td></tr>';
