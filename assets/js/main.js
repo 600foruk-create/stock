@@ -2997,12 +2997,13 @@ async function saveProduction() {
                     transactions.unshift({
                         id: result.id,
                         ...tData,
+                        type: 'IN', // Normalize for UI metrics
                         mainName: main ? main.name : '',
                         subName: sub ? sub.name : '',
                         productCode: getProductCode(item, main, sub),
                         itemName: item.name,
-                        weight: item.weight,
-                        length: item.length,
+                        itemWeight: item.weight,
+                        itemLength: item.length,
                         customer: 'Factory'
                     });
                 } else {
@@ -3094,12 +3095,13 @@ async function saveSale() {
                 transactions.unshift({
                     id: result.id,
                     ...tData,
+                    type: 'OUT', // Normalize for UI
                     mainName: main ? main.name : '',
                     subName: sub ? sub.name : '',
                     productCode: getProductCode(item, main, sub),
                     itemName: item.name,
-                    weight: item.weight,
-                    length: item.length,
+                    itemWeight: item.weight,
+                    itemLength: item.length,
                     customer: customerName
                 });
             } else {
@@ -3177,12 +3179,13 @@ async function saveAdjustment() {
                 transactions.unshift({
                     id: result.id,
                     ...tData,
+                    type: 'ADJ', // Normalize for UI
                     mainName: main ? main.name : '',
                     subName: sub ? sub.name : '',
                     productCode: getProductCode(item, main, sub),
                     itemName: item.name,
-                    weight: item.weight,
-                    length: item.length,
+                    itemWeight: item.weight,
+                    itemLength: item.length,
                     customer: 'Adjustment'
                 });
             } else {
@@ -3360,8 +3363,8 @@ function refreshOrdersList(filter = null) {
         return statusMatch && searchMatch && dateMatch;
     });
 
-    // Ensure latest orders are always at the top
-    filteredOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Ensure latest orders are always at the top (by ID)
+    filteredOrders.sort((a, b) => b.id - a.id);
 
     if (filteredOrders.length === 0) {
         html = '<div style="text-align:center; padding:2rem;">No orders found matching your filters</div>';
@@ -3610,8 +3613,24 @@ async function completeOrder(orderId) {
                 const result = await response.json();
                 if (result.status === 'success') {
                     stockDeducted = true;
-                    invItem.stock = (invItem.stock || 0) - remainingToFulfill;
-                    item.fulfilled = (item.fulfilled || 0) + remainingToFulfill;
+                    invItem.stock = (parseFloat(invItem.stock) || 0) - parseFloat(remainingToFulfill);
+                    item.fulfilled = (parseFloat(item.fulfilled) || 0) + parseFloat(remainingToFulfill);
+                    
+                    // Add to local history for immediate display
+                    let main = mainCategories.find(m => m.id === invItem.mainId);
+                    let sub = subCategories.find(s => s.id === invItem.subId);
+                    transactions.unshift({
+                        id: result.id,
+                        ...tData,
+                        type: 'OUT', // Normalize for UI
+                        mainName: main ? main.name : '',
+                        itemName: invItem.name,
+                        subName: sub ? sub.name : '',
+                        productCode: getProductCode(invItem, main, sub),
+                        itemWeight: invItem.weight,
+                        itemLength: invItem.length,
+                        customer: order.customerName
+                    });
                 } else {
                     alert(`Fulfillment failed for item ${item.productCode}: ${result.message}`);
                     return; // Stop the whole process if one item fails
@@ -3624,10 +3643,13 @@ async function completeOrder(orderId) {
         }
     }
 
+    if (stockDeducted) {
+        order.isStockSubtracted = 1;
+        refreshTransactions(); // Update history list immediately
+    }
+    
     // Update order status on server
     order.status = 'completed';
-    // If ANY item had unfulfilled quantity that we just processed, mark as stock subtracted
-    if (stockDeducted) order.isStockSubtracted = 1;
 
     try {
         const response = await fetch('api/sync.php?action=save_order', {
@@ -4810,13 +4832,13 @@ function refreshTransactions() {
         return searchMatch && dateMatch;
     });
 
-    // Ensure latest transactions are always at the top
-    filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Ensure latest transactions are always at the top (by ID)
+    filtered.sort((a, b) => b.id - a.id);
 
     if (filtered.length === 0) {
         rows = '<tr><td colspan="7" style="text-align:center; padding:1rem;">No transactions found matching your filters</td></tr>';
     } else {
-        const displayList = (search || fromDate || toDate) ? filtered : filtered.slice(0, 50);
+        const displayList = (search || fromDate || toDate) ? filtered : filtered.slice(0, 100);
         displayList.forEach(t => {
             rows += `<tr>
                         <td style="padding:0.5rem; border-bottom:1px solid #eee;">${formatDate(t.date)}</td>
