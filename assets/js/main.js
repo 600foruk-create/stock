@@ -3641,7 +3641,6 @@ async function completeOrder(orderId) {
                 return;
             }
         }
-    }
 
     if (stockDeducted) {
         order.isStockSubtracted = 1;
